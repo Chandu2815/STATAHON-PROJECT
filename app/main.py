@@ -7,45 +7,81 @@ from fastapi.responses import JSONResponse
 import time
 from app.config import get_settings
 from app.database import init_db
-from app.api import auth, datasets, query, users, plfs
+from app.api import auth, datasets, query, users, plfs, frontend
 
 settings = get_settings()
 
 # Create FastAPI application
 app = FastAPI(
-    title=settings.PROJECT_NAME,
+    title="MoSPI Data Portal Infrastructure API",
     description="""
-    ## MoSPI Data Portal Infrastructure (DPI)
+    ## Track: Data Dissemination - STATATHON 2025
     
-    A comprehensive Data Portal Infrastructure built for the Ministry of Statistics 
-    and Programme Implementation (MoSPI) to enable efficient data access, querying, 
-    and management of statistical datasets.
+    Create an API gateway to run SQL queries on Survey Datasets and retrieve 
+    the results in user-friendly form like JSON.
     
-    ### Features
+    ### 🎯 Problem Statement Requirements Met:
     
-    * **Multi-dimensional Filtering**: Query data by state, gender, age group, and more
-    * **Access Control**: Role-based access with rate limiting and usage metering
-    * **Micro-Payment System**: Pay-per-use model with credits system
-    * **RESTful API**: Comprehensive API endpoints for data access
-    * **OpenAPI Documentation**: Interactive API documentation with Swagger UI
+    1. **Structured Database Ingestion** ✓
+       - Load datasets into relational DB with preserved metadata
+       - Real PLFS data: 1,472 records from microdata.gov.in
     
-    ### Authentication
+    2. **Configurable Query Framework** ✓
+       - YAML-based configuration for dynamic query building
+       - No hardcoded filters, metadata-driven queries
     
-    Most endpoints require authentication. Use the `/auth/register` endpoint to create 
-    an account and `/auth/login` to get an access token.
+    3. **RESTful API Layer** ✓
+       - 20+ endpoints with standard HTTP methods
+       - JSON responses with proper error codes (400, 402, 429, 500)
     
-    ### User Roles
+    4. **Multi-dimensional Filtering** ✓
+       - Query example: `state=Maharashtra&gender=female&age=15-29`
+       - Support for complex parameter combinations
     
-    * **Public**: 100 requests/day, 10 MB/day
-    * **Researcher**: 1000 requests/day, 100 MB/day
-    * **Premium**: 10000 requests/day, 1000 MB/day
-    * **Admin**: Unlimited access
+    5. **Access Control & Usage Metering** ✓
+       - Rate-limiting: 100/1000/10000 requests per day by role
+       - Volume caps: 10/100/1000 MB per day
+       - Usage tracking and monitoring
     
-    ### Example Query
+    6. **Micro-Payment Feature** ✓
+       - Simulated pricing model with credits system
+       - Pay-per-use for premium access
+       - Transaction history and billing
+    
+    7. **Developer Experience** ✓
+       - OpenAPI/Swagger documentation (this page)
+       - Interactive API testing
+       - Comprehensive examples
+    
+    ### 📊 Available Datasets:
+    
+    * **District Codes**: 695 records (all India)
+    * **Item Codes**: 377 survey items across 8 blocks
+    * **Data Layout**: 400 structure definitions
+    * **Source**: Periodic Labour Force Survey (PLFS)
+    
+    ### 🔐 Authentication:
+    
+    1. Register: `POST /api/v1/auth/register`
+    2. Login: `POST /api/v1/auth/login` → Get JWT token
+    3. Use token: `Authorization: Bearer <your_token>`
+    
+    ### 👥 User Roles:
+    
+    * **PUBLIC**: 100 requests/day, 10 MB/day, 1,000 credits
+    * **RESEARCHER**: 1,000 requests/day, 100 MB/day
+    * **PREMIUM**: 10,000 requests/day, 1,000 MB/day
+    * **ADMIN**: Unlimited access
+    
+    ### 🔍 Example Multi-dimensional Query:
     
     ```
-    GET /api/v1/query?dataset=census&state=Maharashtra&gender=female&age_group=15-29
+    GET /api/v1/query?state=Maharashtra&gender=female&age=15-29&limit=100
+    GET /api/v1/plfs/district-codes?state=PUNJAB
+    GET /api/v1/plfs/item-codes?block_no=3
     ```
+    
+    ### 🌐 Visit: [Landing Page](/) for visual interface
     """,
     version="1.0.0",
     docs_url="/docs",
@@ -74,7 +110,8 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-# Include routers
+# Include routers - Frontend first for landing page
+app.include_router(frontend.router)  # Landing page at /
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(datasets.router, prefix=settings.API_V1_PREFIX)
 app.include_router(query.router, prefix=settings.API_V1_PREFIX)
@@ -86,17 +123,6 @@ app.include_router(plfs.router, prefix=settings.API_V1_PREFIX)
 async def startup_event():
     """Initialize database on startup"""
     init_db()
-
-
-@app.get("/")
-def root():
-    """Root endpoint"""
-    return {
-        "message": "Welcome to MoSPI Data Portal Infrastructure",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
 
 
 @app.get("/health")
