@@ -120,6 +120,39 @@ class PaymentService:
         
         return transaction
     
+    def deduct_credits(self, user: User, amount: float, reason: str) -> Transaction:
+        """Deduct credits from user account"""
+        
+        if amount <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Amount must be positive"
+            )
+        
+        if user.credits < amount:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Insufficient credits. Required: {amount}, Available: {user.credits}"
+            )
+        
+        # Deduct credits
+        user.credits -= amount
+        
+        # Create transaction
+        transaction = Transaction(
+            user_id=user.id,
+            amount=-amount,
+            transaction_type="deduct",
+            description=reason,
+            status="completed"
+        )
+        
+        self.db.add(transaction)
+        self.db.commit()
+        self.db.refresh(transaction)
+        
+        return transaction
+    
     def get_pricing_info(self) -> dict:
         """Get current pricing information"""
         return {

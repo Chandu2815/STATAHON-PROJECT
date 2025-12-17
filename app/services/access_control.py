@@ -122,6 +122,27 @@ class AccessControlService:
         
         total_mb = sum([size[0] or 0 for size in total_bytes]) / (1024 * 1024)
         
+        # Calculate credits used (from transactions)
+        from app.models.user import Transaction
+        credits_used = sum([
+            abs(t.amount) for t in self.db.query(Transaction).filter(
+                Transaction.user_id == user.id,
+                Transaction.transaction_type.in_(["charge", "deduct"])
+            ).all()
+        ])
+        
+        # Get rate limit
+        rate_limit = self.RATE_LIMITS.get(user.role, 100)
+        requests_remaining = max(0, rate_limit - requests_today)
+        
+        # Determine rate limit status
+        if requests_today >= rate_limit:
+            rate_limit_status = "exceeded"
+        elif requests_today >= rate_limit * 0.8:
+            rate_limit_status = "warning"
+        else:
+            rate_limit_status = "active"
+        
         # Last request
         last_log = self.db.query(UsageLog).filter(
             UsageLog.user_id == user.id
@@ -132,10 +153,40 @@ class AccessControlService:
             'total_requests': total_requests,
             'requests_today': requests_today,
             'total_data_transferred_mb': round(total_mb, 2),
+            'total_data_mb': round(total_mb, 2),  # Alias for schema compatibility
+            'credits_used': credits_used,
             'credits_remaining': user.credits,
+            'rate_limit_status': rate_limit_status,
+            'daily_limit': rate_limit,
+            'requests_remaining_today': requests_remaining,
             'last_request': last_log.timestamp if last_log else None,
-            'rate_limit': self.RATE_LIMITS.get(user.role, 100),
+            'rate_limit': rate_limit,
             'volume_limit_mb': self.VOLUME_LIMITS.get(user.role, 10)
+        }
+    
+    def get_rate_limit_info(self, user: User) -> dict:
+        """Get rate limit status information"""
+        
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+        
+        # Requests today
+        requests_today = self.db.query(UsageLog).filter(
+            UsageLog.user_id == user.id,
+            UsageLog.timestamp >= today_start
+        ).count()
+        
+        # Get rate limit
+        daily_limit = self.RATE_LIMITS.get(user.role, 100)
+        requests_remaining = max(0, daily_limit - requests_today)
+        rate_limit_exceeded = requests_today >= daily_limit
+        
+        return {
+            'daily_limit': daily_limit,
+            'requests_today': requests_today,
+            'requests_remaining': requests_remaining,
+            'reset_at': tomorrow_start,
+            'rate_limit_exceeded': rate_limit_exceeded
         }
     
     def check_permission(self, user: User, required_role: UserRole) -> bool:
