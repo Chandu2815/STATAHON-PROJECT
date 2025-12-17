@@ -1,0 +1,49 @@
+state,district,gender,age_group,population,literacy_rate,employment_rate,year
+Maharashtra,Mumbai,Male,15-29,1250000,92.5,68.3,2021
+Maharashtra,Mumbai,Female,15-29,1180000,89.7,52.4,2021
+Maharashtra,Mumbai,Male,30-44,980000,94.2,75.8,2021
+Maharashtra,Mumbai,Female,30-44,920000,91.3,58.6,2021
+Maharashtra,Pune,Male,15-29,890000,91.8,66.5,2021
+Maharashtra,Pune,Female,15-29,850000,88.9,51.2,2021
+Maharashtra,Pune,Male,30-44,720000,93.5,74.2,2021
+Maharashtra,Pune,Female,30-44,680000,90.1,57.3,2021
+Karnataka,Bangalore,Male,15-29,1450000,93.2,70.5,2021
+Karnataka,Bangalore,Female,15-29,1380000,90.8,55.7,2021
+Karnataka,Bangalore,Male,30-44,1120000,95.1,78.2,2021
+Karnataka,Bangalore,Female,30-44,1060000,92.4,61.8,2021
+Karnataka,Mysore,Male,15-29,420000,89.5,63.2,2021
+Karnataka,Mysore,Female,15-29,390000,86.7,48.9,2021
+Karnataka,Mysore,Male,30-44,340000,91.2,71.5,2021
+Karnataka,Mysore,Female,30-44,320000,88.4,54.6,2021
+Tamil Nadu,Chennai,Male,15-29,1180000,94.5,69.8,2021
+Tamil Nadu,Chennai,Female,15-29,1120000,92.1,54.3,2021
+Tamil Nadu,Chennai,Male,30-44,920000,95.8,76.4,2021
+Tamil Nadu,Chennai,Female,30-44,880000,93.6,59.7,2021
+Tamil Nadu,Coimbatore,Male,15-29,680000,92.3,67.1,2021
+Tamil Nadu,Coimbatore,Female,15-29,640000,89.8,52.8,2021
+Tamil Nadu,Coimbatore,Male,30-44,540000,94.1,73.9,2021
+Tamil Nadu,Coimbatore,Female,30-44,510000,91.5,58.2,2021
+Delhi,Central Delhi,Male,15-29,450000,95.2,71.3,2021
+Delhi,Central Delhi,Female,15-29,420000,93.7,56.8,2021
+Delhi,Central Delhi,Male,30-44,360000,96.5,79.1,2021
+Delhi,Central Delhi,Female,30-44,340000,94.8,62.4,2021
+Delhi,South Delhi,Male,15-29,520000,96.1,72.6,2021
+Delhi,South Delhi,Female,15-29,490000,94.9,58.2,2021
+Delhi,South Delhi,Male,30-44,410000,97.2,80.5,2021
+Delhi,South Delhi,Female,30-44,390000,95.7,64.1,2021
+West Bengal,Kolkata,Male,15-29,980000,91.8,65.7,2021
+West Bengal,Kolkata,Female,15-29,920000,88.4,49.8,2021
+West Bengal,Kolkata,Male,30-44,780000,93.5,72.3,2021
+West Bengal,Kolkata,Female,30-44,740000,90.2,55.9,2021
+West Bengal,Howrah,Male,15-29,520000,89.6,63.4,2021
+West Bengal,Howrah,Female,15-29,490000,86.2,47.6,2021
+West Bengal,Howrah,Male,30-44,420000,91.3,70.1,2021
+West Bengal,Howrah,Female,30-44,390000,88.1,53.7,2021
+Gujarat,Ahmedabad,Male,15-29,1020000,92.7,68.9,2021
+Gujarat,Ahmedabad,Female,15-29,960000,89.3,53.4,2021
+Gujarat,Ahmedabad,Male,30-44,820000,94.4,75.6,2021
+Gujarat,Ahmedabad,Female,30-44,780000,91.1,59.2,2021
+Gujarat,Surat,Male,15-29,780000,91.5,67.2,2021
+Gujarat,Surat,Female,15-29,740000,88.1,51.8,2021
+Gujarat,Surat,Male,30-44,630000,93.2,74.1,2021
+Gujarat,Surat,Female,30-44,590000,89.8,57.6,2021
