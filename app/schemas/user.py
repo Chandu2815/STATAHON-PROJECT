@@ -56,13 +56,46 @@ class LoginRequest(BaseModel):
 
 
 class UsageStatsResponse(BaseModel):
-    """Usage statistics response"""
+    """Enhanced usage statistics response with detailed metrics"""
     user_id: int
     total_requests: int
     requests_today: int
-    total_data_transferred_mb: float
+    total_data_mb: float = Field(alias="total_data_transferred_mb")
+    credits_used: float
     credits_remaining: float
+    rate_limit_status: str
+    daily_limit: int
+    requests_remaining_today: int
     last_request: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
+class TopupRequest(BaseModel):
+    """Request model for credit topup with validation"""
+    amount: float = Field(
+        ..., 
+        gt=10, 
+        le=100000,
+        description="Amount to add (min: 10, max: 100,000)"
+    )
+    payment_method: Optional[str] = Field(default="credit_card", description="Payment method")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "amount": 500.0,
+                "payment_method": "credit_card"
+            }
+        }
+
+
+class DeductCreditsRequest(BaseModel):
+    """Internal request for deducting credits"""
+    amount: float = Field(..., gt=0, description="Amount to deduct")
+    reason: str = Field(..., description="Reason for deduction")
 
 
 class TransactionCreate(BaseModel):
@@ -72,14 +105,54 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionResponse(BaseModel):
-    """Transaction response schema"""
+    """Enhanced transaction response with full details"""
     id: int
     user_id: int
     amount: float
     transaction_type: str
     description: Optional[str] = None
     status: str
+    payment_method: Optional[str] = None
     created_at: datetime
     
     class Config:
         from_attributes = True
+
+
+class TransactionListResponse(BaseModel):
+    """Paginated transaction list with metadata"""
+    total: int
+    page: int
+    page_size: int
+    transactions: list[TransactionResponse]
+
+
+class CreditBalanceResponse(BaseModel):
+    """Credit balance only response"""
+    credits: float
+    last_topup: Optional[datetime] = None
+
+
+class RateLimitResponse(BaseModel):
+    """Rate limit status response"""
+    daily_limit: int
+    requests_today: int
+    requests_remaining: int
+    reset_at: datetime
+    rate_limit_exceeded: bool
+
+
+class PricingTier(BaseModel):
+    """Pricing tier information"""
+    name: str
+    daily_limit: int
+    price_per_month: float
+    features: list[str]
+    recommended: bool = False
+
+
+class PricingResponse(BaseModel):
+    """Complete pricing information"""
+    tiers: list[PricingTier]
+    topup_rates: dict
+    overage_rate: float
