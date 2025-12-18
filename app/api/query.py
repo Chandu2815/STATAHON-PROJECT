@@ -55,18 +55,71 @@ def query_data(
     if not dataset_obj:
         raise HTTPException(status_code=404, detail=f"Dataset with ID {dataset} not found")
     
-    # Build filters
+    # Check if dataset uses dedicated table or data_records
+    from sqlalchemy import inspect
+    inspector = inspect(db.bind)
+    has_dedicated_table = dataset_obj.table_name in inspector.get_table_names()
+    
+    # Map of state names to codes (for convenience)
+    STATE_CODES = {
+        'TELANGANA': 36, 'ANDHRA PRADESH': 28, 'KARNATAKA': 29,
+        'TAMIL NADU': 33, 'KERALA': 32, 'MAHARASHTRA': 27,
+        'PUNJAB': 3, 'HARYANA': 6, 'DELHI': 7, 'UTTAR PRADESH': 9,
+        'BIHAR': 10, 'WEST BENGAL': 19, 'GUJARAT': 24, 'RAJASTHAN': 8
+    }
+    
+    # Build filters - map generic names to actual column names
     filters = {}
-    if state:
-        filters['state'] = state
-    if district:
-        filters['district'] = district
-    if gender:
-        filters['gender'] = gender
-    if age:
-        filters['age_group'] = age
-    if year:
-        filters['year'] = year
+    
+    if has_dedicated_table:
+        # For dedicated tables (household_survey, person_survey), map to actual columns
+        if state:
+            # Try to convert state name to code
+            if state.isdigit():
+                filters['State_UT_Code'] = int(state)
+            elif state.upper() in STATE_CODES:
+                filters['State_UT_Code'] = STATE_CODES[state.upper()]
+        
+        if district:
+            # District should be a code
+            if district.isdigit():
+                filters['District_Code'] = int(district)
+            elif district.upper() == 'NIRMAL':
+                filters['District_Code'] = 4  # Nirmal district code
+        
+        if gender:
+            # For person survey: Sex column (1=Male, 2=Female, 3=Transgender)
+            gender_upper = gender.upper()
+            if gender_upper in ['MALE', 'M', '1']:
+                filters['Sex'] = 1
+            elif gender_upper in ['FEMALE', 'F', '2']:
+                filters['Sex'] = 2
+            elif gender_upper in ['TRANSGENDER', 'T', '3']:
+                filters['Sex'] = 3
+        
+        if age:
+            # Parse age range like "15-29"
+            if '-' in age:
+                age_parts = age.split('-')
+                if len(age_parts) == 2:
+                    filters['Age'] = {
+                        '$gte': int(age_parts[0]),
+                        '$lte': int(age_parts[1])
+                    }
+            elif age.isdigit():
+                filters['Age'] = int(age)
+    else:
+        # For JSON-based storage (data_records)
+        if state:
+            filters['state'] = state
+        if district:
+            filters['district'] = district
+        if gender:
+            filters['gender'] = gender
+        if age:
+            filters['age_group'] = age
+        if year:
+            filters['year'] = year
     
     # Execute query
     query_builder = QueryBuilderService(db)
@@ -79,7 +132,17 @@ def query_data(
             order_by=order_by,
             order_direction=order_direction
         )
+    elif has_dedicated_table:
+        # Use table query for dedicated tables
+        result = query_builder.execute_table_query(
+            table_name=dataset_obj.table_name,
+            filters=filters,
+            fields=None,
+            limit=limit,
+            offset=offset
+        )
     else:
+        # Use generic query for data_records JSON storage
         result = query_builder.execute_generic_query(
             dataset_name=dataset_obj.name,
             filters=filters,
