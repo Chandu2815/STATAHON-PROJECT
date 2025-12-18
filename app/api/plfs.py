@@ -126,6 +126,18 @@ def get_district_codes(
     
     total_count = query.count()
     
+    # Helper function to rename fields for better readability
+    def rename_district_fields(record):
+        """Rename Unnamed columns to meaningful names"""
+        renamed = record.copy()
+        if 'Unnamed: 1' in renamed:
+            renamed['STATE_NAME'] = renamed.pop('Unnamed: 1')
+        if 'Unnamed: 2' in renamed:
+            renamed['DISTRICT_CODE'] = renamed.pop('Unnamed: 2')
+        if 'Unnamed: 3' in renamed:
+            renamed['DISTRICT_NAME'] = renamed.pop('Unnamed: 3')
+        return renamed
+    
     # If filtering by state, fetch ALL records first, then filter
     # (because SQLite doesn't support JSON querying efficiently)
     if state:
@@ -137,7 +149,10 @@ def get_district_codes(
         filtered_data = [d for d in all_data if state.lower() in str(d.get('Unnamed: 1', '')).lower()]
         
         # Apply pagination to filtered results
-        data = filtered_data[offset:offset + limit]
+        paginated_data = filtered_data[offset:offset + limit]
+        
+        # Rename fields for better readability
+        data = [rename_district_fields(d) for d in paginated_data]
         
         return {
             'total_records': total_count,
@@ -148,7 +163,10 @@ def get_district_codes(
     else:
         # No filter - just apply pagination directly
         records = query.limit(limit).offset(offset).all()
-        data = [record.data for record in records]
+        raw_data = [record.data for record in records]
+        
+        # Rename fields for better readability
+        data = [rename_district_fields(d) for d in raw_data]
         
         return {
             'total_records': total_count,
