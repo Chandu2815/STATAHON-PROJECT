@@ -207,6 +207,7 @@ def get_dataset_schema(
 ):
     """Get dataset schema information including columns and types"""
     from sqlalchemy import inspect
+    from app.models.dataset import DataRecord
     
     # Get dataset
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
@@ -219,15 +220,47 @@ def get_dataset_schema(
     # Get table schema from database
     inspector = inspect(db.bind)
     
+    # Check if this dataset uses a dedicated table or data_records
     if dataset.table_name not in inspector.get_table_names():
-        return {
-            'dataset_id': dataset.id,
-            'dataset_name': dataset.name,
-            'table_name': dataset.table_name,
-            'config_schema': dataset.config.get('schema', []) if dataset.config else [],
-            'note': 'Table not yet created in database'
-        }
+        # Check if data exists in data_records table
+        record_count = db.query(DataRecord).filter(DataRecord.dataset_id == dataset.id).count()
+        
+        if record_count > 0:
+            # Dataset uses data_records table (old JSON-based storage)
+            # Get schema from config or sample record
+            sample_record = db.query(DataRecord).filter(DataRecord.dataset_id == dataset.id).first()
+            
+            schema_info = []
+            if sample_record and sample_record.data:
+                for key in sample_record.data.keys():
+                    schema_info.append({
+                        'name': key,
+                        'type': 'JSON (dynamic)',
+                        'nullable': True,
+                        'default': None
+                    })
+            
+            return {
+                'dataset_id': dataset.id,
+                'dataset_name': dataset.name,
+                'table_name': 'data_records',
+                'description': dataset.description,
+                'storage_type': 'JSON-based (data_records table)',
+                'columns': schema_info,
+                'config_schema': dataset.config.get('schema', []) if dataset.config else [],
+                'row_count': record_count,
+                'note': 'This dataset uses JSON storage in data_records table'
+            }
+        else:
+            return {
+                'dataset_id': dataset.id,
+                'dataset_name': dataset.name,
+                'table_name': dataset.table_name,
+                'config_schema': dataset.config.get('schema', []) if dataset.config else [],
+                'note': 'Table not yet created and no data in data_records'
+            }
     
+    # Dataset has a dedicated table
     # Get columns
     columns = inspector.get_columns(dataset.table_name)
     
@@ -243,13 +276,17 @@ def get_dataset_schema(
     # Get indexes
     indexes = inspector.get_indexes(dataset.table_name)
     
+    # Get row count
+    row_count = db.execute(text(f"SELECT COUNT(*) FROM {dataset.table_name}")).scalar()
+    
     return {
         'dataset_id': dataset.id,
         'dataset_name': dataset.name,
         'table_name': dataset.table_name,
         'description': dataset.description,
+        'storage_type': 'Dedicated table',
         'columns': schema_info,
         'indexes': indexes,
         'config_schema': dataset.config.get('schema', []) if dataset.config else [],
-        'row_count': db.execute(f"SELECT COUNT(*) FROM {dataset.table_name}").scalar()
+        'row_count': row_count
     }

@@ -290,3 +290,106 @@ def advanced_query(
     )
     
     return result
+
+
+@router.get("/dataset/{dataset_id}/records")
+def query_dataset_by_id(
+    dataset_id: int,
+    filters: Optional[str] = QueryParam(None, description="JSON filters"),
+    limit: int = QueryParam(100, ge=1, le=10000),
+    offset: int = QueryParam(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Query dataset by ID - handles both dedicated tables and data_records storage
+    
+    Works for all dataset types:
+    - Datasets with dedicated tables (household_survey, person_survey)
+    - Datasets using data_records JSON storage (district codes, item codes, etc.)
+    """
+    from app.models.dataset import Dataset, DataRecord
+    from sqlalchemy import inspect
+    
+    # Check rate limits
+    access_control = AccessControlService(db)
+    access_control.check_rate_limit(current_user)
+    
+    # Get dataset
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    # Parse filters
+    filter_dict = {}
+    if filters:
+        try:
+            filter_dict = json.loads(filters)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON in filters")
+    
+    # Check if dataset uses dedicated table or data_records
+    inspector = inspect(db.bind)
+    
+    if dataset.table_name in inspector.get_table_names():
+        # Use dedicated table
+        query_builder = QueryBuilderService(db)
+        result = query_builder.execute_table_query(
+            table_name=dataset.table_name,
+            filters=filter_dict,
+            fields=None,
+            limit=limit,
+            offset=offset
+        )
+    else:
+        # Use data_records table
+        query = db.query(DataRecord).filter(DataRecord.dataset_id == dataset_id)
+        
+        # Apply filters to JSON data
+        all_records = query.all()
+        filtered_records = []
+        
+        for record in all_records:
+            match = True
+            for key, value in filter_dict.items():
+                if key not in record.data or record.data[key] != value:
+                    match = False
+                    break
+            if match:
+                filtered_records.append(record.data)
+        
+        # Apply pagination
+        total = len(filtered_records)
+        paginated = filtered_records[offset:offset + limit]
+        
+        result = {
+            'data': paginated,
+            'total': total,
+            'limit': limit,
+            'offset': offset,
+            'dataset_id': dataset_id,
+            'dataset_name': dataset.name,
+            'storage_type': 'data_records (JSON)'
+        }
+    
+    # Calculate response size
+    response_size = len(json.dumps(result))
+    
+    # Check volume limits
+    access_control.check_volume_limit(current_user, response_size)
+    
+    # Charge for query
+    payment_service = PaymentService(db)
+    payment_service.charge_for_query(current_user, response_size)
+    
+    # Log usage
+    access_control.log_usage(
+        user=current_user,
+        endpoint=f"/api/v1/query/dataset/{dataset_id}/records",
+        method="GET",
+        dataset_name=dataset.name,
+        query_params=json.dumps(filter_dict),
+        response_size=response_size
+    )
+    
+    return result
