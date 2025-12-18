@@ -125,20 +125,36 @@ def get_district_codes(
     query = db.query(DataRecord).filter(DataRecord.dataset_id == dataset.id)
     
     total_count = query.count()
-    records = query.limit(limit).offset(offset).all()
     
-    data = [record.data for record in records]
-    
-    # Filter by state if provided (client-side filtering for SQLite)
+    # If filtering by state, fetch ALL records first, then filter
+    # (because SQLite doesn't support JSON querying efficiently)
     if state:
-        # The state name is stored in 'Unnamed: 1' field from Excel import
-        data = [d for d in data if state.lower() in str(d.get('Unnamed: 1', '')).lower()]
-    
-    return {
-        'total_records': total_count,
-        'returned_records': len(data),
-        'data': data
-    }
+        # Fetch all records
+        all_records = query.all()
+        all_data = [record.data for record in all_records]
+        
+        # Filter by state - the state name is stored in 'Unnamed: 1' field from Excel import
+        filtered_data = [d for d in all_data if state.lower() in str(d.get('Unnamed: 1', '')).lower()]
+        
+        # Apply pagination to filtered results
+        data = filtered_data[offset:offset + limit]
+        
+        return {
+            'total_records': total_count,
+            'filtered_count': len(filtered_data),
+            'returned_records': len(data),
+            'data': data
+        }
+    else:
+        # No filter - just apply pagination directly
+        records = query.limit(limit).offset(offset).all()
+        data = [record.data for record in records]
+        
+        return {
+            'total_records': total_count,
+            'returned_records': len(data),
+            'data': data
+        }
 
 
 @router.get("/data-layout")
