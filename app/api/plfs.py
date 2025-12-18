@@ -131,7 +131,8 @@ def get_district_codes(
     
     # Filter by state if provided (client-side filtering for SQLite)
     if state:
-        data = [d for d in data if state.lower() in str(d.get('State', '')).lower()]
+        # The state name is stored in 'Unnamed: 1' field from Excel import
+        data = [d for d in data if state.lower() in str(d.get('Unnamed: 1', '')).lower()]
     
     return {
         'total_records': total_count,
