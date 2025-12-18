@@ -18,7 +18,7 @@ router = APIRouter(prefix="/query", tags=["Query"])
 
 @router.get("", response_model=QueryResponse)
 def query_data(
-    dataset: str = QueryParam(..., description="Dataset name to query"),
+    dataset: int = QueryParam(..., description="Dataset ID to query"),
     state: Optional[str] = QueryParam(None, description="Filter by state"),
     district: Optional[str] = QueryParam(None, description="Filter by district"),
     gender: Optional[str] = QueryParam(None, description="Filter by gender"),
@@ -32,14 +32,28 @@ def query_data(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Query data with multi-dimensional filters
+    Query data with multi-dimensional filters using dataset ID
     
-    Example: /query?dataset=census&state=Maharashtra&gender=female&age_group=15-29
+    Example: /query?dataset=2&state=TELANGANA
+    Example: /query?dataset=4&limit=100
+    
+    Available dataset IDs:
+    - 1: Data Layout
+    - 2: District Codes  
+    - 3: Item Codes
+    - 4: Household Survey
+    - 5: Person Survey
     """
+    from app.models.dataset import Dataset
     
     # Check rate limits and access control
     access_control = AccessControlService(db)
     access_control.check_rate_limit(current_user)
+    
+    # Get dataset by ID
+    dataset_obj = db.query(Dataset).filter(Dataset.id == dataset).first()
+    if not dataset_obj:
+        raise HTTPException(status_code=404, detail=f"Dataset with ID {dataset} not found")
     
     # Build filters
     filters = {}
@@ -57,7 +71,7 @@ def query_data(
     # Execute query
     query_builder = QueryBuilderService(db)
     
-    if dataset.lower() == "census":
+    if dataset_obj.name.lower().startswith("census"):
         result = query_builder.execute_census_query(
             filters=filters,
             limit=limit,
@@ -67,7 +81,7 @@ def query_data(
         )
     else:
         result = query_builder.execute_generic_query(
-            dataset_name=dataset,
+            dataset_name=dataset_obj.name,
             filters=filters,
             limit=limit,
             offset=offset
@@ -88,7 +102,7 @@ def query_data(
         user=current_user,
         endpoint="/api/v1/query",
         method="GET",
-        dataset_name=dataset,
+        dataset_name=dataset_obj.name,
         query_params=json.dumps(filters),
         response_size=response_size
     )
