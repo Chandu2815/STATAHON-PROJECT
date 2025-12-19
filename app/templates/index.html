@@ -27,43 +27,79 @@
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
+            padding: 0 30px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
+            gap: 40px;
         }
 
         .logo-section {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 18px;
         }
 
         .emblem {
-            width: 60px;
             height: 60px;
-            background: #1a237e;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .emblem-fallback {
+            height: 60px;
+            width: 60px;
+            background: linear-gradient(135deg, #FF6B00 0%, #138808 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #FFD700;
-            font-size: 32px;
+            color: white;
             font-weight: bold;
+            font-size: 1.5em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .govt-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .govt-text .small-text {
+            font-size: 0.85em;
+            color: #555;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .govt-text .ministry-name {
+            font-size: 0.9em;
+            color: #1a237e;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .title-section {
+            text-align: center;
+            justify-self: center;
+            margin-left: -80px;
         }
 
         .title-section h1 {
             color: #1a237e;
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-bottom: 2px;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
         }
 
         .title-section p {
-            color: #666;
-            font-size: 0.9em;
+            color: #777;
+            font-size: 0.95em;
+            font-weight: 500;
         }
 
         .header-actions {
@@ -155,39 +191,134 @@
         }
 
         .stat-card {
-            background: white;
-            padding: 50px 30px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-top: 3px solid #1a237e;
-            transition: all 0.3s ease;
+            background: transparent;
+            height: 260px;
+            perspective: 1000px;
+            position: relative;
         }
 
-        .stat-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(-3px);
+        .stat-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .stat-card:hover .stat-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .stat-card-front, .stat-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            padding: 45px 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card-front {
+            background: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #1a237e;
+        }
+
+        .stat-card:nth-child(2) .stat-card-front {
+            border-left-color: #FF6B00;
+        }
+
+        .stat-card:nth-child(3) .stat-card-front {
+            border-left-color: #138808;
+        }
+
+        .stat-card:nth-child(4) .stat-card-front {
+            border-left-color: #c62828;
+        }
+
+        .stat-card-back {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            transform: rotateY(180deg);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .stat-card:nth-child(2) .stat-card-back {
+            background: linear-gradient(135deg, #FF6B00 0%, #e65100 100%);
+        }
+
+        .stat-card:nth-child(3) .stat-card-back {
+            background: linear-gradient(135deg, #138808 0%, #0a5004 100%);
+        }
+
+        .stat-card:nth-child(4) .stat-card-back {
+            background: linear-gradient(135deg, #c62828 0%, #8b0000 100%);
+        }
+
+        .stat-card-back p {
+            color: white;
+            font-size: 1.05em;
+            line-height: 1.6;
+            margin-top: 15px;
         }
 
         .stat-icon {
-            font-size: 3.5em;
-            margin-bottom: 20px;
-            opacity: 0.8;
+            width: 70px;
+            height: 70px;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+        }
+
+        .stat-card:nth-child(1) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            color: #1a237e;
+        }
+
+        .stat-card:nth-child(2) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            color: #FF6B00;
+        }
+
+        .stat-card:nth-child(3) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            color: #138808;
+        }
+
+        .stat-card:nth-child(4) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #c62828;
+        }
+
+        .stat-card-back .stat-icon {
+            background: rgba(255,255,255,0.2);
+            color: white;
         }
 
         .stat-number {
-            font-size: 2.8em;
+            font-size: 3em;
             font-weight: 700;
             color: #1a237e;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            line-height: 1;
         }
 
         .stat-label {
-            color: #666;
-            font-size: 1em;
+            color: #555;
+            font-size: 0.95em;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 500;
+            letter-spacing: 1.5px;
+            font-weight: 600;
         }
 
         /* Features Section */
@@ -217,6 +348,14 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-left: 4px solid #FF6B00;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            border-left-width: 6px;
         }
 
         .feature-card h3 {
@@ -226,6 +365,11 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .feature-card:hover h3 {
+            color: #FF6B00;
         }
 
         .feature-card p {
@@ -297,11 +441,19 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <div class="emblem">🇮🇳</div>
-                <div class="title-section">
-                    <h1>MoSPI Data Portal</h1>
-                    <p>Ministry of Statistics & Programme Implementation</p>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                     alt="Government of India Emblem" 
+                     class="emblem"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="emblem-fallback" style="display: none;">🇮🇳</div>
+                <div class="govt-text">
+                    <span class="small-text">Government Of India</span>
+                    <span class="ministry-name">Ministry of Statistics and Programme Implementation</span>
                 </div>
+            </div>
+            <div class="title-section">
+                <h1>MoSPI Data Portal</h1>
+                <p>Official Data Infrastructure Platform</p>
             </div>
             <div class="header-actions">
                 <a href="/login" class="btn btn-primary">Login</a>
@@ -327,24 +479,56 @@
             <h2 class="section-title">Platform Statistics</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-number">515K+</div>
-                    <div class="stat-label">Survey Records</div>
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-number">515K+</div>
+                            <div class="stat-label">Survey Records</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">📊</div>
+                            <p>Comprehensive PLFS data covering household and person-level statistics across India</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">🔍</div>
-                    <div class="stat-number">2</div>
-                    <div class="stat-label">Active Datasets</div>
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">🔍</div>
+                            <div class="stat-number">2</div>
+                            <div class="stat-label">Active Datasets</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">🔍</div>
+                            <p>Household Survey and Person Survey datasets with real-time query access</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-number">Real-time</div>
-                    <div class="stat-label">Data Access</div>
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-number">Real-time</div>
+                            <div class="stat-label">Data Access</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">👥</div>
+                            <p>Instant access to statistical data through our advanced query builder interface</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">🔐</div>
-                    <div class="stat-number">Secure</div>
-                    <div class="stat-label">API Gateway</div>
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">🔐</div>
+                            <div class="stat-number">Secure</div>
+                            <div class="stat-label">API Gateway</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">🔐</div>
+                            <p>Role-based authentication with credit system and transparent usage metering</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -387,16 +571,12 @@
             <div>
                 <h4>About</h4>
                 <ul>
-                    <li><a href="/home">About Portal</a></li>
                     <li><a href="https://www.mospi.gov.in" target="_blank">MoSPI Official Website</a></li>
-                    <li><a href="/docs">API Documentation</a></li>
                 </ul>
             </div>
             <div>
-                <h4>Datasets</h4>
+                <h4>Reference</h4>
                 <ul>
-                    <li><a href="/docs">Household Survey (PLFS)</a></li>
-                    <li><a href="/docs">Person Survey (PLFS)</a></li>
                     <li><a href="https://microdata.gov.in" target="_blank">Microdata Portal</a></li>
                 </ul>
             </div>
@@ -406,14 +586,6 @@
                     <li><a href="/login">Login</a></li>
                     <li><a href="/register">Register</a></li>
                     <li><a href="/admin/login">Admin Portal</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4>Support</h4>
-                <ul>
-                    <li><a href="/docs">Help & Documentation</a></li>
-                    <li>Email: support@mospi.gov.in</li>
-                    <li>Government of India Initiative</li>
                 </ul>
             </div>
         </div>
