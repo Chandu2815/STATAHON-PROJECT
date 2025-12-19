@@ -4,7 +4,9 @@ FastAPI main application
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import time
+from pathlib import Path
 from app.config import get_settings
 from app.database import init_db
 from app.api import auth, datasets, query, users, plfs, frontend, export, dataset_info
@@ -88,6 +90,11 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
+
+# Mount static files
+static_path = Path(__file__).parent / "static"
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 # CORS middleware
 app.add_middleware(

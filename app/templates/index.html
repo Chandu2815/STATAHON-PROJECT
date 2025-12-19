@@ -142,15 +142,45 @@
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            position: relative;
             color: white;
             padding: 80px 20px;
             text-align: center;
+            overflow: hidden;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            object-fit: cover;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.7) 0%, rgba(13, 71, 161, 0.7) 100%);
+            z-index: 1;
         }
 
         .hero-content {
             max-width: 900px;
             margin: 0 auto;
+            position: relative;
+            z-index: 2;
         }
 
         .hero h2 {
@@ -464,6 +494,12 @@
 
     <!-- Hero Section -->
     <section class="hero">
+        <video autoplay muted loop playsinline class="hero-video">
+            <source src="/static/videos/background.mp4" type="video/mp4">
+            <source src="/static/videos/background.webm" type="video/webm">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-overlay"></div>
         <div class="hero-content">
             <h2>Empowering India with Data</h2>
             <p>Access comprehensive statistical data and insights from India's official data infrastructure platform</p>
