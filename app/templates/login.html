@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MoSPI Data Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Government Tricolor */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: 24px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(to right, #FF6B00, #fff, #138808);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+        .emblem {
+            width: 70px;
+            height: 70px;
+            background: #1a237e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFD700;
+            font-size: 36px;
+            margin: 0 auto 15px;
+        }
+        .logo h1 {
+            color: #1a237e;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .logo p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #1a237e;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(26, 35, 126, 0.4);
+        }
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .info-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .register-link a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        .admin-link {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .admin-link a {
+            color: #FF6B00;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+        .back-home {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .back-home a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-home a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a237e;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .demo-accounts {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+        .demo-accounts h3 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .demo-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+        .demo-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        .demo-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .demo-user {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+        .demo-features {
+            font-size: 0.75em;
+            color: #666;
+            line-height: 1.6;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="gov-bar"></div>
+    
+    <div class="login-container">
+        <div class="back-home">
+            <a href="/">← Back to Home</a>
+        </div>
+        
+        <div class="logo">
+            <div class="emblem">🇮🇳</div>
+            <h1>User Login</h1>
+            <p>Ministry of Statistics & Programme Implementation</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="infoMessage" class="info-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">Login</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Authenticating...</p>
+            </div>
+        </form>
+
+        <div class="register-link">
+            <p>Don't have an account? <a href="/register">Register here</a></p>
+        </div>
+
+        <div class="admin-link">
+            <a href="/admin/login">🔑 Admin Portal →</a>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const infoMessage = document.getElementById('infoMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            infoMessage.style.display = 'none';
+        }
+
+        function showInfo(message) {
+            infoMessage.textContent = message;
+            infoMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            infoMessage.style.display = 'none';
+        }
+
+        function fillLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            hideMessages();
+            showInfo('Click Login to continue as ' + username);
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Show loading
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                // Create form data
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                // Login request
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store token
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user_role', data.user_role);
+                    localStorage.setItem('username', data.username);
+
+                    showInfo('Login successful! Redirecting...');
+
+                    // Redirect to dashboard (admins should use /admin/login)
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    showError(data.detail || 'Login failed. Please check your credentials.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

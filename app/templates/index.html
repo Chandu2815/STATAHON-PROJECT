@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoSPI Data Portal - Ministry of Statistics & Programme Implementation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Top Government Bar */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+        }
+
+        /* Header */
+        .header {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px 0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .emblem {
+            width: 60px;
+            height: 60px;
+            background: #1a237e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFD700;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .title-section h1 {
+            color: #1a237e;
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .title-section p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #1a237e;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(26, 35, 126, 0.3);
+        }
+
+        .btn-secondary {
+            background: #FF6B00;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #e65100;
+            transform: translateY(-2px);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h2 {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: #f5f5f5;
+            padding: 70px 20px;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 50px 30px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 3px solid #1a237e;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+        }
+
+        .stat-icon {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .stat-number {
+            font-size: 2.8em;
+            font-weight: 700;
+            color: #1a237e;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.2em;
+            color: #1a237e;
+            margin-bottom: 50px;
+            font-weight: 600;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #FF6B00;
+        }
+
+        .feature-card h3 {
+            color: #1a237e;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a237e;
+            color: white;
+            padding: 40px 20px 20px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .footer h4 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .footer ul {
+            list-style: none;
+        }
+
+        .footer li {
+            margin-bottom: 10px;
+        }
+
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .hero h2 { font-size: 2em; }
+            .hero p { font-size: 1.1em; }
+            .header-content { flex-direction: column; gap: 15px; }
+            .logo-section { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Government Tricolor Bar -->
+    <div class="gov-bar"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="emblem">🇮🇳</div>
+                <div class="title-section">
+                    <h1>MoSPI Data Portal</h1>
+                    <p>Ministry of Statistics & Programme Implementation</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="/login" class="btn btn-primary">Login</a>
+                <a href="/register" class="btn btn-secondary">Register</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h2>Empowering India with Data</h2>
+            <p>Access comprehensive statistical data and insights from India's official data infrastructure platform</p>
+            <div class="hero-actions">
+                <a href="/register" class="btn btn-secondary" style="padding: 15px 40px; font-size: 1.1em;">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-container">
+            <h2 class="section-title">Platform Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-number">515K+</div>
+                    <div class="stat-label">Survey Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔍</div>
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">Active Datasets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-number">Real-time</div>
+                    <div class="stat-label">Data Access</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔐</div>
+                    <div class="stat-number">Secure</div>
+                    <div class="stat-label">API Gateway</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <h2 class="section-title">Key Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3><span>📈</span> PLFS Survey Data</h3>
+                <p>Access Periodic Labour Force Survey data with 515,000+ records covering household and person-level statistics across India.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>🔍</span> Advanced Query Builder</h3>
+                <p>Build complex queries with multi-dimensional filtering, aggregation, and export capabilities through our intuitive interface.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>🔐</span> Role-Based Access</h3>
+                <p>Secure authentication with role-based permissions for public users, researchers, and administrators.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>💳</span> Credit System</h3>
+                <p>Fair usage metering with credit-based access control and transparent pricing for data queries.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>📊</span> Data Export</h3>
+                <p>Export query results in multiple formats including JSON, CSV, and visualization-ready formats.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>⚡</span> RESTful API</h3>
+                <p>Modern API infrastructure with comprehensive documentation, rate limiting, and usage analytics.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <h4>About</h4>
+                <ul>
+                    <li><a href="/home">About Portal</a></li>
+                    <li><a href="https://www.mospi.gov.in" target="_blank">MoSPI Official Website</a></li>
+                    <li><a href="/docs">API Documentation</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Datasets</h4>
+                <ul>
+                    <li><a href="/docs">Household Survey (PLFS)</a></li>
+                    <li><a href="/docs">Person Survey (PLFS)</a></li>
+                    <li><a href="https://microdata.gov.in" target="_blank">Microdata Portal</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/login">Login</a></li>
+                    <li><a href="/register">Register</a></li>
+                    <li><a href="/admin/login">Admin Portal</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="/docs">Help & Documentation</a></li>
+                    <li>Email: support@mospi.gov.in</li>
+                    <li>Government of India Initiative</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 Ministry of Statistics & Programme Implementation, Government of India</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Built for STATATHON 2025 - Data Dissemination Track</p>
+        </div>
+    </footer>
+
+    <script>
+        // Check if user is already logged in
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            const role = localStorage.getItem('user_role');
+            if (role && role.toLowerCase().includes('admin')) {
+                window.location.href = '/admin/dashboard';
+            } else if (role) {
+                window.location.href = '/dashboard';
+            }
+        }
+    </script>
+</body>
+</html>

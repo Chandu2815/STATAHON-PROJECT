@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - MoSPI Data Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #c62828 0%, #ad1457 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: 24px;
+        }
+        .admin-login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .admin-login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(to right, #FF6B00, #fff, #138808);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+        .emblem {
+            width: 70px;
+            height: 70px;
+            background: #c62828;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFD700;
+            font-size: 36px;
+            margin: 0 auto 15px;
+        }
+        .logo h1 {
+            color: #c62828;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .logo p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        .back-home {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .back-home a {
+            color: #c62828;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-home a:hover {
+            text-decoration: underline;
+        }
+        .security-badge {
+            background: #fff3cd;
+            border-left: 4px solid #FF6B00;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        .security-badge strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #c62828;
+        }
+        .btn-admin-login {
+            width: 100%;
+            padding: 14px;
+            background: #c62828;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-admin-login:hover {
+            background: #ad1457;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(198, 40, 40, 0.4);
+        }
+        .btn-admin-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .info-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .public-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .public-link a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .public-link a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e94560;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .public-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+        }
+        .public-link a {
+            color: #c62828;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .public-link a:hover {
+            text-decoration: underline;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #c62828;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="gov-bar"></div>
+    
+    <div class="admin-login-container">
+        <div class="back-home">
+            <a href="/">← Back to Home</a>
+        </div>
+        
+        <div class="logo">
+            <div class="emblem">🔐</div>
+            <h1>Admin Portal</h1>
+            <p>Ministry of Statistics & Programme Implementation</p>
+        </div>
+
+        <div class="security-badge">
+            <strong>🔒 Secure Administrative Area</strong>
+            <small>Authorized personnel only • Access logged and monitored</small>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="infoMessage" class="info-message"></div>
+
+        <form id="adminLoginForm">
+            <div class="form-group">
+                <label for="username">Administrator Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter admin username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter password">
+            </div>
+
+            <button type="submit" class="btn-admin-login" id="loginBtn">🔐 Admin Login</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Authenticating...</p>
+            </div>
+        </form>
+
+        <div class="public-link">
+            <p>Not an administrator? <a href="/login">← Go to public portal</a></p>
+        </div>
+    </div>
+
+    <script>
+        const adminLoginForm = document.getElementById('adminLoginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const infoMessage = document.getElementById('infoMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            infoMessage.style.display = 'none';
+        }
+
+        function showInfo(message) {
+            infoMessage.textContent = message;
+            infoMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            infoMessage.style.display = 'none';
+        }
+
+        adminLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Show loading
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                // Create form data
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                // Login request
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Check if user is admin (any admin type)
+                    const adminRoles = ['admin', 'super_admin', 'data_admin', 'user_admin', 'support_admin'];
+                    const userRole = data.user_role.toLowerCase();
+                    
+                    if (!adminRoles.includes(userRole)) {
+                        showError('Access denied. Admin privileges required.');
+                        loginBtn.disabled = false;
+                        loading.style.display = 'none';
+                        return;
+                    }
+
+                    // Store token
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user_role', data.user_role);
+                    localStorage.setItem('username', data.username);
+
+                    showInfo('Admin authentication successful! Redirecting...');
+
+                    // Redirect to admin dashboard
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard';
+                    }, 1000);
+                } else {
+                    showError(data.detail || 'Login failed. Please check your credentials.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

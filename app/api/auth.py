@@ -35,6 +35,14 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Username or email already registered"
         )
     
+    # Assign credits based on role
+    credits_by_role = {
+        "public": 10.0,
+        "researcher": 100.0,
+        "premium": 500.0,
+        "admin": 999999.0  # Unlimited
+    }
+    
     # Create new user
     user = User(
         email=user_data.email,
@@ -42,7 +50,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         full_name=user_data.full_name,
         hashed_password=get_password_hash(user_data.password),
         role=user_data.role,
-        credits=10.0  # Give 10 free credits to new users
+        credits=credits_by_role.get(user_data.role.value if hasattr(user_data.role, 'value') else user_data.role, 10.0)
     )
     
     db.add(user)
@@ -52,12 +60,12 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    """Login and get access token"""
+    """Login and get access token with user role"""
     
     # Find user
     user = db.query(User).filter(User.username == form_data.username).first()
@@ -81,7 +89,15 @@ def login(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Handle role - could be enum or string
+    user_role = user.role.value if hasattr(user.role, 'value') else user.role
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user_role": user_role,
+        "username": user.username
+    }
 
 
 @router.get("/me", response_model=UserResponse)

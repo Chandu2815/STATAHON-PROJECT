@@ -32,6 +32,29 @@ logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+@router.get("/", response_model=List[UserResponse])
+def get_all_users(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all users (Admin only)
+    
+    Requires admin privileges to access user list
+    """
+    # Check if user is admin
+    if not current_user.is_admin():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    # Get all users
+    users = db.query(User).all()
+    logger.info(f"Admin {current_user.username} retrieved {len(users)} users")
+    return users
+
+
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(
     current_user: User = Depends(get_current_user)

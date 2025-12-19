@@ -112,6 +112,36 @@ python -m app.database
 python -m app.services.ingestion --config config/datasets/sample_dataset.yaml
 ```
 
+## Available Datasets
+
+### PLFS Survey Data (Production Ready)
+
+Two comprehensive datasets from the Periodic Labour Force Survey (PLFS) are available:
+
+#### 1. Household Survey (chhv1.csv)
+- **Size**: 13 MB | **Records**: ~102K households
+- **Key Features**: Household demographics, expenditure patterns, social groups
+- **Filters**: State, District, Sector (Rural/Urban), Quarter, Religion, Social Group
+- **Use Cases**: Household economic analysis, expenditure studies, demographic research
+
+#### 2. Person Survey (cperv1.csv)
+- **Size**: 118 MB | **Records**: ~415K individuals  
+- **Key Features**: Employment status, education, earnings, daily activities
+- **Filters**: Age, Sex, Education Level, Employment Status, Industry, Occupation
+- **Use Cases**: Labour force analysis, employment studies, skill assessment
+
+### Quick Start - Ingest PLFS Data
+
+```powershell
+# Interactive menu
+.\ingest_csv.ps1
+
+# Or directly
+python ingest_plfs_data.py
+```
+
+For detailed instructions, see [CSV_INTEGRATION_GUIDE.md](CSV_INTEGRATION_GUIDE.md)
+
 ## Usage
 
 ### Start the API server

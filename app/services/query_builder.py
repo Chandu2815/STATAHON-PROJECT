@@ -167,3 +167,85 @@ class QueryBuilderService:
             'data': data,
             'query_time_ms': round(query_time, 2)
         }
+    
+    def execute_table_query(
+        self,
+        table_name: str,
+        filters: Optional[Dict[str, Any]] = None,
+        fields: Optional[List[str]] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Execute query on any table with dynamic filters"""
+        
+        from sqlalchemy import text, MetaData, Table
+        
+        start_time = time.time()
+        
+        # Reflect the table
+        metadata = MetaData()
+        table = Table(table_name, metadata, autoload_with=self.db.bind)
+        
+        # Build base query
+        query = self.db.query(table)
+        
+        # Apply filters
+        if filters:
+            for field, value in filters.items():
+                if field in table.c:
+                    column = table.c[field]
+                    
+                    # Handle different filter types
+                    if isinstance(value, dict):
+                        # Operator-based filters
+                        if '$gte' in value:
+                            query = query.filter(column >= value['$gte'])
+                        if '$lte' in value:
+                            query = query.filter(column <= value['$lte'])
+                        if '$gt' in value:
+                            query = query.filter(column > value['$gt'])
+                        if '$lt' in value:
+                            query = query.filter(column < value['$lt'])
+                        if '$in' in value:
+                            query = query.filter(column.in_(value['$in']))
+                        if '$ne' in value:
+                            query = query.filter(column != value['$ne'])
+                    elif isinstance(value, list):
+                        # IN clause
+                        query = query.filter(column.in_(value))
+                    else:
+                        # Exact match
+                        query = query.filter(column == value)
+        
+        # Get total count
+        total_count = query.count()
+        
+        # Apply pagination
+        query = query.limit(limit).offset(offset)
+        
+        # Execute query
+        results = query.all()
+        
+        # Convert to dictionaries
+        data = []
+        for row in results:
+            row_dict = dict(row._mapping)
+            
+            # Filter fields if specified
+            if fields:
+                row_dict = {k: v for k, v in row_dict.items() if k in fields}
+            
+            data.append(row_dict)
+        
+        query_time = (time.time() - start_time) * 1000
+        
+        return {
+            'dataset': table_name,
+            'total_records': total_count,
+            'returned_records': len(data),
+            'data': data,
+            'query_time_ms': round(query_time, 2),
+            'filters_applied': filters or {},
+            'limit': limit,
+            'offset': offset
+        }

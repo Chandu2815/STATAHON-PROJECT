@@ -2,16 +2,119 @@
 Frontend landing page for MoSPI Data Portal
 """
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from pathlib import Path
 
 router = APIRouter(tags=["Frontend"])
+
+# Get templates directory
+TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
+
+
+@router.get("/", response_class=HTMLResponse)
+def home_page():
+    """
+    Landing page for MoSPI Data Portal
+    """
+    index_file = TEMPLATES_DIR / "index.html"
+    if index_file.exists():
+        with open(index_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Home page not found</h1>"
+
+
+@router.get("/home", response_class=HTMLResponse)
+def home_page_alt():
+    """
+    Alternative route for landing page
+    """
+    index_file = TEMPLATES_DIR / "index.html"
+    if index_file.exists():
+        with open(index_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Home page not found</h1>"
+
+
+@router.get("/login", response_class=HTMLResponse)
+def login_page():
+    """
+    Login page for all users
+    """
+    login_file = TEMPLATES_DIR / "login.html"
+    if login_file.exists():
+        with open(login_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Login page not found</h1>"
+
+
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard_page():
+    """
+    Dashboard for public and researcher users
+    """
+    dashboard_file = TEMPLATES_DIR / "dashboard.html"
+    if dashboard_file.exists():
+        with open(dashboard_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Dashboard not found</h1>"
+
+
+@router.get("/register", response_class=HTMLResponse)
+def register_page():
+    """
+    Registration page for new users
+    """
+    register_file = TEMPLATES_DIR / "register.html"
+    if register_file.exists():
+        with open(register_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Register page not found</h1>"
+
+
+@router.get("/admin/login", response_class=HTMLResponse)
+def admin_login_page():
+    """
+    Admin login page - separate from public portal
+    """
+    admin_login_file = TEMPLATES_DIR / "admin_login.html"
+    if admin_login_file.exists():
+        with open(admin_login_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Admin login page not found</h1>"
+
+
+@router.get("/admin/dashboard", response_class=HTMLResponse)
+def admin_dashboard_page():
+    """
+    Admin dashboard - requires admin authentication
+    """
+    admin_dashboard_file = TEMPLATES_DIR / "admin_dashboard.html"
+    if admin_dashboard_file.exists():
+        with open(admin_dashboard_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Admin dashboard not found</h1>"
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def admin_redirect():
+    """
+    Redirect /admin to /admin/login
+    """
+    return '<script>window.location.href="/admin/login";</script>'
 
 
 @router.get("/", response_class=HTMLResponse)
 def landing_page():
     """
-    Landing page for MoSPI Data Portal Infrastructure
-    Matches problem statement requirements
+    Landing page - redirects to login page
+    """
+    return '<script>window.location.href="/login";</script>'
+
+
+@router.get("/home", response_class=HTMLResponse)
+def home_page():
+    """
+    Portal overview page (accessible from login page)
     """
     return """
     <!DOCTYPE html>
@@ -202,27 +305,27 @@ def landing_page():
                 <!-- Statistics -->
                 <div class="stats">
                     <div class="stat-box">
-                        <div class="number">1,472</div>
-                        <div class="label">PLFS Records</div>
+                        <div class="number">517K+</div>
+                        <div class="label">Survey Records</div>
                     </div>
                     <div class="stat-box">
-                        <div class="number">695</div>
-                        <div class="label">District Codes</div>
+                        <div class="number">102K</div>
+                        <div class="label">Households</div>
                     </div>
                     <div class="stat-box">
-                        <div class="number">377</div>
-                        <div class="label">Survey Items</div>
+                        <div class="number">415K</div>
+                        <div class="label">Individuals</div>
                     </div>
                     <div class="stat-box">
-                        <div class="number">20+</div>
+                        <div class="number">25+</div>
                         <div class="label">API Endpoints</div>
                     </div>
                 </div>
 
                 <!-- CTA Buttons -->
                 <div class="cta-buttons">
-                    <a href="/docs" class="btn btn-primary">📖 API Documentation</a>
-                    <a href="/redoc" class="btn btn-secondary">📚 ReDoc</a>
+                    <a href="/login" class="btn btn-primary">🔐 Login / Access Portal</a>
+                    <a href="/docs" class="btn btn-secondary">📖 API Documentation</a>
                 </div>
 
                 <!-- Track Information -->
@@ -268,14 +371,20 @@ def landing_page():
 
                 <!-- Example Query -->
                 <div class="section">
-                    <h2>🔍 Example Multi-dimensional Query</h2>
-                    <p style="margin-bottom: 15px;">Filter data with multiple parameters:</p>
+                    <h2>🔍 Example Multi-dimensional Queries</h2>
+                    <p style="margin-bottom: 15px;"><strong>Household Survey - Filter by location and demographics:</strong></p>
                     <div class="example-query">
-GET /api/v1/query?state=Maharashtra&gender=female&age=15-29
+GET /api/query/household_survey?filters={"State_Ut_Code": 28, "Sector": 1, "Social_Group": 2}
+# Rural households from SC social group in Karnataka
+                    </div>
+                    <p style="margin-top: 20px; margin-bottom: 15px;"><strong>Person Survey - Filter by employment and demographics:</strong></p>
+                    <div class="example-query">
+GET /api/query/person_survey?filters={"Age": {"$gte": 25, "$lte": 35}, "Sex": 1, "Sector": 2}
+# Urban males aged 25-35
                     </div>
                     <p style="margin-top: 15px; color: #555;">
-                        Query datasets by state, gender, age groups, and other demographic parameters. 
-                        Results returned in JSON format with pagination support.
+                        Query datasets by state, district, gender, age, employment status, education level, and more. 
+                        Supports complex filtering with operators like $gte, $lte, $in. Results returned in JSON with pagination.
                     </p>
                 </div>
 
@@ -341,6 +450,20 @@ GET /api/v1/query?state=Maharashtra&gender=female&age=15-29
                 <div class="section">
                     <h2>📁 Available Datasets</h2>
                     <div class="feature-grid">
+                        <div class="feature-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                            <h3>🏠 Household Survey (CHHV1)</h3>
+                            <p><strong>~102,000 households</strong> | 38 fields</p>
+                            <p>Demographics, expenditure, social groups, consumption patterns</p>
+                            <p style="margin-top: 10px;"><strong>Filters:</strong> State, District, Sector, Quarter, Religion, Social Group</p>
+                            <p><a href="/docs#/Datasets" style="color: #667eea; font-weight: bold;">View API →</a></p>
+                        </div>
+                        <div class="feature-card" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                            <h3>👥 Person Survey (CPERV1)</h3>
+                            <p><strong>~415,000 individuals</strong> | 140 fields</p>
+                            <p>Employment status, education, earnings, daily activities</p>
+                            <p style="margin-top: 10px;"><strong>Filters:</strong> Age, Sex, Education, Employment Status, Industry, Occupation</p>
+                            <p><a href="/docs#/Datasets" style="color: #667eea; font-weight: bold;">View API →</a></p>
+                        </div>
                         <div class="feature-card">
                             <h3>📍 District Codes</h3>
                             <p>695 records covering all India districts with NSS codes</p>
