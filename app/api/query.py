@@ -60,25 +60,66 @@ def query_data(
     inspector = inspect(db.bind)
     has_dedicated_table = dataset_obj.table_name in inspector.get_table_names()
     
-    # Map of state names to codes (for convenience)
+    # Map of state names to codes (from PLFS District Codes dataset)
     STATE_CODES = {
-        'TELANGANA': 36, 'ANDHRA PRADESH': 28, 'KARNATAKA': 29,
-        'TAMIL NADU': 33, 'KERALA': 32, 'MAHARASHTRA': 27,
-        'PUNJAB': 3, 'HARYANA': 6, 'DELHI': 7, 'UTTAR PRADESH': 9,
-        'BIHAR': 10, 'WEST BENGAL': 19, 'GUJARAT': 24, 'RAJASTHAN': 8
+        'JAMMU & KASHMIR': 1, 'JAMMU AND KASHMIR': 1,
+        'HIMACHAL PRADESH': 2,
+        'PUNJAB': 3,
+        'CHANDIGARH': 4,
+        'UTTARAKHAND': 5,
+        'HARYANA': 6,
+        'DELHI': 7,
+        'RAJASTHAN': 8,
+        'UTTAR PRADESH': 9,
+        'BIHAR': 10,
+        'SIKKIM': 11,
+        'ARUNACHAL PRADESH': 12,
+        'NAGALAND': 13,
+        'MANIPUR': 14,
+        'MIZORAM': 15,
+        'TRIPURA': 16,
+        'MEGHALAYA': 17,
+        'ASSAM': 18,
+        'WEST BENGAL': 19,
+        'JHARKHAND': 20,
+        'ODISHA': 21,
+        'CHHATTISGARH': 22,
+        'MADHYA PRADESH': 23,
+        'GUJARAT': 24,
+        'DAMAN & DIU & D & N HAVELI': 25, 'DADRA AND NAGAR HAVELI AND DAMAN AND DIU': 25,
+        'MAHARASHTRA': 27,
+        'ANDHRA PRADESH': 28,
+        'KARNATAKA': 29,
+        'GOA': 30,
+        'LAKSHADWEEP': 31,
+        'KERALA': 32,
+        'TAMIL NADU': 33,
+        'PUDUCHERRY': 34,
+        'A & N ISLANDS': 35, 'ANDAMAN AND NICOBAR ISLANDS': 35,
+        'TELANGANA': 36,
+        'LADAKH': 37
     }
     
     # Build filters - map generic names to actual column names
     filters = {}
+    print(f"DEBUG: Query parameters - dataset={dataset}, state={state}, district={district}, gender={gender}, age={age}, year={year}")
     
     if has_dedicated_table:
         # For dedicated tables (household_survey, person_survey), map to actual columns
+        table_name = dataset_obj.table_name.lower()
+        
         if state:
             # Try to convert state name to code
+            # Note: person_survey uses State_UT_Code, household_survey uses State_Ut_Code
+            state_column = 'State_UT_Code' if 'person' in table_name else 'State_Ut_Code'
             if state.isdigit():
-                filters['State_UT_Code'] = int(state)
+                filters[state_column] = int(state)
             elif state.upper() in STATE_CODES:
-                filters['State_UT_Code'] = STATE_CODES[state.upper()]
+                state_code = STATE_CODES[state.upper()]
+                filters[state_column] = state_code
+                print(f"DEBUG: Mapped state '{state}' to code {state_code} (column: {state_column})")
+            else:
+                print(f"DEBUG: State '{state}' not found in STATE_CODES")
         
         if district:
             # District should be a code
@@ -87,25 +128,27 @@ def query_data(
             elif district.upper() == 'NIRMAL':
                 filters['District_Code'] = 4  # Nirmal district code
         
-        if gender:
-            # For person survey: Sex column (1=Male, 2=Female, 3=Transgender)
-            gender_upper = gender.upper()
-            if gender_upper in ['MALE', 'M', '1']:
-                filters['Sex'] = 1
-            elif gender_upper in ['FEMALE', 'F', '2']:
-                filters['Sex'] = 2
-            elif gender_upper in ['TRANSGENDER', 'T', '3']:
-                filters['Sex'] = 3
-        
-        if age:
-            # Parse age range like "15-29"
-            if '-' in age:
-                age_parts = age.split('-')
-                if len(age_parts) == 2:
-                    filters['Age'] = {
-                        '$gte': int(age_parts[0]),
-                        '$lte': int(age_parts[1])
-                    }
+        # Sex and Age filters only apply to Person Survey
+        if 'person' in table_name:
+            if gender:
+                # For person survey: Sex column (1=Male, 2=Female, 3=Transgender)
+                gender_upper = gender.upper()
+                if gender_upper in ['MALE', 'M', '1']:
+                    filters['Sex'] = 1
+                elif gender_upper in ['FEMALE', 'F', '2']:
+                    filters['Sex'] = 2
+                elif gender_upper in ['TRANSGENDER', 'T', '3']:
+                    filters['Sex'] = 3
+            
+            if age:
+                # Parse age range like "15-29"
+                if '-' in age:
+                    age_parts = age.split('-')
+                    if len(age_parts) == 2:
+                        filters['Age'] = {
+                            '$gte': int(age_parts[0]),
+                            '$lte': int(age_parts[1])
+                        }
             elif age.isdigit():
                 filters['Age'] = int(age)
     else:
@@ -120,6 +163,9 @@ def query_data(
             filters['age_group'] = age
         if year:
             filters['year'] = year
+    
+    print(f"DEBUG: Final filters dictionary: {filters}")
+    print(f"DEBUG: Dataset table name: {dataset_obj.table_name if has_dedicated_table else 'data_records'}")
     
     # Execute query
     query_builder = QueryBuilderService(db)

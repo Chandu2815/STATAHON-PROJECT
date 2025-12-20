@@ -6,23 +6,76 @@
     <title>Dashboard - MoSPI Data Portal</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Government Tricolor Bar */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            width: 100%;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
+            background: #f8f9fa;
             min-height: 100vh;
         }
+        
         .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #ffffff;
+            color: #1a237e;
             padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border-bottom: 3px solid #1a237e;
+        }
+        
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        
         .navbar-brand {
-            font-size: 1.5em;
-            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .navbar-brand .emblem {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand .emblem img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        
+        .navbar-brand .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .navbar-brand .brand-text h1 {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #1a237e;
+            margin: 0;
+        }
+        
+        .navbar-brand .brand-text p {
+            font-size: 0.75em;
+            color: #666;
+            margin: 0;
+            font-weight: 500;
         }
         .navbar-user {
             display: flex;
@@ -31,25 +84,38 @@
         }
         .user-info {
             text-align: right;
+            background: #f0f4ff;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #1a237e;
+        }
+        .user-info #userName {
+            font-weight: 600;
+            color: #1a237e;
+            font-size: 0.95em;
         }
         .user-role {
-            font-size: 0.85em;
-            opacity: 0.9;
+            font-size: 0.75em;
+            color: #666;
             text-transform: uppercase;
+            font-weight: 600;
         }
         .btn-logout {
-            background: rgba(255,255,255,0.2);
+            background: #1a237e;
             color: white;
-            border: 2px solid white;
-            padding: 8px 20px;
-            border-radius: 5px;
+            border: 2px solid #1a237e;
+            padding: 8px 24px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
+            font-size: 0.9em;
         }
         .btn-logout:hover {
-            background: white;
-            color: #667eea;
+            background: #0d47a1;
+            border-color: #0d47a1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(26,35,126,0.3);
         }
         .container {
             max-width: 1400px;
@@ -57,19 +123,33 @@
             padding: 0 20px;
         }
         .welcome-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(26,35,126,0.2);
             margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        .welcome-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #FF6B00, #fff, #138808);
         }
         .welcome-section h2 {
-            color: #333;
+            color: white;
             margin-bottom: 10px;
+            font-size: 1.8em;
+            font-weight: 600;
         }
         .welcome-section p {
-            color: #666;
-            font-size: 1.1em;
+            color: rgba(255,255,255,0.9);
+            font-size: 1.05em;
         }
         .stats-grid {
             display: grid;
@@ -80,83 +160,116 @@
         .stat-card {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            border-left: 4px solid #1a237e;
         }
         .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(26,35,126,0.15);
+        }
+        .stat-card:nth-child(2) {
+            border-left-color: #FF6B00;
+        }
+        .stat-card:nth-child(3) {
+            border-left-color: #138808;
+        }
+        .stat-card:nth-child(4) {
+            border-left-color: #9c27b0;
         }
         .stat-icon {
             font-size: 2.5em;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            opacity: 0.9;
         }
         .stat-value {
-            font-size: 2em;
+            font-size: 2.2em;
             font-weight: 700;
-            color: #667eea;
-            margin-bottom: 5px;
+            color: #1a237e;
+            margin-bottom: 8px;
+            line-height: 1;
         }
         .stat-label {
             color: #666;
-            font-size: 0.95em;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .query-section {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 35px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
+            border-top: 4px solid #1a237e;
         }
         .query-section h3 {
-            color: #333;
-            margin-bottom: 20px;
+            color: #1a237e;
+            margin-bottom: 25px;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 1.4em;
+            font-weight: 700;
         }
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
+            align-items: start;
         }
         .form-group {
             display: flex;
             flex-direction: column;
+            align-self: stretch;
         }
         .form-group label {
             font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
+            color: #1a237e;
+            margin-bottom: 8px;
             font-size: 0.9em;
+            min-height: 20px;
         }
         .form-group select, .form-group input {
-            padding: 10px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: border-color 0.3s;
+            border-radius: 6px;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            background: white;
+            height: 45px;
         }
         .form-group select:focus, .form-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26,35,126,0.1);
         }
+        
+        /* Ensure gender and age group containers have same styling */
+        #genderGroup, #ageGroupContainer {
+            display: flex !important;
+            flex-direction: column;
+        }
+        
         .btn-query {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a237e;
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
+            padding: 14px 40px;
+            border-radius: 6px;
             font-size: 1em;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(26,35,126,0.2);
         }
         .btn-query:hover {
+            background: #0d47a1;
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 12px rgba(26,35,126,0.3);
         }
         .btn-query:disabled {
             background: #ccc;
@@ -247,17 +360,94 @@
             background: #ffebee;
             color: #c62828;
         }
+
+        /* Charts Section */
+        .charts-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #1a237e;
+        }
+
+        .chart-card h4 {
+            color: #1a237e;
+            margin-bottom: 20px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        .chart-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chart-toggle button {
+            padding: 8px 16px;
+            border: 2px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .chart-toggle button.active {
+            background: #1a237e;
+            color: white;
+        }
+
+        .chart-toggle button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div class="gov-bar"></div>
+    
     <nav class="navbar">
-        <div class="navbar-brand">📊 MoSPI Data Portal</div>
-        <div class="navbar-user">
-            <div class="user-info">
-                <div id="userName">Loading...</div>
-                <div class="user-role" id="userRole">Loading...</div>
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <div class="emblem">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                         alt="Government of India Emblem">
+                </div>
+                <div class="brand-text">
+                    <h1>MoSPI Data Portal</h1>
+                    <p>Ministry of Statistics & Programme Implementation</p>
+                </div>
             </div>
-            <button class="btn-logout" onclick="logout()">Logout</button>
+            <div class="navbar-user">
+                <div class="user-info">
+                    <div id="userName">Loading...</div>
+                    <div class="user-role" id="userRole">Loading...</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
         </div>
     </nav>
 
@@ -270,7 +460,7 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon">📁</div>
-                <div class="stat-value">5</div>
+                <div class="stat-value">2</div>
                 <div class="stat-label">Available Datasets</div>
             </div>
             <div class="stat-card">
@@ -301,35 +491,60 @@
                             <option value="">Select Dataset</option>
                             <option value="4">Household Survey (PLFS)</option>
                             <option value="5">Person Survey (PLFS)</option>
-                            <option value="1">Sample Census Data</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="state">State</label>
                         <select id="state">
                             <option value="">All States</option>
-                            <option value="TELANGANA">Telangana</option>
+                            <option value="ANDAMAN AND NICOBAR ISLANDS">Andaman and Nicobar Islands</option>
                             <option value="ANDHRA PRADESH">Andhra Pradesh</option>
-                            <option value="MAHARASHTRA">Maharashtra</option>
-                            <option value="KARNATAKA">Karnataka</option>
-                            <option value="TAMIL NADU">Tamil Nadu</option>
-                            <option value="KERALA">Kerala</option>
-                            <option value="WEST BENGAL">West Bengal</option>
+                            <option value="ARUNACHAL PRADESH">Arunachal Pradesh</option>
+                            <option value="ASSAM">Assam</option>
+                            <option value="BIHAR">Bihar</option>
+                            <option value="CHANDIGARH">Chandigarh</option>
+                            <option value="CHHATTISGARH">Chhattisgarh</option>
+                            <option value="DADRA AND NAGAR HAVELI AND DAMAN AND DIU">Dadra and Nagar Haveli and Daman and Diu</option>
+                            <option value="DELHI">Delhi</option>
+                            <option value="GOA">Goa</option>
                             <option value="GUJARAT">Gujarat</option>
+                            <option value="HARYANA">Haryana</option>
+                            <option value="HIMACHAL PRADESH">Himachal Pradesh</option>
+                            <option value="JAMMU AND KASHMIR">Jammu and Kashmir</option>
+                            <option value="JHARKHAND">Jharkhand</option>
+                            <option value="KARNATAKA">Karnataka</option>
+                            <option value="KERALA">Kerala</option>
+                            <option value="LADAKH">Ladakh</option>
+                            <option value="LAKSHADWEEP">Lakshadweep</option>
+                            <option value="MADHYA PRADESH">Madhya Pradesh</option>
+                            <option value="MAHARASHTRA">Maharashtra</option>
+                            <option value="MANIPUR">Manipur</option>
+                            <option value="MEGHALAYA">Meghalaya</option>
+                            <option value="MIZORAM">Mizoram</option>
+                            <option value="NAGALAND">Nagaland</option>
+                            <option value="ODISHA">Odisha</option>
+                            <option value="PUDUCHERRY">Puducherry</option>
+                            <option value="PUNJAB">Punjab</option>
                             <option value="RAJASTHAN">Rajasthan</option>
+                            <option value="SIKKIM">Sikkim</option>
+                            <option value="TAMIL NADU">Tamil Nadu</option>
+                            <option value="TELANGANA">Telangana</option>
+                            <option value="TRIPURA">Tripura</option>
                             <option value="UTTAR PRADESH">Uttar Pradesh</option>
+                            <option value="UTTARAKHAND">Uttarakhand</option>
+                            <option value="WEST BENGAL">West Bengal</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="genderGroup">
                         <label for="gender">Gender</label>
                         <select id="gender">
-                            <option value="">All</option>
+                            <option value="">All Genders</option>
                             <option value="MALE">Male</option>
                             <option value="FEMALE">Female</option>
                             <option value="TRANSGENDER">Transgender</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="ageGroupContainer">
                         <label for="ageGroup">Age Group</label>
                         <select id="ageGroup">
                             <option value="">All Ages</option>
@@ -339,6 +554,14 @@
                             <option value="60-100">60+ (Senior)</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="sector">Sector</label>
+                        <select id="sector">
+                            <option value="">All Sectors</option>
+                            <option value="1">Rural</option>
+                            <option value="2">Urban</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -346,6 +569,7 @@
                         <input type="number" id="limit" value="100" min="1" max="10000">
                     </div>
                 </div>
+                <p class="dataset-info" id="datasetInfo" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
                 <button type="submit" class="btn-query">Run Query</button>
             </form>
 
@@ -358,9 +582,46 @@
         <div class="results-section" id="resultsSection">
             <div class="results-header">
                 <h3>Query Results (<span id="resultCount">0</span> records)</h3>
-                <button class="btn-export" onclick="exportResults()">📥 Export CSV</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-export" onclick="toggleView('table')" id="btnTable">📊 Table View</button>
+                    <button class="btn-export" onclick="toggleView('charts')" id="btnCharts">📈 Charts View</button>
+                    <button class="btn-export" onclick="exportResults()">📥 Export CSV</button>
+                </div>
             </div>
             <div class="results-table" id="resultsTable"></div>
+        </div>
+
+        <div class="charts-section" id="chartsSection">
+            <h3>📊 Data Visualization</h3>
+            <div class="chart-toggle">
+                <button class="active" onclick="showAllCharts()">Show All</button>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h4>📊 Distribution by State</h4>
+                    <div class="chart-container">
+                        <canvas id="stateChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card" id="genderChartCard">
+                    <h4>👥 Gender Distribution</h4>
+                    <div class="chart-container">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card" id="ageChartCard">
+                    <h4>📈 Age Distribution</h4>
+                    <div class="chart-container">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h4>🏘️ Sector Distribution (Rural/Urban)</h4>
+                    <div class="chart-container">
+                        <canvas id="sectorChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -413,6 +674,30 @@
             window.location.href = '/login';
         }
 
+        // Dataset change handler - show/hide filters based on dataset type
+        document.getElementById('dataset').addEventListener('change', function() {
+            const dataset = this.value;
+            const genderGroup = document.getElementById('genderGroup');
+            const ageGroupContainer = document.getElementById('ageGroupContainer');
+            const datasetInfo = document.getElementById('datasetInfo');
+            
+            if (dataset === '5') {
+                // Person Survey - show all filters
+                genderGroup.style.display = 'block';
+                ageGroupContainer.style.display = 'block';
+                datasetInfo.textContent = '📊 Person Survey: Individual-level data (413,549 records). Filters: State, Gender, Age, Sector';
+            } else if (dataset === '4') {
+                // Household Survey - hide gender and age
+                genderGroup.style.display = 'none';
+                ageGroupContainer.style.display = 'none';
+                datasetInfo.textContent = '🏠 Household Survey: Household-level data (101,957 records). Filters: State, Sector';
+            } else {
+                genderGroup.style.display = 'block';
+                ageGroupContainer.style.display = 'block';
+                datasetInfo.textContent = '';
+            }
+        });
+
         // Query form submission
         document.getElementById('queryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -424,6 +709,7 @@
             const state = document.getElementById('state').value;
             const gender = document.getElementById('gender').value;
             const ageGroup = document.getElementById('ageGroup').value;
+            const sector = document.getElementById('sector').value;
             const limit = document.getElementById('limit').value;
 
             if (!dataset) {
@@ -433,9 +719,14 @@
 
             // Build query URL
             let queryUrl = `/api/v1/query?dataset=${dataset}&limit=${limit}`;
-            if (state) queryUrl += `&state=${state}`;
-            if (gender) queryUrl += `&gender=${gender}`;
-            if (ageGroup) queryUrl += `&age_group=${ageGroup}`;
+            if (state) queryUrl += `&state=${encodeURIComponent(state)}`;
+            if (sector) queryUrl += `&year=${sector}`; // Using year parameter for sector temporarily
+            
+            // Only add gender and age for Person Survey
+            if (dataset === '5') {
+                if (gender) queryUrl += `&gender=${gender}`;
+                if (ageGroup) queryUrl += `&age_group=${ageGroup}`;
+            }
 
             // Show loading
             document.getElementById('loading').style.display = 'block';
@@ -452,7 +743,9 @@
 
                 if (response.ok) {
                     currentResults = data.data || [];
+                    const dataset = document.getElementById('dataset').value;
                     displayResults(currentResults);
+                    createCharts(currentResults, dataset);
                     document.getElementById('queryCount').textContent = 
                         parseInt(document.getElementById('queryCount').textContent) + 1;
                     
@@ -529,6 +822,255 @@
             a.href = url;
             a.download = `mospi_query_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
+        }
+
+        // Toggle between table and charts view
+        function toggleView(view) {
+            const tableSection = document.getElementById('resultsSection');
+            const chartsSection = document.getElementById('chartsSection');
+            const btnTable = document.getElementById('btnTable');
+            const btnCharts = document.getElementById('btnCharts');
+
+            if (view === 'table') {
+                tableSection.style.display = 'block';
+                chartsSection.style.display = 'none';
+                btnTable.style.background = '#1a237e';
+                btnTable.style.color = 'white';
+                btnCharts.style.background = 'white';
+                btnCharts.style.color = '#1a237e';
+            } else {
+                tableSection.style.display = 'none';
+                chartsSection.style.display = 'block';
+                btnCharts.style.background = '#1a237e';
+                btnCharts.style.color = 'white';
+                btnTable.style.background = 'white';
+                btnTable.style.color = '#1a237e';
+            }
+        }
+
+        function showAllCharts() {
+            // Already showing all charts by default
+        }
+
+        // Chart instances
+        let stateChart, genderChart, ageChart, sectorChart;
+
+        // State code to name mapping
+        const STATE_NAMES = {
+            1: 'J&K', 2: 'HP', 3: 'Punjab', 4: 'Chandigarh', 5: 'Uttarakhand',
+            6: 'Haryana', 7: 'Delhi', 8: 'Rajasthan', 9: 'UP', 10: 'Bihar',
+            11: 'Sikkim', 12: 'Arunachal', 13: 'Nagaland', 14: 'Manipur',
+            15: 'Mizoram', 16: 'Tripura', 17: 'Meghalaya', 18: 'Assam',
+            19: 'WB', 20: 'Jharkhand', 21: 'Odisha', 22: 'Chhattisgarh',
+            23: 'MP', 24: 'Gujarat', 25: 'DNH & DD', 27: 'Maharashtra',
+            28: 'AP', 29: 'Karnataka', 30: 'Goa', 31: 'Lakshadweep',
+            32: 'Kerala', 33: 'TN', 34: 'Puducherry', 35: 'A&N Islands',
+            36: 'Telangana', 37: 'Ladakh'
+        };
+
+        function createCharts(data, datasetId) {
+            if (!data || data.length === 0) return;
+
+            const isPerson = datasetId === '5';
+            
+            // Show/hide charts based on dataset
+            const genderCard = document.getElementById('genderChartCard');
+            const ageCard = document.getElementById('ageChartCard');
+            if (genderCard) genderCard.style.display = isPerson ? 'block' : 'none';
+            if (ageCard) ageCard.style.display = isPerson ? 'block' : 'none';
+
+            // State Distribution
+            createStateChart(data);
+
+            // Sector Distribution
+            createSectorChart(data);
+
+            // Gender and Age only for Person Survey
+            if (isPerson) {
+                createGenderChart(data);
+                createAgeChart(data);
+            }
+        }
+
+        function createStateChart(data) {
+            const stateKey = data[0].hasOwnProperty('State_UT_Code') ? 'State_UT_Code' : 'State_Ut_Code';
+            const stateCounts = {};
+            
+            data.forEach(row => {
+                const state = row[stateKey] || 'Unknown';
+                stateCounts[state] = (stateCounts[state] || 0) + 1;
+            });
+
+            const labels = Object.keys(stateCounts).map(code => STATE_NAMES[code] || `State ${code}`);
+            const values = Object.values(stateCounts);
+
+            if (stateChart) stateChart.destroy();
+            
+            const ctx = document.getElementById('stateChart').getContext('2d');
+            stateChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Records by State',
+                        data: values,
+                        backgroundColor: 'rgba(26, 35, 126, 0.7)',
+                        borderColor: 'rgba(26, 35, 126, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createGenderChart(data) {
+            const genderCounts = { Male: 0, Female: 0, Transgender: 0 };
+            
+            data.forEach(row => {
+                const sex = row.Sex;
+                if (sex === 1) genderCounts.Male++;
+                else if (sex === 2) genderCounts.Female++;
+                else if (sex === 3) genderCounts.Transgender++;
+            });
+
+            if (genderChart) genderChart.destroy();
+            
+            const ctx = document.getElementById('genderChart').getContext('2d');
+            genderChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(genderCounts),
+                    datasets: [{
+                        data: Object.values(genderCounts),
+                        backgroundColor: [
+                            'rgba(26, 35, 126, 0.8)',
+                            'rgba(255, 107, 0, 0.8)',
+                            'rgba(19, 136, 8, 0.8)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 15, font: { size: 12 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createAgeChart(data) {
+            const ageBuckets = {
+                '0-14': 0,
+                '15-29': 0,
+                '30-44': 0,
+                '45-59': 0,
+                '60+': 0
+            };
+            
+            data.forEach(row => {
+                const age = row.Age;
+                if (age <= 14) ageBuckets['0-14']++;
+                else if (age <= 29) ageBuckets['15-29']++;
+                else if (age <= 44) ageBuckets['30-44']++;
+                else if (age <= 59) ageBuckets['45-59']++;
+                else ageBuckets['60+']++;
+            });
+
+            if (ageChart) ageChart.destroy();
+            
+            const ctx = document.getElementById('ageChart').getContext('2d');
+            ageChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ageBuckets),
+                    datasets: [{
+                        label: 'Records by Age Group',
+                        data: Object.values(ageBuckets),
+                        backgroundColor: [
+                            'rgba(255, 107, 0, 0.7)',
+                            'rgba(26, 35, 126, 0.7)',
+                            'rgba(19, 136, 8, 0.7)',
+                            'rgba(198, 40, 40, 0.7)',
+                            'rgba(123, 31, 162, 0.7)'
+                        ],
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSectorChart(data) {
+            const sectorCounts = { Rural: 0, Urban: 0, Unknown: 0 };
+            
+            data.forEach(row => {
+                const sector = row.Sector;
+                if (sector === 1) sectorCounts.Rural++;
+                else if (sector === 2) sectorCounts.Urban++;
+                else sectorCounts.Unknown++;
+            });
+
+            if (sectorChart) sectorChart.destroy();
+            
+            const ctx = document.getElementById('sectorChart').getContext('2d');
+            sectorChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(sectorCounts).filter(k => sectorCounts[k] > 0),
+                    datasets: [{
+                        data: Object.values(sectorCounts).filter(v => v > 0),
+                        backgroundColor: [
+                            'rgba(19, 136, 8, 0.8)',
+                            'rgba(26, 35, 126, 0.8)',
+                            'rgba(158, 158, 158, 0.8)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 15, font: { size: 12 } }
+                        }
+                    }
+                }
+            });
         }
 
         // Initialize
