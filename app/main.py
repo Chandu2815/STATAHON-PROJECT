@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from app.config import get_settings
 from app.database import init_db
-from app.api import auth, datasets, query, users, plfs, frontend, export, dataset_info
+from app.api import auth, datasets, query, users, plfs, frontend, export  # , dataset_info
 
 settings = get_settings()
 
@@ -125,7 +125,7 @@ app.include_router(query.router, prefix=settings.API_V1_PREFIX)
 app.include_router(users.router, prefix=settings.API_V1_PREFIX)
 app.include_router(plfs.router, prefix=settings.API_V1_PREFIX)
 app.include_router(export.router, prefix=settings.API_V1_PREFIX)  # CSV/Chart/Table exports
-app.include_router(dataset_info.router, prefix=settings.API_V1_PREFIX)  # Dataset information
+# app.include_router(dataset_info.router, prefix=settings.API_V1_PREFIX)  # Dataset information - temporarily disabled
 
 
 @app.on_event("startup")
