@@ -401,6 +401,120 @@ def upgrade_to_premium(
         )
 
 
+@router.post("/upgrade")
+def upgrade_plan(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Upgrade user to a specific plan (Researcher or Premium)
+    
+    Credit System:
+    - Public: 10 credits (free)
+    - Researcher: 100 credits (₹499/month)
+    - Premium: Unlimited credits (₹999/month)
+    
+    **Request Body:**
+    ```json
+    {
+        "plan": "researcher" or "premium",
+        "payment_method": "upi" or "card" or "netbanking" or "credits",
+        "amount": 499 or 999
+    }
+    ```
+    """
+    try:
+        plan = request.get('plan', '').lower()
+        payment_method = request.get('payment_method', 'upi')
+        amount = request.get('amount', 0)
+        
+        # Plan pricing and credits
+        PLAN_CONFIG = {
+            'researcher': {'cost': 499.0, 'credits': 100.0},
+            'premium': {'cost': 999.0, 'credits': 999999.0}  # Unlimited
+        }
+        
+        if plan not in PLAN_CONFIG:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid plan. Choose 'researcher' or 'premium'"
+            )
+        
+        # Check if user already has equal or higher tier
+        from app.models.user import UserRole
+        role_hierarchy = {
+            'public': 0,
+            'researcher': 1,
+            'premium': 2,
+            'admin': 3,
+            'super_admin': 4
+        }
+        
+        current_level = role_hierarchy.get(current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role), 0)
+        target_level = role_hierarchy.get(plan, 0)
+        
+        if current_level >= target_level:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"You already have {current_user.role} access or higher"
+            )
+        
+        # Validate upgrade path: Public -> Researcher -> Premium
+        if current_level == 0 and plan == 'premium':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please upgrade to Researcher first before upgrading to Premium"
+            )
+        
+        config = PLAN_CONFIG[plan]
+        cost = config['cost']
+        new_credits = config['credits']
+        
+        # Upgrade user role
+        if plan == 'researcher':
+            current_user.role = UserRole.RESEARCHER
+        elif plan == 'premium':
+            current_user.role = UserRole.PREMIUM
+        
+        # Set new credit balance for the plan
+        current_user.credits = new_credits
+        
+        # Create transaction record
+        from app.models.user import Transaction
+        transaction = Transaction(
+            user_id=current_user.id,
+            amount=cost,
+            transaction_type="upgrade",
+            description=f"Upgraded to {plan.upper()} plan via {payment_method}. Credits: {new_credits}",
+            status="completed",
+            payment_gateway_ref=f"{payment_method.upper()}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        )
+        db.add(transaction)
+        db.commit()
+        db.refresh(transaction)
+        
+        logger.info(f"User {current_user.id} upgraded to {plan.upper()} plan via {payment_method}. New credits: {new_credits}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully upgraded to {plan.upper()} plan!",
+            "new_role": plan,
+            "new_credits": new_credits,
+            "transaction_id": transaction.id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Upgrade failed for user {current_user.id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Upgrade failed. Please try again."
+        )
+
+
 @router.get("/me/transactions", response_model=TransactionListResponse)
 def get_my_transactions(
     skip: int = 0,

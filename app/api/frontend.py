@@ -95,6 +95,18 @@ def admin_dashboard_page():
     return "<h1>Admin dashboard not found</h1>"
 
 
+@router.get("/upgrade", response_class=HTMLResponse)
+def upgrade_page():
+    """
+    Premium upgrade page for users
+    """
+    upgrade_file = TEMPLATES_DIR / "upgrade.html"
+    if upgrade_file.exists():
+        with open(upgrade_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Upgrade page not found</h1>"
+
+
 @router.get("/admin", response_class=HTMLResponse)
 def admin_redirect():
     """
