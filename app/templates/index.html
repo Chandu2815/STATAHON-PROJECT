@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoSPI Data Portal - Ministry of Statistics & Programme Implementation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Top Government Bar */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+        }
+
+        /* Header */
+        .header {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .emblem {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .emblem-fallback {
+            height: 60px;
+            width: 60px;
+            background: linear-gradient(135deg, #FF6B00 0%, #138808 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .govt-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .govt-text .small-text {
+            font-size: 0.85em;
+            color: #555;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .govt-text .ministry-name {
+            font-size: 0.9em;
+            color: #1a237e;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            max-width: 280px;
+            line-height: 1.3;
+        }
+
+        .title-section {
+            text-align: center;
+            justify-self: center;
+        }
+
+        .title-section h1 {
+            color: #1a237e;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .title-section p {
+            color: #777;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #1a237e;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(26, 35, 126, 0.3);
+        }
+
+        .btn-secondary {
+            background: #FF6B00;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #e65100;
+            transform: translateY(-2px);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            overflow: hidden;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            object-fit: cover;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.7) 0%, rgba(13, 71, 161, 0.7) 100%);
+            z-index: 1;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero h2 {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: #f5f5f5;
+            padding: 70px 20px;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: transparent;
+            height: 260px;
+            perspective: 1000px;
+            position: relative;
+        }
+
+        .stat-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .stat-card:hover .stat-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .stat-card-front, .stat-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            padding: 45px 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card-front {
+            background: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #1a237e;
+        }
+
+        .stat-card:nth-child(2) .stat-card-front {
+            border-left-color: #FF6B00;
+        }
+
+        .stat-card:nth-child(3) .stat-card-front {
+            border-left-color: #138808;
+        }
+
+        .stat-card:nth-child(4) .stat-card-front {
+            border-left-color: #c62828;
+        }
+
+        .stat-card-back {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            transform: rotateY(180deg);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .stat-card:nth-child(2) .stat-card-back {
+            background: linear-gradient(135deg, #FF6B00 0%, #e65100 100%);
+        }
+
+        .stat-card:nth-child(3) .stat-card-back {
+            background: linear-gradient(135deg, #138808 0%, #0a5004 100%);
+        }
+
+        .stat-card:nth-child(4) .stat-card-back {
+            background: linear-gradient(135deg, #c62828 0%, #8b0000 100%);
+        }
+
+        .stat-card-back p {
+            color: white;
+            font-size: 1.05em;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+        }
+
+        .stat-card:nth-child(1) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            color: #1a237e;
+        }
+
+        .stat-card:nth-child(2) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            color: #FF6B00;
+        }
+
+        .stat-card:nth-child(3) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            color: #138808;
+        }
+
+        .stat-card:nth-child(4) .stat-card-front .stat-icon {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #c62828;
+        }
+
+        .stat-card-back .stat-icon {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: 700;
+            color: #1a237e;
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #555;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.2em;
+            color: #1a237e;
+            margin-bottom: 50px;
+            font-weight: 600;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #FF6B00;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            border-left-width: 6px;
+        }
+
+        .feature-card h3 {
+            color: #1a237e;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .feature-card:hover h3 {
+            color: #FF6B00;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a237e;
+            color: white;
+            padding: 40px 20px 20px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .footer h4 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .footer ul {
+            list-style: none;
+        }
+
+        .footer li {
+            margin-bottom: 10px;
+        }
+
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .hero h2 { font-size: 2em; }
+            .hero p { font-size: 1.1em; }
+            .header-content { flex-direction: column; gap: 15px; }
+            .logo-section { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Government Tricolor Bar -->
+    <div class="gov-bar"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                     alt="Government of India Emblem" 
+                     class="emblem"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="emblem-fallback" style="display: none;">🇮🇳</div>
+                <div class="govt-text">
+                    <span class="small-text">Government Of India</span>
+                    <span class="ministry-name">Ministry of Statistics and<br>Programme Implementation</span>
+                </div>
+            </div>
+            <div class="title-section">
+                <h1>MoSPI Data Portal</h1>
+                <p>Official Data Infrastructure Platform</p>
+            </div>
+            <div class="header-actions">
+                <a href="/login" class="btn btn-primary">Login</a>
+                <a href="/register" class="btn btn-secondary">Register</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <video autoplay muted loop playsinline class="hero-video">
+            <source src="/static/videos/background.mp4" type="video/mp4">
+            <source src="/static/videos/background.webm" type="video/webm">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h2>Empowering India with Data</h2>
+            <p>Access comprehensive statistical data and insights from India's official data infrastructure platform</p>
+            <div class="hero-actions">
+                <a href="/register" class="btn btn-secondary" style="padding: 15px 40px; font-size: 1.1em;">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-container">
+            <h2 class="section-title">Platform Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-number">515K+</div>
+                            <div class="stat-label">Survey Records</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">📊</div>
+                            <p>Comprehensive PLFS data covering household and person-level statistics across India</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">🔍</div>
+                            <div class="stat-number">2</div>
+                            <div class="stat-label">Active Datasets</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">🔍</div>
+                            <p>Household Survey and Person Survey datasets with real-time query access</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-number">Real-time</div>
+                            <div class="stat-label">Data Access</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">👥</div>
+                            <p>Instant access to statistical data through our advanced query builder interface</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-card-front">
+                            <div class="stat-icon">🔐</div>
+                            <div class="stat-number">Secure</div>
+                            <div class="stat-label">API Gateway</div>
+                        </div>
+                        <div class="stat-card-back">
+                            <div class="stat-icon">🔐</div>
+                            <p>Role-based authentication with credit system and transparent usage metering</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <h2 class="section-title">Key Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3><span>📈</span> PLFS Survey Data</h3>
+                <p>Access Periodic Labour Force Survey data with 515,000+ records covering household and person-level statistics across India.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>🔍</span> Advanced Query Builder</h3>
+                <p>Build complex queries with multi-dimensional filtering, aggregation, and export capabilities through our intuitive interface.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>🔐</span> Role-Based Access</h3>
+                <p>Secure authentication with role-based permissions for public users, researchers, and administrators.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>💳</span> Credit System</h3>
+                <p>Fair usage metering with credit-based access control and transparent pricing for data queries.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>📊</span> Data Export</h3>
+                <p>Export query results in multiple formats including JSON, CSV, and visualization-ready formats.</p>
+            </div>
+            <div class="feature-card">
+                <h3><span>⚡</span> RESTful API</h3>
+                <p>Modern API infrastructure with comprehensive documentation, rate limiting, and usage analytics.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <h4>About</h4>
+                <ul>
+                    <li><a href="https://www.mospi.gov.in" target="_blank">MoSPI Official Website</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="https://microdata.gov.in" target="_blank">Microdata Portal</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/login">Login</a></li>
+                    <li><a href="/register">Register</a></li>
+                    <li><a href="/admin/login">Admin Portal</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 Ministry of Statistics & Programme Implementation, Government of India</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Built for STATATHON 2025 - Data Dissemination Track</p>
+        </div>
+    </footer>
+
+    <script>
+        // Check if user is already logged in
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            const role = localStorage.getItem('user_role');
+            if (role && role.toLowerCase().includes('admin')) {
+                window.location.href = '/admin/dashboard';
+            } else if (role) {
+                window.location.href = '/dashboard';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+dataset:
+  name: "PLFS Household Survey Data (CHHV1)"
+  description: "Periodic Labour Force Survey (PLFS) Household Visit data - Contains household level information including demographics, expenditure, and survey details"
+  table_name: "household_survey"
+  source: "Ministry of Statistics and Programme Implementation (MoSPI)"
+  
+  schema:
+    - name: "Panel"
+      type: "string"
+      filterable: true
+      description: "Panel identifier (e.g., P4)"
+    
+    - name: "File_Identification"
+      type: "string"
+      filterable: true
+      description: "File identification code"
+    
+    - name: "Schdule"
+      type: "integer"
+      filterable: true
+      description: "Schedule number"
+    
+    - name: "Quarter"
+      type: "string"
+      filterable: true
+      description: "Quarter of the survey (Q1, Q2, Q3, Q4)"
+    
+    - name: "Visit"
+      type: "string"
+      filterable: true
+      description: "Visit number"
+    
+    - name: "Sector"
+      type: "integer"
+      filterable: true
+      description: "Sector code (1: Rural, 2: Urban)"
+      allowed_values: [1, 2]
+    
+    - name: "State_Ut_Code"
+      type: "integer"
+      filterable: true
+      description: "State/UT code as per NSS classification"
+    
+    - name: "District_Code"
+      type: "integer"
+      filterable: true
+      description: "District code"
+    
+    - name: "NSS_Region"
+      type: "integer"
+      filterable: true
+      description: "NSS Region code"
+    
+    - name: "Stratum"
+      type: "string"
+      filterable: true
+      description: "Stratum identifier"
+    
+    - name: "Sub_Stratum"
+      type: "string"
+      filterable: true
+      description: "Sub-stratum identifier"
+    
+    - name: "Sub_Sample"
+      type: "integer"
+      filterable: true
+      description: "Sub-sample number"
+    
+    - name: "Fod_Sub_Region"
+      type: "integer"
+      filterable: true
+      description: "FOD Sub-region code"
+    
+    - name: "FSU"
+      type: "integer"
+      filterable: true
+      description: "First Stage Unit number"
+    
+    - name: "Sample_Sg_Sb_No"
+      type: "integer"
+      filterable: true
+      description: "Sample segment/sub-block number"
+    
+    - name: "Second_Stage_Stratum_No"
+      type: "integer"
+      filterable: true
+      description: "Second stage stratum number"
+    
+    - name: "Sample_Household_Number"
+      type: "string"
+      filterable: true
+      description: "Sample household number"
+    
+    - name: "Month_of_Survey"
+      type: "integer"
+      filterable: true
+      description: "Month when survey was conducted (1-12)"
+    
+    - name: "Response_Code"
+      type: "integer"
+      filterable: true
+      description: "Response code for the survey"
+    
+    - name: "Survey_Code"
+      type: "integer"
+      filterable: true
+      description: "Survey code identifier"
+    
+    - name: "Reason_for_Substitution"
+      type: "string"
+      filterable: true
+      description: "Reason for household substitution if applicable"
+    
+    - name: "Household_Size"
+      type: "integer"
+      filterable: true
+      description: "Number of members in the household"
+    
+    - name: "Household_Type"
+      type: "integer"
+      filterable: true
+      description: "Type of household (1: Self-employed, 2: Regular wage/salary, 3: Casual labour, 4: Others)"
+    
+    - name: "Religion"
+      type: "integer"
+      filterable: true
+      description: "Religion code (1: Hinduism, 2: Islam, 3: Christianity, 4: Sikhism, 5: Jainism, 6: Buddhism, 7: Zoroastrianism, 9: Others)"
+    
+    - name: "Social_Group"
+      type: "integer"
+      filterable: true
+      description: "Social group (1: ST, 2: SC, 3: OBC, 9: Others)"
+    
+    - name: "Usual_Expenditure"
+      type: "float"
+      description: "Usual monthly expenditure of the household"
+    
+    - name: "Imputed_Homegrown_Consumption"
+      type: "float"
+      description: "Imputed value of home-grown consumption"
+    
+    - name: "Imputed_Wages_Consumption"
+      type: "float"
+      description: "Imputed value of wages in kind"
+    
+    - name: "Annual_Clothing_Expenditure"
+      type: "float"
+      description: "Annual expenditure on clothing"
+    
+    - name: "Annual_Durables_Expenditure"
+      type: "float"
+      description: "Annual expenditure on durable goods"
+    
+    - name: "Monthly_Consumer_Expenditure"
+      type: "float"
+      description: "Monthly per capita consumer expenditure"
+    
+    - name: "Informant_Serial_No"
+      type: "string"
+      filterable: true
+      description: "Serial number of the informant"
+    
+    - name: "Survey_Date"
+      type: "string"
+      filterable: true
+      description: "Date of survey (DDMMYYYY format)"
+    
+    - name: "Total_Time_Taken"
+      type: "integer"
+      description: "Total time taken for survey in minutes"
+    
+    - name: "NSS_Sector_Stratum_Substr_Subsam"
+      type: "integer"
+      filterable: true
+      description: "Combined NSS sector, stratum, sub-stratum, sub-sample code"
+    
+    - name: "NSC_Sector_Stratum_Substr"
+      type: "integer"
+      filterable: true
+      description: "Combined NSC sector, stratum, sub-stratum code"
+    
+    - name: "Subsample_Multiplier"
+      type: "float"
+      description: "Multiplier for sub-sample weighting"
+    
+    - name: "Contrib_Sample_Count"
+      type: "integer"
+      description: "Contributing sample count"
+  
+  relationships:
+    - type: "hierarchical"
+      description: "State -> District -> NSS Region"
+    - type: "temporal"
+      description: "Quarter -> Month -> Survey Date"
+  
+  indexes:
+    - columns: ["State_Ut_Code", "District_Code"]
+      name: "idx_location"
+    - columns: ["Quarter", "Month_of_Survey"]
+      name: "idx_time"
+    - columns: ["Sector"]
+      name: "idx_sector"
+    - columns: ["Social_Group"]
+      name: "idx_social_group"
+  
+  access:
+    public_preview_rows: 100
+    requires_authentication: true
+    pricing_tier: "premium"

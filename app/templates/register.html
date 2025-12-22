@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - MoSPI Data Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: 24px;
+        }
+        .register-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .register-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(to right, #FF6B00, #fff, #138808);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+        .emblem {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            padding: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .emblem img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .logo h1 {
+            color: #1a237e;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .logo p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        .back-home {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .back-home a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-home a:hover {
+            text-decoration: underline;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1a237e;
+        }
+        .form-group small {
+            display: block;
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.85em;
+        }
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-register:hover {
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(26, 35, 126, 0.4);
+        }
+        .btn-register:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .login-link a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a237e;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .role-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .role-info h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .role-info ul {
+            margin-left: 20px;
+            color: #666;
+        }
+        .role-info li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="gov-bar"></div>
+    
+    <div class="register-container">
+        <div class="back-home">
+            <a href="/">← Back to Home</a>
+        </div>
+        
+        <div class="logo">
+            <div class="emblem">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                     alt="Government of India Emblem">
+            </div>
+            <h1>Create Account</h1>
+            <p>Ministry of Statistics & Programme Implementation</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="fullName" required placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                <small>Use your institutional or personal email</small>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required minlength="3" placeholder="Choose a username">
+                <small>Minimum 3 characters, alphanumeric only</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="6">
+                <small>Minimum 6 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Account Type</label>
+                <select id="role" name="role" required>
+                    <option value="public">Public User (Free - 10 credits)</option>
+                    <option value="researcher">Researcher (100 credits)</option>
+                </select>
+            </div>
+
+            <div class="role-info">
+                <h4>Account Types:</h4>
+                <ul>
+                    <li><strong>Public:</strong> Basic access, 10 free credits, query up to 100 records</li>
+                    <li><strong>Researcher:</strong> Advanced access, 100 credits, query up to 10,000 records</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="btn-register" id="registerBtn">Create Account</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Creating your account...</p>
+            </div>
+        </form>
+
+        <div class="login-link">
+            <p>Already have an account? <a href="/login">Login here</a></p>
+        </div>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const registerBtn = document.getElementById('registerBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const fullName = document.getElementById('fullName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('role').value;
+
+            // Validation
+            if (password !== confirmPassword) {
+                showError('Passwords do not match!');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long');
+                return;
+            }
+
+            if (username.length < 3) {
+                showError('Username must be at least 3 characters long');
+                return;
+            }
+
+            // Show loading
+            registerBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        username: username,
+                        password: password,
+                        full_name: fullName,
+                        role: role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('Account created successfully! Redirecting to login...');
+                    
+                    // Redirect to login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    showError(data.detail || 'Registration failed. Please try again.');
+                    registerBtn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                registerBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // Real-time password match validation
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                this.style.borderColor = '#c33';
+            } else {
+                this.style.borderColor = '#e0e0e0';
+            }
+        });
+    </script>
+</body>
+</html>

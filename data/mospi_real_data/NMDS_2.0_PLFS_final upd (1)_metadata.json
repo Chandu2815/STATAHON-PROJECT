@@ -1,0 +1,239 @@
+{
+  "filename": "NMDS_2.0_PLFS_final upd (1).docx",
+  "paragraphs": [],
+  "paragraph_count": 0,
+  "tables": [
+    [
+      [
+        "Item No",
+        "Concept name",
+        "Details"
+      ],
+      [
+        "1",
+        "Contact",
+        "Contact"
+      ],
+      [
+        "1.1",
+        "Contact Organization* ",
+        "Ministry of Statistics and Programme Implementation (MoSPI)"
+      ],
+      [
+        "1.2",
+        "Compiling agency*",
+        "Household Survey Division, NSO, MoSPI"
+      ],
+      [
+        "1.3",
+        "Contact Details*",
+        "Ms. Noushida N A, Director (SCD)/Email: noushida.na@gov.in/ Phone no: 011-22388203\nOffice Address: Sankhyiki Bhawan, Maharshi Valmiki Marg,CBD Shahdara, Delhi-110032"
+      ],
+      [
+        "2",
+        "Statistical Presentation and description",
+        "Statistical Presentation and description"
+      ],
+      [
+        "2.1",
+        "Data description*",
+        "Unit level data of Periodic Labour Force Survey (PLFS).\n\nPeriodic Labour Force Survey (PLFS) is the primary source of data on employment and unemployment situation of the country for estimating various labour market indicators like Labour Force Participation Rate (LFPR), Worker Population Ratio (WPR) and Unemployment Rate (UR), etc."
+      ],
+      [
+        "2.2",
+        "System of Classification*",
+        "Levels of disaggregation at which different employment and unemployment indicators are presented includes:\n\u2022State\n\u2022Sector (rural, urban)\n\u2022Gender\n\u2022Age group\n\u2022Level of education"
+      ],
+      [
+        "2.3",
+        "International/ National Standards Classification/Codes, if followed*",
+        "Classifications used\n\nIndustry: National Industrial Classification (NIC) -2008. NIC-2008 is comparable with International Standard Industrial Classification of All Economic Activities (ISIC) (Revision 4) till 4-digit classes in totality.\n\nOccupation: national Classification of Occupation (NCO)-2015. NCO-2015 is aligned with International Standard Classification of Occupation (ISCO) 2008."
+      ],
+      [
+        "2.4",
+        "Sector coverage*",
+        "The following industry sections as per National Industrial Classification (NIC-2008) are covered in PLFS:\nSection A: Agriculture, forestry and fishing\nSection B: Mining and quarryingSection \nC: Manufacturing\nSection D: Electricity, gas, steam and air conditioning supply\nSection E: Water supply; sewerage, waste management and remediation activities\nSection F: Construction\nSection G: Wholesale and retail trade; repair of motor vehicles and motorcycles\nSection H: Transportation and storage,\nSection I: Accommodation and Food service activities\nSection J: Information and communication\nSection K: Financial and insurance activities,\nSection L: Real estate activities\nSection M: Professional, scientific and technical activities\nSection N: Administrative and support service activities\nSection O: Public administration and defence; compulsory social security\nSection P: Education\nSection Q: Human health and social work activities\nSection R: Arts, entertainment and recreation\nSection S: Other service activities\nSection T: Activities of households as employers\nSection U: Activities of extraterritorial organizations and bodies"
+      ],
+      [
+        "2.5",
+        "Concepts and definitions*",
+        "Detailed concepts and definitions are brought out in the Annual Report of PLFS. Moreover, the Instruction Manual for Field Staff containing all the concepts, definitions and frameworks involved is also released along with the unit level data. Link for accessing the Annual Report and Instruction manual for Field Staff are given below:\nhttps://microdata.gov.in/NADA/index.php/catalog/213/related-materials \nhttps://www.mospi.gov.in/download-reports?main_cat=ODU5&cat=All&sub_category=All  \nExpression for the key employment unemployment indicators released in PLFS are given below\n\n1. Labour Force Participation Rate (LFPR): \n2. Worker Population Ratio (WPR):  \n\n3. Unemployment Rate (UR):  \n"
+      ],
+      [
+        "2.6",
+        "Unit of compilation",
+        "In PLFS information is collected from the members of the surveyed household. Apart from person level information some household level information is also collected in PLFS. "
+      ],
+      [
+        "2.7",
+        "Population coverage",
+        "PLFS covers the whole of the Indian Union except the villages in Andaman and Nicobar Islands which are difficult to access throughout the year. Population coverage.\n\nThe coverage of population in the survey are determined with the following guidelines:1. Under-trial prisoners in jails and indoor patients of hospitals, nursing homes etc., are to be excluded, but residential staff therein will be listed while listing is done in such institutions. The persons of the first category will be considered as normal members of their parent households and will be counted there. Convicted prisoners undergoing sentence will be outside the coverage of the survey.2. Floating population, i.e., persons without any normal residence will not be listed. But households residing in open space, roadside shelter, under a bridge, etc., more or less regularly in the same place, will be listed.3. Foreign nationals will not be listed, nor their domestic servants, if by definition the latter belong to the foreign national's household. If, however, a foreign national becomes an Indian citizen for all practical purposes, he or she will be covered. 4. Persons residing in barracks of military and paramilitary forces (like police, BSF, etc.) will be kept outside the survey coverage due to difficulty in conduct of survey therein. However, civilian population residing in their neighborhood, including the family quarters of service personnel, are to be covered. Permission for this may have to be obtained from appropriate authorities.5. Orphanages, rescue homes, ashrams and vagrant houses are outside the survey coverage. However, persons staying in old age homes, students staying in ashrams/ hostels and the residential staff (other than monks/ nuns) of these ashrams may be listed. For orphanages, although orphans are not to be listed, the persons looking after them and staying there may be considered for listing. "
+      ],
+      [
+        "2.8",
+        "Reference Period*",
+        "Two types of reference period are used in PLFS for determining activity status of a household member:\n\u2022For determining the Usual Activity Status (ps+ss), the reference period is last 365 days from the date of survey.\n\u2022For determining the Current Weekly Status (CWS), the reference period is last 7 days from the date of survey."
+      ],
+      [
+        "2.9",
+        "Duration and period of enumeration*",
+        "Since its launch in 2017 to December 2024, the samples in PLFS were canvassed on a quarterly basis. For the quarterly bulletins of PLFS the samples surveyed during the concerned quarter was considered. \n\nFor Annual report the survey covering period July of any year to June of the following year, the quarterly samples covered during the quarter July-September, October - December, January - March and April - June falling within the July-June survey period were considered. \n\nSimilarly for calendar year results the quarters January - March, April - June, July-September and October - December of a specific calendar year are considered.\n\nThe sample design of PLFS has been revamped from January 2025. In the revamped sample design, the data is collected on a monthly basis. \n\nThe monthly results from PLFS are brought out based on information collected during a specific month. \n\nThe quarterly and calendar year wise estimates would be brought out by considering the information collected during the corresponding months falling within the quarter and calendar year."
+      ],
+      [
+        "2.10",
+        "Sample size or dataset size*",
+        "Upto December 2024, PLFS sample size was around 1,02,400 households from 12,800 First Stage Units (FSUs: census 2011 villages in rural areas and UFS blocks in urban areas)\n\nFrom January 2025, the PLFS sample size is 2,72,304 households from 22,692 FSUs (census 2011 villages in rural areas and UFS blocks in urban areas)."
+      ],
+      [
+        "2.11",
+        "Data Confidentiality",
+        "As per dissemination policy of the Government, no personal identification particulars or confidential information is disseminated."
+      ],
+      [
+        "3",
+        "Institutional Mandate",
+        "Institutional Mandate"
+      ],
+      [
+        "3.1",
+        "Legal acts and other agreements*",
+        "Data in PLFS is not collected under any statutory Act."
+      ],
+      [
+        "3.2",
+        "Data sharing or Data Dissemination",
+        "As per the data dissemination policy of the Ministry, same may be seen at link: http://microdata.gov.in/nada43/index.php/dissemination "
+      ],
+      [
+        "3.3",
+        "Release calendar*",
+        "PLFS reports and unit level data is released as per Advance Release Calendar (ARC) of MoSPI available in the MoSPI website.\n\nLink for accessing advance release calendar is \nhttps://www.mospi.gov.in/release-calendar "
+      ],
+      [
+        "3.4",
+        "Frequency of dissemination*",
+        "Since its launch in 2017 to December 2024, on the basis of PLFS the following Reports/Bulletins were released\n(i)Annual Report \n(ii)Quarterly Bulletin for urban areas corresponding to each quarter of the year.\nThe sample design of PLFS has been revamped from January 2025. In the revamped PLFS with changes the following frequency of dissemination of results are planned \nMonthly\nQuarterly; and\nAnnual for calendar year\n"
+      ],
+      [
+        "3.5",
+        "Data access*",
+        "Freely available on the website of Ministry of Statistics & Programme Implementation.\nLink: mospi.gov.in"
+      ],
+      [
+        "4",
+        "Quality Management",
+        "Quality Management"
+      ],
+      [
+        "4.1",
+        "Documentation on methodology*",
+        "Concepts, definitions and methodologies adopted for PLFS are available in the published Reports.\n\nThe latest Annual Report of the PLFS Annual Report 2023-24 can be accessed at the following link:\nhttps://www.mospi.gov.in/sites/default/files/publication_reports/AnnualReport_PLFS2023-24L2.pdf   "
+      ],
+      [
+        "4.2",
+        "Quality documentation",
+        "To ensure quality, monitoring is ensured at each step the of survey including field inspection, scrutiny, various stages of validation, checking for consistency of the tables, etc."
+      ],
+      [
+        "4.3",
+        "Quality assurance",
+        "Data collection is done using CAPI with in-built validation; checking for completeness of data and data quality during the survey is done on regular basis; rigorous checking followed in data; Therefore, all the results are subjected to rigorous monitoring of the survey work and intensive checking/validation of data and tables at each stage of processing.\n\n\n\n\n\n\n\n\n\n"
+      ],
+      [
+        "5",
+        "Accuracy and Reliability",
+        "Accuracy and Reliability"
+      ],
+      [
+        "5.1",
+        "Sampling error",
+        "The Relative Standard Error (RSE) of the key employment and unemployment indicators are presented in the published results of PLFS."
+      ],
+      [
+        "5.2",
+        "Measures of reliability",
+        "Relative Standard Error (RSE) of estimates Labour Force Participation Rate (LFPR), Worker Population ratio (WPR) and Unemployment Rate (UR) at all-India and State level and industrial distribution of employed persons are brought out."
+      ],
+      [
+        "6",
+        "Timeliness",
+        "\u00a0"
+      ],
+      [
+        "6.1",
+        "Timeliness*",
+        "All the PLFS publications are released as per the timeline earmarked in the Annual Release calendar of MoSPI. \n\nLinks for accessing advance release calender:\nhttps://www.mospi.gov.in/release-calendar "
+      ],
+      [
+        "7",
+        "Coherence and Comparability",
+        "Coherence and Comparability"
+      ],
+      [
+        "7.1",
+        "Comparability \u2013 over time*",
+        "Results are comparable over time."
+      ],
+      [
+        "7.2",
+        "Coherence ",
+        "Coverage of economic activities used in PLFS to determine the activity status of the household members broadly matches with the production boundary of System of National Accounts (SNA 2008) followed."
+      ],
+      [
+        "8",
+        "Data Processing",
+        "Data Processing"
+      ],
+      [
+        "8.1",
+        "Source data type*",
+        "Survey data."
+      ],
+      [
+        "8.2",
+        "Frequency of data collection",
+        "PLFS is a continuous survey.\nSince the launch of PLFS in 2017 to December, 2024 PLFS data was collected on a quarterly basis. \n\nThe sample design of PLFS has been revamped from January 2025. In the revamped sample design, the data is collected on a monthly basis."
+      ],
+      [
+        "8.3",
+        "Data collection method",
+        "Data is collected through personal interviewing method through CAPI with in-built validation."
+      ],
+      [
+        "8.4",
+        "Data validation*",
+        "Collected data is validated through a set of scrutiny programmes and other consistency checks."
+      ],
+      [
+        "8.5",
+        "Data compilation",
+        "Data compilation is done through a dedicated team of HSD. Design based weights are derived as per the sampling design to calculate the estimates in rates/ratios.\n"
+      ],
+      [
+        "8.6",
+        "Data identifier(s)* ",
+        "Both Household level and person level data are identified for the purpose of analysis through a masked identifiers method which ensures the confidentiality of the surveyed individuals and households in accordance with the fundamental principles of official statistics."
+      ],
+      [
+        "9",
+        "Metadata Update",
+        "Metadata Update"
+      ],
+      [
+        "9.1",
+        "Metadata last posted",
+        "To be filled based on the actual date of posting the metadata on MoSPI website"
+      ],
+      [
+        "9.2",
+        "Metadata last update",
+        "To be filled based on the actual date when the updates made in the metadata are approved by the competent authority."
+      ]
+    ]
+  ],
+  "table_count": 1,
+  "metadata": {
+    "has_tables": true,
+    "total_paragraphs": 0
+  }
+}
