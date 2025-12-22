@@ -117,6 +117,38 @@
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(26,35,126,0.3);
         }
+        
+        /* Upgrade to Premium Button */
+        .btn-upgrade {
+            background: linear-gradient(135deg, #FF6B00 0%, #ff8533 100%);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+            box-shadow: 0 2px 8px rgba(255,107,0,0.3);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-upgrade:hover {
+            background: linear-gradient(135deg, #e65c00 0%, #ff6b00 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255,107,0,0.4);
+        }
+        .btn-upgrade.hidden {
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(255,107,0,0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 4px 20px rgba(255,107,0,0.6); }
+        }
+        
         .container {
             max-width: 1400px;
             margin: 30px auto;
@@ -446,6 +478,7 @@
                     <div id="userName">Loading...</div>
                     <div class="user-role" id="userRole">Loading...</div>
                 </div>
+                <a href="/upgrade" class="btn-upgrade hidden" id="upgradeBtn">⭐ Upgrade to Premium</a>
                 <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -489,8 +522,8 @@
                         <label for="dataset">Dataset</label>
                         <select id="dataset" required>
                             <option value="">Select Dataset</option>
-                            <option value="4">Household Survey (PLFS)</option>
-                            <option value="5">Person Survey (PLFS)</option>
+                            <option value="1">Household Survey (PLFS)</option>
+                            <option value="2">Person Survey (PLFS)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -648,6 +681,18 @@
             
             document.getElementById('userName').textContent = username || 'User';
             document.getElementById('userRole').textContent = role || 'public';
+            
+            // Show/hide upgrade button based on role and update text
+            const upgradeBtn = document.getElementById('upgradeBtn');
+            if (role === 'public') {
+                upgradeBtn.classList.remove('hidden');
+                upgradeBtn.textContent = '🔬 Upgrade to Researcher';
+            } else if (role === 'researcher') {
+                upgradeBtn.classList.remove('hidden');
+                upgradeBtn.textContent = '💎 Upgrade to Premium';
+            } else {
+                upgradeBtn.classList.add('hidden');
+            }
 
             // Fetch credits
             try {
@@ -658,8 +703,15 @@
                 });
                 if (response.ok) {
                     const userData = await response.json();
-                    const creditsDisplay = userData.credits >= 999999 ? 'Unlimited' : userData.credits.toFixed(2);
+                    const creditsDisplay = userData.credits >= 999999 ? 'Unlimited' : userData.credits.toFixed(1);
                     document.getElementById('userCredits').textContent = creditsDisplay;
+                    
+                    // Show low credits warning
+                    const creditLimits = { 'public': 10, 'researcher': 100, 'premium': 999999 };
+                    const limit = creditLimits[role] || 10;
+                    if (userData.credits <= 2 && role !== 'premium') {
+                        upgradeBtn.style.animation = 'pulse 1s infinite';
+                    }
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);

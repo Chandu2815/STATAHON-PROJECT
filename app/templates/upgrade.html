@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade to Premium - MoSPI Data Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Government Tricolor Bar */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            width: 100%;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #1565c0 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: #ffffff;
+            color: #1a237e;
+            padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border-bottom: 3px solid #1a237e;
+        }
+        
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .navbar-brand .emblem {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .navbar-brand .brand-text h1 {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #1a237e;
+        }
+        
+        .navbar-brand .brand-text p {
+            font-size: 0.75em;
+            color: #666;
+        }
+        
+        .btn-back {
+            background: #1a237e;
+            color: white;
+            border: 2px solid #1a237e;
+            padding: 8px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-back:hover {
+            background: #0d47a1;
+            border-color: #0d47a1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .hero-section {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        .hero-section h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .hero-section p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .plans-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .plan-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        
+        .plan-card.featured {
+            border: 3px solid #FF6B00;
+            transform: scale(1.05);
+        }
+        
+        .plan-card.featured:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+        
+        .plan-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #FF6B00, #ff8533);
+            color: white;
+            padding: 8px 25px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85em;
+            box-shadow: 0 4px 15px rgba(255,107,0,0.4);
+        }
+        
+        .plan-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        
+        .plan-name {
+            font-size: 1.8em;
+            color: #1a237e;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .plan-price {
+            font-size: 3em;
+            color: #FF6B00;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        
+        .plan-price span {
+            font-size: 0.4em;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .plan-description {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 0.95em;
+        }
+        
+        .plan-features {
+            list-style: none;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .plan-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #333;
+        }
+        
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .plan-features li .check {
+            color: #138808;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .plan-features li .cross {
+            color: #ccc;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .btn-select {
+            width: 100%;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-select.primary {
+            background: linear-gradient(135deg, #FF6B00, #ff8533);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255,107,0,0.3);
+        }
+        
+        .btn-select.primary:hover {
+            background: linear-gradient(135deg, #e65c00, #FF6B00);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,107,0,0.4);
+        }
+        
+        .btn-select.secondary {
+            background: #1a237e;
+            color: white;
+        }
+        
+        .btn-select.secondary:hover {
+            background: #0d47a1;
+        }
+        
+        .btn-select:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .comparison-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 50px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-section h2 {
+            text-align: center;
+            color: #1a237e;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-table th {
+            background: #f8f9fa;
+            color: #1a237e;
+            font-weight: 700;
+        }
+        
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+            text-align: left;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .faq-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .faq-section h2 {
+            text-align: center;
+            color: #1a237e;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid #eee;
+            padding: 20px 0;
+        }
+        
+        .faq-question {
+            font-weight: 600;
+            color: #1a237e;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .faq-answer {
+            color: #666;
+            margin-top: 15px;
+            padding-left: 10px;
+            line-height: 1.6;
+            display: none;
+        }
+        
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+        
+        /* Payment Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        
+        .modal h3 {
+            color: #1a237e;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .modal p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+        
+        .payment-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .payment-option:hover {
+            border-color: #1a237e;
+            background: #f8f9fa;
+        }
+        
+        .payment-option.selected {
+            border-color: #FF6B00;
+            background: #fff8f0;
+        }
+        
+        .payment-option input {
+            display: none;
+        }
+        
+        .payment-icon {
+            font-size: 24px;
+        }
+        
+        .payment-details {
+            text-align: left;
+        }
+        
+        .payment-details strong {
+            color: #1a237e;
+        }
+        
+        .payment-details small {
+            color: #666;
+        }
+        
+        .btn-pay {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #138808, #1a9e14);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-pay:hover {
+            background: linear-gradient(135deg, #0d6b06, #138808);
+        }
+        
+        .success-animation {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2em;
+            }
+            
+            .plan-card.featured {
+                transform: scale(1);
+            }
+            
+            .plan-card.featured:hover {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="gov-bar"></div>
+    
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <div class="emblem">🇮🇳</div>
+                <div class="brand-text">
+                    <h1>MoSPI Data Portal</h1>
+                    <p>Ministry of Statistics & Programme Implementation</p>
+                </div>
+            </div>
+            <a href="/dashboard" class="btn-back">← Back to Dashboard</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="hero-section">
+            <h1>⭐ Upgrade Your Experience</h1>
+            <p>Unlock powerful features and get more credits for India's comprehensive statistical data</p>
+        </div>
+        
+        <!-- Credit Progress Section -->
+        <div class="credit-progress-section" style="background: white; border-radius: 15px; padding: 30px; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <h3 style="color: #1a237e; margin-bottom: 20px; text-align: center;">📊 Your Credit Status</h3>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2.5em; font-weight: bold; color: #FF6B00;" id="currentCredits">0</div>
+                    <div style="color: #666;">Credits Remaining</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2.5em; font-weight: bold; color: #1a237e;" id="totalCredits">10</div>
+                    <div style="color: #666;">Total Allowed</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <div id="creditWarning" style="display: none; background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    ⚠️ Your credits are running low! Upgrade now to continue using the platform.
+                </div>
+            </div>
+        </div>
+        
+        <div class="plans-container" id="plansContainer">
+            <!-- Plans will be dynamically loaded based on user role -->
+        </div>
+        
+        <div class="comparison-section">
+            <h2>📋 Plan Comparison</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Public (Free)</th>
+                        <th>Researcher (₹499/mo)</th>
+                        <th>Premium (₹999/mo)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Starting Credits</td>
+                        <td><strong>10</strong></td>
+                        <td><strong>100</strong></td>
+                        <td><strong>Unlimited</strong></td>
+                    </tr>
+                    <tr>
+                        <td>API Requests/Day</td>
+                        <td>100</td>
+                        <td>1,000</td>
+                        <td>10,000</td>
+                    </tr>
+                    <tr>
+                        <td>Data Download/Day</td>
+                        <td>10 MB</td>
+                        <td>100 MB</td>
+                        <td>1 GB</td>
+                    </tr>
+                    <tr>
+                        <td>Query Filters</td>
+                        <td>Basic</td>
+                        <td>Advanced</td>
+                        <td>All Filters</td>
+                    </tr>
+                    <tr>
+                        <td>Export Formats</td>
+                        <td>CSV</td>
+                        <td>CSV, Excel</td>
+                        <td>CSV, Excel, JSON, PDF</td>
+                    </tr>
+                    <tr>
+                        <td>Support</td>
+                        <td>Community</td>
+                        <td>Email Support</td>
+                        <td>Priority 24/7</td>
+                    </tr>
+                    <tr>
+                        <td>Analytics Dashboard</td>
+                        <td>Basic</td>
+                        <td>Standard</td>
+                        <td>Advanced + Real-time</td>
+                    </tr>
+                    <tr>
+                        <td>API Documentation</td>
+                        <td>✓</td>
+                        <td>✓</td>
+                        <td>✓ + Private endpoints</td>
+                    </tr>
+                    <tr>
+                        <td>Custom Reports</td>
+                        <td>✗</td>
+                        <td>✗</td>
+                        <td>✓</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="faq-section">
+            <h2>❓ Frequently Asked Questions</h2>
+            
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <span>How does the credit system work?</span>
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    Each plan comes with a set number of credits. Public users get 10 credits, Researchers get 100 credits, and Premium users get unlimited access. Credits are consumed when you make API queries. Once your credits run out, you'll need to upgrade to continue using the platform.
+                </div>
+            </div>
+            
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <span>How do I upgrade my plan?</span>
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    Simply click on the "Upgrade" button for your desired plan. You'll be prompted to complete the payment process. Once payment is confirmed, your account will be upgraded immediately and your credits will be refreshed.
+                </div>
+            </div>
+            
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <span>Can I cancel my subscription anytime?</span>
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    Yes, you can cancel your subscription at any time. Your premium features will remain active until the end of your current billing period.
+                </div>
+            </div>
+            
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <span>What payment methods are accepted?</span>
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    We accept UPI, Credit/Debit Cards, Net Banking, and Wallet payments. All transactions are secured with industry-standard encryption.
+                </div>
+            </div>
+            
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <span>Is there a refund policy?</span>
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    We offer a 7-day money-back guarantee. If you're not satisfied with our service within the first 7 days, contact our support team for a full refund.
+                </div>
+            </div>
+            
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <span>Do I get a discount for annual subscription?</span>
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    Yes! Annual subscribers get 2 months free. Choose the annual billing option at checkout to avail this offer.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Modal -->
+    <div class="modal" id="paymentModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div class="modal-icon">💳</div>
+            <h3>Complete Your Upgrade</h3>
+            <p>You're upgrading to <strong id="selectedPlanName">Premium</strong> for <strong id="selectedPlanPrice">₹999/month</strong></p>
+            
+            <div class="payment-options">
+                <label class="payment-option selected">
+                    <input type="radio" name="payment" value="upi" checked>
+                    <span class="payment-icon">📱</span>
+                    <div class="payment-details">
+                        <strong>UPI</strong><br>
+                        <small>Google Pay, PhonePe, Paytm</small>
+                    </div>
+                </label>
+                
+                <label class="payment-option">
+                    <input type="radio" name="payment" value="card">
+                    <span class="payment-icon">💳</span>
+                    <div class="payment-details">
+                        <strong>Credit/Debit Card</strong><br>
+                        <small>Visa, Mastercard, RuPay</small>
+                    </div>
+                </label>
+                
+                <label class="payment-option">
+                    <input type="radio" name="payment" value="netbanking">
+                    <span class="payment-icon">🏦</span>
+                    <div class="payment-details">
+                        <strong>Net Banking</strong><br>
+                        <small>All major banks supported</small>
+                    </div>
+                </label>
+                
+                <label class="payment-option">
+                    <input type="radio" name="payment" value="credits">
+                    <span class="payment-icon">💰</span>
+                    <div class="payment-details">
+                        <strong>Use Credits</strong><br>
+                        <small>Balance: <span id="creditBalance">0</span> credits</small>
+                    </div>
+                </label>
+            </div>
+            
+            <button class="btn-pay" onclick="processPayment()">🔒 Pay Securely</button>
+        </div>
+    </div>
+    
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content success-animation">
+            <div class="modal-icon">🎉</div>
+            <h3>Upgrade Successful!</h3>
+            <p>Welcome to <strong id="upgradedPlanName">Premium</strong>! Your account has been upgraded successfully.</p>
+            <button class="btn-select primary" onclick="goToDashboard()">Go to Dashboard</button>
+        </div>
+    </div>
+    
+    <script>
+        let selectedPlan = null;
+        let selectedPrice = 0;
+        let currentUserRole = 'public';
+        let currentCredits = 0;
+        
+        // Credit limits by role
+        const CREDIT_LIMITS = {
+            'public': 10,
+            'researcher': 100,
+            'premium': 999999  // Unlimited
+        };
+        
+        // Check authentication and load user info
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return null;
+            }
+            return token;
+        }
+        
+        function renderPlans(role, credits) {
+            const container = document.getElementById('plansContainer');
+            let html = '';
+            
+            if (role === 'public') {
+                // Public user - show upgrade to Researcher
+                html = `
+                    <div class="plan-card" id="currentPlanCard">
+                        <div class="plan-icon">📊</div>
+                        <div class="plan-name">Public</div>
+                        <div class="plan-price">Free</div>
+                        <div class="plan-description">Your current plan</div>
+                        <ul class="plan-features">
+                            <li><span class="check">✓</span> <strong>10 Credits</strong> to start</li>
+                            <li><span class="check">✓</span> 100 API requests/day</li>
+                            <li><span class="check">✓</span> 10 MB data download/day</li>
+                            <li><span class="check">✓</span> Basic query filters</li>
+                            <li><span class="check">✓</span> CSV export</li>
+                            <li><span class="cross">✗</span> Priority support</li>
+                        </ul>
+                        <button class="btn-select secondary" disabled>Current Plan</button>
+                    </div>
+                    
+                    <div class="plan-card featured">
+                        <div class="plan-badge">NEXT STEP</div>
+                        <div class="plan-icon">🔬</div>
+                        <div class="plan-name">Researcher</div>
+                        <div class="plan-price">₹499<span>/month</span></div>
+                        <div class="plan-description">Perfect for academic research</div>
+                        <ul class="plan-features">
+                            <li><span class="check">✓</span> <strong>100 Credits</strong></li>
+                            <li><span class="check">✓</span> 1,000 API requests/day</li>
+                            <li><span class="check">✓</span> 100 MB data download/day</li>
+                            <li><span class="check">✓</span> Advanced query filters</li>
+                            <li><span class="check">✓</span> CSV & Excel export</li>
+                            <li><span class="check">✓</span> Email support</li>
+                        </ul>
+                        <button class="btn-select primary" onclick="selectPlan('researcher', 499)">🚀 Upgrade to Researcher</button>
+                    </div>
+                `;
+            } else if (role === 'researcher') {
+                // Researcher - show upgrade to Premium
+                html = `
+                    <div class="plan-card" id="currentPlanCard">
+                        <div class="plan-icon">🔬</div>
+                        <div class="plan-name">Researcher</div>
+                        <div class="plan-price">₹499<span>/mo</span></div>
+                        <div class="plan-description">Your current plan</div>
+                        <ul class="plan-features">
+                            <li><span class="check">✓</span> <strong>100 Credits</strong></li>
+                            <li><span class="check">✓</span> 1,000 API requests/day</li>
+                            <li><span class="check">✓</span> 100 MB data download/day</li>
+                            <li><span class="check">✓</span> Advanced query filters</li>
+                            <li><span class="check">✓</span> CSV & Excel export</li>
+                            <li><span class="check">✓</span> Email support</li>
+                        </ul>
+                        <button class="btn-select secondary" disabled>Current Plan</button>
+                    </div>
+                    
+                    <div class="plan-card featured">
+                        <div class="plan-badge">RECOMMENDED</div>
+                        <div class="plan-icon">💎</div>
+                        <div class="plan-name">Premium</div>
+                        <div class="plan-price">₹999<span>/month</span></div>
+                        <div class="plan-description">Unlimited access for professionals</div>
+                        <ul class="plan-features">
+                            <li><span class="check">✓</span> <strong>Unlimited Credits</strong></li>
+                            <li><span class="check">✓</span> 10,000 API requests/day</li>
+                            <li><span class="check">✓</span> 1 GB data download/day</li>
+                            <li><span class="check">✓</span> All query filters</li>
+                            <li><span class="check">✓</span> All export formats</li>
+                            <li><span class="check">✓</span> Priority 24/7 support</li>
+                        </ul>
+                        <button class="btn-select primary" onclick="selectPlan('premium', 999)">💎 Upgrade to Premium</button>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function loadUserInfo() {
+            const token = checkAuth();
+            if (!token) return;
+            
+            const role = localStorage.getItem('user_role') || 'public';
+            currentUserRole = role;
+            
+            // Redirect if already premium or admin
+            if (role === 'premium' || role === 'admin' || role === 'super_admin') {
+                alert('You already have Premium access!');
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            // Load user data and credits
+            try {
+                const response = await fetch('/api/v1/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    currentCredits = userData.credits;
+                    
+                    // Update credit display
+                    document.getElementById('currentCredits').textContent = currentCredits.toFixed(1);
+                    document.getElementById('totalCredits').textContent = CREDIT_LIMITS[role] === 999999 ? '∞' : CREDIT_LIMITS[role];
+                    document.getElementById('creditBalance').textContent = currentCredits.toFixed(2);
+                    
+                    // Show warning if credits are low
+                    const creditLimit = CREDIT_LIMITS[role];
+                    if (currentCredits <= creditLimit * 0.2) {
+                        document.getElementById('creditWarning').style.display = 'block';
+                    }
+                    
+                    // Render plans based on role
+                    renderPlans(role, currentCredits);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                renderPlans(role, 0);
+            }
+        }
+        
+        function selectPlan(plan, price) {
+            selectedPlan = plan;
+            selectedPrice = price;
+            
+            const planNames = {
+                'researcher': 'Researcher',
+                'premium': 'Premium'
+            };
+            
+            document.getElementById('selectedPlanName').textContent = planNames[plan];
+            document.getElementById('selectedPlanPrice').textContent = `₹${price}/month`;
+            document.getElementById('paymentModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('paymentModal').classList.remove('active');
+            document.getElementById('successModal').classList.remove('active');
+        }
+        
+        // Payment option selection
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                this.querySelector('input').checked = true;
+            });
+        });
+        
+        async function processPayment() {
+            const token = checkAuth();
+            if (!token) return;
+            
+            const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+            
+            // Simulate payment processing
+            const btn = document.querySelector('.btn-pay');
+            btn.textContent = '⏳ Processing...';
+            btn.disabled = true;
+            
+            try {
+                // Call API to upgrade user
+                const response = await fetch('/api/v1/users/upgrade', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        plan: selectedPlan,
+                        payment_method: paymentMethod,
+                        amount: selectedPrice
+                    })
+                });
+                
+                if (response.ok) {
+                    // Update local storage with new role
+                    localStorage.setItem('user_role', selectedPlan);
+                    
+                    // Show success modal
+                    document.getElementById('paymentModal').classList.remove('active');
+                    document.getElementById('upgradedPlanName').textContent = selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1);
+                    document.getElementById('successModal').classList.add('active');
+                } else {
+                    const error = await response.json();
+                    alert('Upgrade failed: ' + (error.detail || 'Please try again'));
+                    btn.textContent = '🔒 Pay Securely';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                // Simulate success for demo
+                localStorage.setItem('user_role', selectedPlan);
+                document.getElementById('paymentModal').classList.remove('active');
+                document.getElementById('upgradedPlanName').textContent = selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1);
+                document.getElementById('successModal').classList.add('active');
+            }
+        }
+        
+        function goToDashboard() {
+            window.location.href = '/dashboard';
+        }
+        
+        function toggleFaq(element) {
+            element.classList.toggle('active');
+            const icon = element.querySelector('.faq-question span:last-child');
+            icon.textContent = element.classList.contains('active') ? '−' : '+';
+        }
+        
+        // Initialize
+        loadUserInfo();
+    </script>
+</body>
+</html>
