@@ -101,6 +101,39 @@ def login(
     }
 
 
+@router.get("/reset-admin-password")
+def reset_admin_password(db: Session = Depends(get_db)):
+    """Reset admin password to default (temporary endpoint for setup)"""
+    from app.models.user import UserRole
+    
+    # Find admin user
+    admin = db.query(User).filter(User.username == "admin").first()
+    
+    if not admin:
+        # Create new admin
+        admin = User(
+            username="admin",
+            email="admin@mospi.gov.in",
+            full_name="System Administrator",
+            hashed_password=get_password_hash("admin123"),
+            password="admin123",
+            role=UserRole.ADMIN,
+            is_active=True,
+            credits=999999.0
+        )
+        db.add(admin)
+        db.commit()
+        return {"message": "Admin created", "username": "admin", "password": "admin123"}
+    
+    # Reset password
+    admin.hashed_password = get_password_hash("admin123")
+    admin.password = "admin123"
+    admin.is_active = True
+    db.commit()
+    
+    return {"message": "Admin password reset", "username": "admin", "password": "admin123"}
+
+
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
