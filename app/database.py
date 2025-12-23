@@ -47,8 +47,40 @@ def init_db():
     """Initialize database tables"""
     # Import all models to ensure they're registered
     from app.models import dataset, user
+    from app.models.user import User, UserRole
+    import bcrypt
     
     Base.metadata.create_all(bind=engine)
+    
+    # Create default admin if not exists
+    db = SessionLocal()
+    try:
+        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
+        if not admin:
+            admin = db.query(User).filter(User.username == 'admin').first()
+        
+        if not admin:
+            print("Creating default admin user...")
+            password = "admin123"
+            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            
+            admin = User(
+                username="admin",
+                email="admin@mospi.gov.in",
+                full_name="System Administrator",
+                hashed_password=hashed.decode('utf-8'),
+                password=password,  # Store plain password for admin viewing
+                role=UserRole.ADMIN,
+                is_active=True,
+                credits=999999.0
+            )
+            db.add(admin)
+            db.commit()
+            print(f"✅ Default admin created - Username: admin, Password: admin123")
+        else:
+            print(f"✅ Admin user exists: {admin.username}")
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":
