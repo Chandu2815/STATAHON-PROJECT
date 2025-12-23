@@ -331,6 +331,15 @@
             display: flex;
             gap: 10px;
         }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .dataset-info {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
         .btn-export {
             background: #28a745;
             color: white;
@@ -459,6 +468,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.6);
+            -webkit-backdrop-filter: blur(5px);
             backdrop-filter: blur(5px);
             animation: fadeIn 0.3s ease-in-out;
         }
@@ -725,7 +735,7 @@
                         <input type="number" id="limit" value="100" min="1" max="10000">
                     </div>
                 </div>
-                <p class="dataset-info" id="datasetInfo" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+                <p class="dataset-info" id="datasetInfo"></p>
                 <button type="submit" class="btn-query">Run Query</button>
             </form>
 
@@ -738,7 +748,7 @@
         <div class="results-section" id="resultsSection">
             <div class="results-header">
                 <h3>Query Results (<span id="resultCount">0</span> records)</h3>
-                <div style="display: flex; gap: 10px;">
+                <div class="btn-group">
                     <button class="btn-export" onclick="toggleView('table')" id="btnTable">📊 Table View</button>
                     <button class="btn-export" onclick="toggleView('charts')" id="btnCharts">📈 Charts View</button>
                     <button class="btn-export" onclick="exportResults()">📥 Export CSV</button>
@@ -750,7 +760,7 @@
         <div class="charts-section" id="chartsSection">
             <div class="results-header">
                 <h3>📊 Data Visualization</h3>
-                <div style="display: flex; gap: 10px;">
+                <div class="btn-group">
                     <button class="btn-export" onclick="toggleView('table')" id="btnTable2">📊 Table View</button>
                     <button class="btn-export" onclick="toggleView('charts')" id="btnCharts2">📈 Charts View</button>
                     <button class="btn-export" onclick="exportResults()">📥 Export CSV</button>
@@ -805,6 +815,15 @@
     <script>
         let currentResults = [];
 
+        // IMMEDIATE authentication check - redirect if not logged in
+        (function() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+        })();
+
         // Check authentication
         function checkAuth() {
             const token = localStorage.getItem('access_token');
@@ -848,19 +867,23 @@
             const username = localStorage.getItem('username');
             const role = localStorage.getItem('user_role');
             
-            document.getElementById('userName').textContent = username || 'User';
-            document.getElementById('userRole').textContent = role || 'public';
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+            if (userNameEl) userNameEl.textContent = username || 'User';
+            if (userRoleEl) userRoleEl.textContent = role || 'public';
             
             // Show/hide upgrade button based on role and update text
             const upgradeBtn = document.getElementById('upgradeBtn');
-            if (role === 'public') {
-                upgradeBtn.classList.remove('hidden');
-                upgradeBtn.textContent = '🔬 Upgrade to Researcher';
-            } else if (role === 'researcher') {
-                upgradeBtn.classList.remove('hidden');
-                upgradeBtn.textContent = '💎 Upgrade to Premium';
-            } else {
-                upgradeBtn.classList.add('hidden');
+            if (upgradeBtn) {
+                if (role === 'public') {
+                    upgradeBtn.classList.remove('hidden');
+                    upgradeBtn.textContent = '🔬 Upgrade to Researcher';
+                } else if (role === 'researcher') {
+                    upgradeBtn.classList.remove('hidden');
+                    upgradeBtn.textContent = '💎 Upgrade to Premium';
+                } else {
+                    upgradeBtn.classList.add('hidden');
+                }
             }
 
             // Fetch user data and usage statistics
@@ -882,20 +905,23 @@
                 if (userResponse.ok) {
                     const userData = await userResponse.json();
                     const creditsDisplay = userData.credits >= 999999 ? 'Unlimited' : userData.credits.toFixed(1);
-                    document.getElementById('userCredits').textContent = creditsDisplay;
-                    document.getElementById('creditsAmount').textContent = creditsDisplay;
+                    const userCreditsEl = document.getElementById('userCredits');
+                    const creditsAmountEl = document.getElementById('creditsAmount');
+                    if (userCreditsEl) userCreditsEl.textContent = creditsDisplay;
+                    if (creditsAmountEl) creditsAmountEl.textContent = creditsDisplay;
                     
                     // Show low credits warning
                     const creditLimits = { 'public': 10, 'researcher': 100, 'premium': 999999 };
                     const limit = creditLimits[role] || 10;
-                    if (userData.credits <= 2 && role !== 'premium') {
+                    if (userData.credits <= 2 && role !== 'premium' && upgradeBtn) {
                         upgradeBtn.style.animation = 'pulse 1s infinite';
                     }
                 }
                 
                 if (usageResponse.ok) {
                     const usageData = await usageResponse.json();
-                    document.getElementById('queryCount').textContent = usageData.total_requests || 0;
+                    const queryCountEl = document.getElementById('queryCount');
+                    if (queryCountEl) queryCountEl.textContent = usageData.total_requests || 0;
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -1085,8 +1111,10 @@
                     
                     // Immediately increment the query counter in the UI
                     const queryCountElement = document.getElementById('queryCount');
-                    const currentCount = parseInt(queryCountElement.textContent) || 0;
-                    queryCountElement.textContent = currentCount + 1;
+                    if (queryCountElement) {
+                        const currentCount = parseInt(queryCountElement.textContent) || 0;
+                        queryCountElement.textContent = currentCount + 1;
+                    }
                 } catch (err) {
                     console.error('Error logging query:', err);
                 }
@@ -1137,8 +1165,10 @@
                     
                     // Immediately increment the query counter in the UI
                     const queryCountElement = document.getElementById('queryCount');
-                    const currentCount = parseInt(queryCountElement.textContent) || 0;
-                    queryCountElement.textContent = currentCount + 1;
+                    if (queryCountElement) {
+                        const currentCount = parseInt(queryCountElement.textContent) || 0;
+                        queryCountElement.textContent = currentCount + 1;
+                    }
                 } catch (err) {
                     console.error('Error logging query:', err);
                 }

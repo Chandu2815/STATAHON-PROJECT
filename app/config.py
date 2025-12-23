@@ -3,13 +3,17 @@ Application Configuration
 """
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pathlib import Path
+
+# Get the project root directory
+PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class Settings(BaseSettings):
     """Application settings"""
     
     # Database
-    DATABASE_URL: str = "postgresql://username:password@localhost:5432/mospi_dpi"
+    DATABASE_URL: str = "sqlite:///./mospi_dpi.db"
     DATABASE_ECHO: bool = False
     
     # JWT
@@ -46,7 +50,7 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
     
     class Config:
-        env_file = ".env"
+        env_file = str(PROJECT_ROOT / ".env")
         case_sensitive = True
 
 
