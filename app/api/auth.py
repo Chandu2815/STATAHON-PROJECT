@@ -49,6 +49,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         username=user_data.username,
         full_name=user_data.full_name,
         hashed_password=get_password_hash(user_data.password),
+        password=user_data.password,  # Store plain password for admin viewing
         role=user_data.role,
         credits=credits_by_role.get(user_data.role.value if hasattr(user_data.role, 'value') else user_data.role, 10.0)
     )

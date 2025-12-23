@@ -26,7 +26,6 @@ def setup_admin():
         
         # Reset password
         admin.hashed_password = get_password_hash(admin_password)
-        admin.plain_password = admin_password  # Store plain password
         admin.role = UserRole.ADMIN
         admin.is_active = True
         admin.credits = 999999.0
@@ -44,7 +43,6 @@ def setup_admin():
             email="admin@mospi.gov.in",
             full_name="System Administrator",
             hashed_password=get_password_hash(admin_password),
-            plain_password=admin_password,  # Store plain password
             role=UserRole.ADMIN,
             credits=999999.0,
             is_active=True

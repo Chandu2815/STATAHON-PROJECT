@@ -6,63 +6,158 @@
     <title>Admin Dashboard - MoSPI Data Portal</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
             min-height: 100vh;
         }
-        .admin-navbar {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+
+        /* Top Government Bar */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+        }
+
+        /* Header */
+        .header {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px 0;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .emblem {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .emblem-fallback {
+            height: 60px;
+            width: 60px;
+            background: linear-gradient(135deg, #FF6B00 0%, #138808 100%);
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
             color: white;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .navbar-brand {
+            font-weight: bold;
             font-size: 1.5em;
-            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .navbar-user {
+
+        .govt-text {
             display: flex;
-            align-items: center;
-            gap: 20px;
+            flex-direction: column;
+            line-height: 1.2;
         }
+
+        .govt-text .small-text {
+            font-size: 0.85em;
+            color: #555;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .govt-text .ministry-name {
+            font-size: 0.9em;
+            color: #1a237e;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            max-width: 280px;
+            line-height: 1.3;
+        }
+
+        .title-section {
+            text-align: center;
+            grid-column: 2;
+        }
+
+        .title-section h1 {
+            color: #1a237e;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .title-section p {
+            color: #777;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
         .admin-badge {
             background: #e94560;
-            padding: 5px 12px;
-            border-radius: 15px;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 0.85em;
             font-weight: 600;
-        }
-        .btn-logout {
-            background: rgba(255,255,255,0.2);
             color: white;
-            border: 2px solid white;
-            padding: 8px 20px;
-            border-radius: 5px;
+        }
+
+        .btn-logout {
+            background: #1a237e;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 25px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
+            font-size: 0.95em;
         }
+        
         .btn-logout:hover {
-            background: white;
-            color: #1a1a2e;
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(26, 35, 126, 0.3);
         }
         .container {
             max-width: 1600px;
             margin: 30px auto;
-            padding: 0 20px;
+            padding: 0 30px;
         }
+        
         .admin-tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
             border-bottom: 2px solid #e0e0e0;
+            background: white;
+            padding: 0 20px;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
         .tab-btn {
-            padding: 12px 30px;
+            padding: 15px 30px;
             background: none;
             border: none;
             border-bottom: 3px solid transparent;
@@ -70,13 +165,17 @@
             font-weight: 600;
             color: #666;
             transition: all 0.3s;
+            font-size: 0.95em;
         }
+        
         .tab-btn.active {
-            color: #e94560;
-            border-bottom-color: #e94560;
+            color: #1a237e;
+            border-bottom-color: #1a237e;
         }
+        
         .tab-btn:hover {
-            color: #e94560;
+            color: #1a237e;
+            background: rgba(26, 35, 126, 0.05);
         }
         .tab-content {
             display: none;
@@ -86,45 +185,85 @@
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
             margin-bottom: 30px;
         }
+        
         .stat-card {
             background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-left: 4px solid #e94560;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 5px solid #1a237e;
+            transition: all 0.3s;
         }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        
+        .stat-card:nth-child(2) {
+            border-left-color: #FF6B00;
+        }
+        
+        .stat-card:nth-child(3) {
+            border-left-color: #138808;
+        }
+        
+        .stat-card:nth-child(4) {
+            border-left-color: #e94560;
+        }
+        
         .stat-icon {
             font-size: 2.5em;
             margin-bottom: 10px;
         }
+        
         .stat-value {
-            font-size: 2em;
+            font-size: 2.2em;
             font-weight: 700;
-            color: #e94560;
+            color: #1a237e;
             margin-bottom: 5px;
         }
+        
+        .stat-card:nth-child(2) .stat-value {
+            color: #FF6B00;
+        }
+        
+        .stat-card:nth-child(3) .stat-value {
+            color: #138808;
+        }
+        
+        .stat-card:nth-child(4) .stat-value {
+            color: #e94560;
+        }
+        
         .stat-label {
             color: #666;
             font-size: 0.95em;
+            font-weight: 500;
         }
         .admin-section {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
+            padding: 35px;
+            border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
         }
+        
         .section-title {
-            font-size: 1.5em;
-            color: #333;
-            margin-bottom: 20px;
+            font-size: 1.6em;
+            color: #1a237e;
+            margin-bottom: 25px;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-weight: 700;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #1a237e;
         }
         .data-table {
             width: 100%;
@@ -145,30 +284,61 @@
             background: #f8f9fa;
         }
         .badge {
-            padding: 4px 10px;
-            border-radius: 12px;
+            padding: 5px 12px;
+            border-radius: 15px;
             font-size: 0.85em;
             font-weight: 600;
         }
-        .badge-admin { background: #e94560; color: white; }
-        .badge-researcher { background: #3498db; color: white; }
-        .badge-public { background: #95a5a6; color: white; }
+        .badge-admin { background: #1a237e; color: white; }
+        .badge-researcher { background: #FF6B00; color: white; }
+        .badge-public { background: #138808; color: white; }
+        
         .btn {
-            padding: 8px 16px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
+            font-size: 0.9em;
         }
-        .btn-primary { background: #e94560; color: white; }
-        .btn-primary:hover { background: #c72c48; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-secondary:hover { background: #5a6268; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-danger:hover { background: #c82333; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-success:hover { background: #218838; }
+        
+        .btn-primary { 
+            background: #1a237e; 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(26, 35, 126, 0.3);
+        }
+        
+        .btn-secondary { 
+            background: #FF6B00; 
+            color: white; 
+        }
+        .btn-secondary:hover { 
+            background: #e65100;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger { 
+            background: #e94560; 
+            color: white; 
+        }
+        .btn-danger:hover { 
+            background: #c72c48;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success { 
+            background: #138808; 
+            color: white; 
+        }
+        .btn-success:hover { 
+            background: #0a5004;
+            transform: translateY(-2px);
+        }
         .action-btns {
             display: flex;
             gap: 5px;
@@ -191,7 +361,7 @@
         }
         .action-card:hover {
             transform: translateY(-5px);
-            border-color: #e94560;
+            border-color: #1a237e;
         }
         .action-icon {
             font-size: 2.5em;
@@ -204,7 +374,7 @@
         }
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #e94560;
+            border-top: 4px solid #1a237e;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -215,17 +385,267 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Enhanced Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            margin: 5% auto;
+            padding: 0;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.4s ease-out;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .modal-body {
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .modal-footer {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .close {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close:hover,
+        .close:focus {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 4px solid #1a237e;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+        
+        .info-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .info-item label {
+            display: block;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .info-item p {
+            margin: 0;
+            font-size: 1.1em;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .info-item-full {
+            grid-column: 1 / -1;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .badge-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .header-content {
+                grid-template-columns: auto 1fr;
+                gap: 20px;
+            }
+            
+            .title-section {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .logo-section {
+                justify-content: center;
+            }
+            
+            .header-actions {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-tabs {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .tab-btn {
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <nav class="admin-navbar">
-        <div class="navbar-brand">⚙️ Admin Control Panel</div>
-        <div class="navbar-user">
-            <span class="admin-badge" id="roleBadge">ADMINISTRATOR</span>
-            <div id="userName">Loading...</div>
-            <button class="btn-logout" onclick="logout()">Logout</button>
+    <!-- Top Government Bar -->
+    <div class="gov-bar"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                     alt="Government of India Emblem" 
+                     class="emblem"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="emblem-fallback">🇮🇳</div>
+                <div class="govt-text">
+                    <span class="small-text">Government of India</span>
+                    <span class="ministry-name">Ministry of Statistics & Programme Implementation</span>
+                </div>
+            </div>
+
+            <div class="title-section">
+                <h1>Admin Control Panel</h1>
+                <p>Data Portal Infrastructure</p>
+            </div>
+
+            <div class="header-actions">
+                <span class="admin-badge" id="roleBadge">ADMINISTRATOR</span>
+                <span id="userName" style="color: #555; font-weight: 600;">Loading...</span>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
         </div>
-    </nav>
+    </header>
 
     <div class="container">
         <div class="stats-grid">
@@ -268,6 +688,259 @@
                     <p>Loading users...</p>
                 </div>
                 <div id="usersTable"></div>
+            </div>
+        </div>
+
+        <!-- View User Modal -->
+        <div id="viewUserModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>👤 User Details</h2>
+                    <span class="close" onclick="closeViewUserModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>👤 Username</label>
+                            <p id="view_username"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>📧 Email</label>
+                            <p id="view_email"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>✏️ Full Name</label>
+                            <p id="view_fullname"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>🔑 Password</label>
+                            <p id="view_password" style="font-family: monospace; background: #f5f5f5; padding: 8px; border-radius: 6px;"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>🎭 Role</label>
+                            <p id="view_role"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>💰 Credits</label>
+                            <p id="view_credits"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>📊 Status</label>
+                            <p id="view_status"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>📅 Created At</label>
+                            <p id="view_created"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeViewUserModal()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit User Modal -->
+        <div id="editUserModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>✏️ Edit User</h2>
+                    <span class="close" onclick="closeEditUserModal()">&times;</span>
+                </div>
+                <form id="editUserForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_user_id">
+                        
+                        <div class="info-grid">
+                            <div class="form-group">
+                                <label>👤 Username *</label>
+                                <input type="text" id="edit_username" class="form-control" required readonly style="background: #f5f5f5; cursor: not-allowed;">
+                            </div>
+                            <div class="form-group">
+                                <label>📧 Email *</label>
+                                <input type="email" id="edit_email" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>✏️ Full Name</label>
+                            <input type="text" id="edit_fullname" class="form-control" placeholder="Enter full name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🔑 Password <small style="color: #666;">(leave blank to keep current)</small></label>
+                            <input type="text" id="edit_password" class="form-control" placeholder="Enter new password or leave blank">
+                        </div>
+                        
+                        <div class="info-grid">
+                            <div class="form-group">
+                                <label>🎭 Role *</label>
+                                <select id="edit_role" class="form-control" required>
+                                    <option value="public">PUBLIC</option>
+                                    <option value="researcher">RESEARCHER</option>
+                                    <option value="premium">PREMIUM</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>💰 Credits</label>
+                                <input type="number" id="edit_credits" class="form-control" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e0e0e0; transition: all 0.3s;">
+                                <input type="checkbox" id="edit_is_active" style="margin-right: 10px; cursor: pointer; width: 20px; height: 20px;">
+                                <span style="font-weight: 600;">✅ Active User</span>
+                            </label>
+                        </div>
+                        
+                        <div id="editUserMessage" style="display: none; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: 600;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- View Admin Modal -->
+        <div id="viewAdminModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>👑 Administrator Details</h2>
+                    <span class="close" onclick="closeViewAdminModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>👤 Username</label>
+                            <p id="view_admin_username"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>📧 Email</label>
+                            <p id="view_admin_email"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>✏️ Full Name</label>
+                            <p id="view_admin_fullname"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>🔑 Password</label>
+                            <p id="view_admin_password" style="font-family: monospace; background: #f5f5f5; padding: 8px; border-radius: 6px;"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>🎭 Role</label>
+                            <p id="view_admin_role"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>💰 Credits</label>
+                            <p id="view_admin_credits"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>📊 Status</label>
+                            <p id="view_admin_status"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>📅 Created At</label>
+                            <p id="view_admin_created"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeViewAdminModal()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Admin Modal -->
+        <div id="editAdminModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>✏️ Edit Administrator</h2>
+                    <span class="close" onclick="closeEditAdminModal()">&times;</span>
+                </div>
+                <form id="editAdminForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_admin_id">
+                        
+                        <div class="info-grid">
+                            <div class="form-group">
+                                <label>👤 Username *</label>
+                                <input type="text" id="edit_admin_username" class="form-control" required readonly style="background: #f5f5f5; cursor: not-allowed;">
+                            </div>
+                            <div class="form-group">
+                                <label>📧 Email *</label>
+                                <input type="email" id="edit_admin_email" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>✏️ Full Name</label>
+                            <input type="text" id="edit_admin_fullname" class="form-control" placeholder="Enter full name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🔑 Password <small style="color: #666;">(leave blank to keep current)</small></label>
+                            <input type="text" id="edit_admin_password" class="form-control" placeholder="Enter new password or leave blank">
+                        </div>
+                        
+                        <div class="info-grid">
+                            <div class="form-group">
+                                <label>🎭 Role *</label>
+                                <select id="edit_admin_role" class="form-control" required>
+                                    <option value="admin">ADMIN</option>
+                                    <option value="super_admin">SUPER ADMIN</option>
+                                    <option value="data_admin">DATA ADMIN</option>
+                                    <option value="user_admin">USER ADMIN</option>
+                                    <option value="support_admin">SUPPORT ADMIN</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>💰 Credits</label>
+                                <input type="number" id="edit_admin_credits" class="form-control" step="0.01" min="0" placeholder="999999.00">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e0e0e0; transition: all 0.3s;">
+                                <input type="checkbox" id="edit_admin_is_active" style="margin-right: 10px; cursor: pointer; width: 20px; height: 20px;">
+                                <span style="font-weight: 600;">✅ Active Administrator</span>
+                            </label>
+                        </div>
+                        
+                        <div id="editAdminMessage" style="display: none; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: 600;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditAdminModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dataset Viewer Modal -->
+        <div id="datasetViewerModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow: auto;">
+                <div class="modal-header">
+                    <h2 id="datasetViewerTitle">📊 Dataset Viewer</h2>
+                    <span class="close" onclick="closeDatasetViewer()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="datasetViewerInfo" style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
+                        <span id="datasetTotalRecords" style="display: inline-block; margin-right: 20px; font-weight: bold;"></span>
+                        <span id="datasetReturnedRecords" style="display: inline-block; margin-right: 20px; font-weight: bold;"></span>
+                        <span id="datasetTableName" style="display: inline-block; font-weight: bold;"></span>
+                    </div>
+                    <div id="datasetViewerLoading" style="text-align: center; padding: 40px; display: none;">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 15px;">Loading dataset...</p>
+                    </div>
+                    <div id="datasetViewerContent" style="overflow-x: auto;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeDatasetViewer()">Close</button>
+                </div>
             </div>
         </div>
 
@@ -609,16 +1282,21 @@
             }
         }
 
+        // Store users globally
+        let allUsers = [];
+
         // Display users
         function displayUsers(users) {
+            allUsers = users; // Store for later use
             const roleColors = {
                 'admin': 'badge-admin',
                 'researcher': 'badge-researcher',
-                'public': 'badge-public'
+                'public': 'badge-public',
+                'premium': 'badge-researcher'
             };
 
             let html = '<table class="data-table"><thead><tr>';
-            html += '<th>Username</th><th>Email</th><th>Full Name</th><th>Role</th><th>Credits</th><th>Status</th><th>Actions</th>';
+            html += '<th>Username</th><th>Email</th><th>Full Name</th><th>Password</th><th>Role</th><th>Credits</th><th>Status</th><th>Actions</th>';
             html += '</tr></thead><tbody>';
 
             // Filter out admin users from regular user list (case-insensitive)
@@ -634,19 +1312,20 @@
             regularUsers.forEach(user => {
                 const roleClass = roleColors[user.role] || 'badge-public';
                 const creditsDisplay = user.credits >= 999999 ? 'Unlimited' : user.credits.toFixed(2);
+                const passwordDisplay = user.password || '••••••••';
                 
                 html += '<tr>';
                 html += `<td>${user.username}</td>`;
                 html += `<td>${user.email}</td>`;
                 html += `<td>${user.full_name || '-'}</td>`;
+                html += `<td><span style="font-family: monospace; background: #f5f5f5; padding: 4px 8px; border-radius: 4px;">${passwordDisplay}</span></td>`;
                 html += `<td><span class="badge ${roleClass}">${user.role.toUpperCase()}</span></td>`;
                 html += `<td>${creditsDisplay}</td>`;
                 html += `<td><span class="badge ${user.is_active ? 'badge-success' : 'badge-secondary'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>`;
                 html += '<td><div class="action-btns">';
+                html += `<button class="btn btn-secondary" onclick="viewUser(${user.id})" style="margin-right: 5px;">View</button>`;
                 if (canEdit) {
-                    html += `<button class="btn btn-secondary" onclick="editUser(${user.id})">Edit</button>`;
-                } else {
-                    html += '<span style="color: #999;">View Only</span>';
+                    html += `<button class="btn btn-primary" onclick="editUser(${user.id})">Edit</button>`;
                 }
                 html += '</div></td>';
                 html += '</tr>';
@@ -656,8 +1335,181 @@
             document.getElementById('usersTable').innerHTML = html;
         }
 
-        // Edit user (placeholder)
+        // Delete user
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete user');
+                }
+
+                showMessage('User deleted successfully', 'success');
+                
+                // Remove from UI with animation
+                const row = event.target.closest('tr');
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    loadUsers(); // Reload the user list
+                }, 300);
+
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showMessage('Failed to delete user: ' + error.message, 'error');
+            }
+        }
+
+        // View user details
+        function viewUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('view_username').textContent = user.username;
+            document.getElementById('view_email').textContent = user.email;
+            document.getElementById('view_fullname').textContent = user.full_name || '-';
+            document.getElementById('view_password').textContent = user.password || '••••••••';
+            document.getElementById('view_role').innerHTML = `<span class="badge badge-${user.role}">${user.role.toUpperCase()}</span>`;
+            document.getElementById('view_credits').textContent = user.credits >= 999999 ? 'Unlimited' : user.credits.toFixed(2);
+            document.getElementById('view_status').innerHTML = `<span class="badge ${user.is_active ? 'badge-success' : 'badge-secondary'}">${user.is_active ? 'Active' : 'Inactive'}</span>`;
+            document.getElementById('view_created').textContent = new Date(user.created_at).toLocaleString();
+
+            const modal = document.getElementById('viewUserModal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.style.opacity = '1', 10);
+        }
+
+        function closeViewUserModal() {
+            const modal = document.getElementById('viewUserModal');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        // Edit user
         function editUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('edit_user_id').value = user.id;
+            document.getElementById('edit_username').value = user.username;
+            document.getElementById('edit_email').value = user.email;
+            document.getElementById('edit_fullname').value = user.full_name || '';
+            document.getElementById('edit_password').value = ''; // Don't populate password
+            document.getElementById('edit_role').value = user.role;
+            document.getElementById('edit_credits').value = user.credits;
+            document.getElementById('edit_is_active').checked = user.is_active;
+            document.getElementById('editUserMessage').style.display = 'none';
+
+            const modal = document.getElementById('editUserModal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.style.opacity = '1', 10);
+        }
+
+        function closeEditUserModal() {
+            const modal = document.getElementById('editUserModal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.getElementById('editUserForm').reset();
+            }, 300);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const viewModal = document.getElementById('viewUserModal');
+            const editModal = document.getElementById('editUserModal');
+            const viewAdminModal = document.getElementById('viewAdminModal');
+            const editAdminModal = document.getElementById('editAdminModal');
+            const datasetModal = document.getElementById('datasetViewerModal');
+            
+            if (event.target === viewModal) {
+                closeViewUserModal();
+            }
+            if (event.target === editModal) {
+                closeEditUserModal();
+            }
+            if (event.target === viewAdminModal) {
+                closeViewAdminModal();
+            }
+            if (event.target === editAdminModal) {
+                closeEditAdminModal();
+            }
+            if (event.target === datasetModal) {
+                closeDatasetViewer();
+            }
+        }
+
+        // Handle edit form submission
+        document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const token = checkAuth();
+            if (!token) return;
+
+            const userId = document.getElementById('edit_user_id').value;
+            const messageDiv = document.getElementById('editUserMessage');
+            
+            const updateData = {
+                email: document.getElementById('edit_email').value,
+                full_name: document.getElementById('edit_fullname').value,
+                role: document.getElementById('edit_role').value,
+                credits: parseFloat(document.getElementById('edit_credits').value),
+                is_active: document.getElementById('edit_is_active').checked
+            };
+
+            const newPassword = document.getElementById('edit_password').value;
+            if (newPassword) {
+                updateData.password = newPassword;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    messageDiv.textContent = '✅ User updated successfully!';
+                    messageDiv.style.background = '#d4edda';
+                    messageDiv.style.color = '#155724';
+                    messageDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        closeEditUserModal();
+                        loadUsers(); // Reload users
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    messageDiv.textContent = '❌ ' + (error.detail || 'Failed to update user');
+                    messageDiv.style.background = '#f8d7da';
+                    messageDiv.style.color = '#721c24';
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                messageDiv.textContent = '❌ Connection error';
+                messageDiv.style.background = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                messageDiv.style.display = 'block';
+            }
+        });
+
+        // Edit user (placeholder)
+        function editUser_old(userId) {
             alert('User editing feature - User ID: ' + userId);
         }
 
@@ -785,23 +1637,29 @@
         }
 
         // Display admins table
+        // Store admins globally
+        let allAdmins = [];
+
+        // Display admins table
         function displayAdmins(users) {
-            const adminUsers = users.filter(u => u.role && u.role.includes('ADMIN'));
+            const adminUsers = users.filter(u => u.role && (u.role.includes('ADMIN') || u.role.toUpperCase().includes('ADMIN')));
+            allAdmins = adminUsers; // Store for later use
             
             const roleInfo = {
-                'SUPER_ADMIN': { badge: 'badge-admin', icon: '👑', name: 'Super Admin', permissions: 'Full Control' },
-                'ADMIN': { badge: 'badge-admin', icon: '⚙️', name: 'Admin', permissions: 'Full Control (Legacy)' },
-                'DATA_ADMIN': { badge: 'badge-researcher', icon: '📊', name: 'Data Admin', permissions: 'Datasets Only' },
-                'USER_ADMIN': { badge: '', icon: '👥', name: 'User Admin', permissions: 'Users Only', style: 'background: #9b59b6; color: white;' },
-                'SUPPORT_ADMIN': { badge: 'badge-public', icon: '🎧', name: 'Support Admin', permissions: 'View Only' }
+                'SUPER_ADMIN': { badge: 'badge-admin', icon: '👑', name: 'Super Admin' },
+                'ADMIN': { badge: 'badge-admin', icon: '⚙️', name: 'Admin' },
+                'DATA_ADMIN': { badge: 'badge-researcher', icon: '📊', name: 'Data Admin' },
+                'USER_ADMIN': { badge: '', icon: '👥', name: 'User Admin', style: 'background: #9b59b6; color: white;' },
+                'SUPPORT_ADMIN': { badge: 'badge-public', icon: '🎧', name: 'Support Admin' }
             };
 
             let html = '<table class="data-table"><thead><tr>';
-            html += '<th>Role</th><th>Username</th><th>Email</th><th>Full Name</th><th>Permissions</th><th>Credits</th><th>Actions</th>';
+            html += '<th>Role</th><th>Username</th><th>Email</th><th>Full Name</th><th>Credits</th><th>Actions</th>';
             html += '</tr></thead><tbody>';
 
             adminUsers.forEach(admin => {
-                const info = roleInfo[admin.role] || { badge: 'badge-public', icon: '👤', name: admin.role };
+                const roleKey = admin.role.toUpperCase();
+                const info = roleInfo[roleKey] || { badge: 'badge-public', icon: '👤', name: admin.role };
                 const badgeStyle = info.style ? `style="${info.style}"` : '';
                 
                 html += '<tr>';
@@ -809,9 +1667,11 @@
                 html += `<td>${admin.username}</td>`;
                 html += `<td>${admin.email}</td>`;
                 html += `<td>${admin.full_name || '-'}</td>`;
-                html += `<td>${info.permissions || '-'}</td>`;
                 html += '<td>Unlimited</td>';
-                html += '<td><button class="btn btn-secondary" onclick="viewAdminDetails(' + admin.id + ')">View</button></td>';
+                html += '<td><div class="action-btns">';
+                html += `<button class="btn btn-secondary" onclick="viewAdminDetails(${admin.id})" style="margin-right: 5px;">View</button>`;
+                html += `<button class="btn btn-primary" onclick="editAdminDetails(${admin.id})">Edit</button>`;
+                html += '</div></td>';
                 html += '</tr>';
             });
 
@@ -819,9 +1679,125 @@
             document.getElementById('adminsTableContainer').innerHTML = html;
         }
 
+        // View admin details
         function viewAdminDetails(adminId) {
-            alert('Admin details viewer - Admin ID: ' + adminId);
+            const admin = allAdmins.find(a => a.id === adminId);
+            if (!admin) return;
+
+            const roleInfo = {
+                'super_admin': '👑 Super Admin',
+                'admin': '⚙️ Admin',
+                'data_admin': '📊 Data Admin',
+                'user_admin': '👥 User Admin',
+                'support_admin': '🎧 Support Admin'
+            };
+
+            document.getElementById('view_admin_username').textContent = admin.username;
+            document.getElementById('view_admin_email').textContent = admin.email;
+            document.getElementById('view_admin_fullname').textContent = admin.full_name || '-';
+            document.getElementById('view_admin_password').textContent = admin.password || '••••••••';
+            document.getElementById('view_admin_role').innerHTML = `<span class="badge badge-admin">${roleInfo[admin.role] || admin.role.toUpperCase()}</span>`;
+            document.getElementById('view_admin_credits').textContent = 'Unlimited';
+            document.getElementById('view_admin_status').innerHTML = `<span class="badge ${admin.is_active ? 'badge-success' : 'badge-secondary'}">${admin.is_active ? 'Active' : 'Inactive'}</span>`;
+            document.getElementById('view_admin_created').textContent = new Date(admin.created_at).toLocaleString();
+
+            const modal = document.getElementById('viewAdminModal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.style.opacity = '1', 10);
         }
+
+        function closeViewAdminModal() {
+            const modal = document.getElementById('viewAdminModal');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        // Edit admin details
+        function editAdminDetails(adminId) {
+            const admin = allAdmins.find(a => a.id === adminId);
+            if (!admin) return;
+
+            document.getElementById('edit_admin_id').value = admin.id;
+            document.getElementById('edit_admin_username').value = admin.username;
+            document.getElementById('edit_admin_email').value = admin.email;
+            document.getElementById('edit_admin_fullname').value = admin.full_name || '';
+            document.getElementById('edit_admin_password').value = '';
+            document.getElementById('edit_admin_role').value = admin.role;
+            document.getElementById('edit_admin_credits').value = admin.credits;
+            document.getElementById('edit_admin_is_active').checked = admin.is_active;
+            document.getElementById('editAdminMessage').style.display = 'none';
+
+            const modal = document.getElementById('editAdminModal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.style.opacity = '1', 10);
+        }
+
+        function closeEditAdminModal() {
+            const modal = document.getElementById('editAdminModal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.getElementById('editAdminForm').reset();
+            }, 300);
+        }
+
+        // Handle edit admin form submission
+        document.getElementById('editAdminForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const token = checkAuth();
+            if (!token) return;
+
+            const adminId = document.getElementById('edit_admin_id').value;
+            const messageDiv = document.getElementById('editAdminMessage');
+            
+            const updateData = {
+                email: document.getElementById('edit_admin_email').value,
+                full_name: document.getElementById('edit_admin_fullname').value,
+                role: document.getElementById('edit_admin_role').value,
+                credits: parseFloat(document.getElementById('edit_admin_credits').value),
+                is_active: document.getElementById('edit_admin_is_active').checked
+            };
+
+            const newPassword = document.getElementById('edit_admin_password').value;
+            if (newPassword) {
+                updateData.password = newPassword;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/users/${adminId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    messageDiv.textContent = '✅ Administrator updated successfully!';
+                    messageDiv.style.background = '#d4edda';
+                    messageDiv.style.color = '#155724';
+                    messageDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        closeEditAdminModal();
+                        loadAdmins(); // Reload admins
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    messageDiv.textContent = '❌ ' + (error.detail || 'Failed to update administrator');
+                    messageDiv.style.background = '#f8d7da';
+                    messageDiv.style.color = '#721c24';
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                messageDiv.textContent = '❌ Connection error';
+                messageDiv.style.background = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                messageDiv.style.display = 'block';
+            }
+        });
 
         // Dataset management functions
         function loadDatasets() {
@@ -838,28 +1814,268 @@
             alert('📊 Dataset Upload Feature\n\nThis feature allows you to:\n• Upload CSV/Excel files\n• Map columns to database schema\n• Validate data before import\n\nComing soon!');
         }
 
-        function viewDataset(dataset) {
-            const datasetUrls = {
-                'household': '/api/v1/plfs/household?limit=100',
-                'person': '/api/v1/plfs/person?limit=100',
-                'census': '/api/v1/datasets/census/data?limit=100'
+        async function viewDataset(dataset) {
+            const token = checkAuth();
+            if (!token) return;
+
+            const datasetConfig = {
+                'household': {
+                    table: 'household_survey',
+                    title: '📁 Household Survey (PLFS) - CHHV1',
+                    limit: 100,
+                    sampleData: generateHouseholdSampleData()
+                },
+                'person': {
+                    table: 'person_survey',
+                    title: '👤 Person Survey (PLFS) - CPERV1',
+                    limit: 100,
+                    sampleData: generatePersonSampleData()
+                }
             };
-            
-            if (datasetUrls[dataset]) {
-                window.open(datasetUrls[dataset], '_blank');
-            } else {
-                alert('Dataset viewer coming soon!');
+
+            const config = datasetConfig[dataset];
+            if (!config) {
+                alert('Dataset not found!');
+                return;
+            }
+
+            // Show modal
+            const modal = document.getElementById('datasetViewerModal');
+            const loading = document.getElementById('datasetViewerLoading');
+            const content = document.getElementById('datasetViewerContent');
+            const info = document.getElementById('datasetViewerInfo');
+            const title = document.getElementById('datasetViewerTitle');
+
+            title.textContent = config.title;
+            loading.style.display = 'block';
+            content.innerHTML = '';
+            info.style.display = 'none';
+            modal.style.display = 'block';
+            setTimeout(() => modal.style.opacity = '1', 10);
+
+            try {
+                // Fetch data
+                const response = await fetch(`/api/v1/query/${config.table}?limit=${config.limit}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // If data not found (404), use sample data
+                    if (response.status === 404) {
+                        loading.style.display = 'none';
+                        info.style.display = 'block';
+                        document.getElementById('datasetTotalRecords').textContent = `📈 Total Records: ${dataset === 'household' ? '101,957' : '413,549'} (Sample)`;
+                        document.getElementById('datasetReturnedRecords').textContent = `📄 Showing: ${config.sampleData.length} sample records`;
+                        document.getElementById('datasetTableName').textContent = `🗂️ Status: Sample Data (Database not populated yet)`;
+                        content.innerHTML = generateDataTable(config.sampleData);
+                        return;
+                    }
+                    throw new Error('Failed to load dataset');
+                }
+
+                const result = await response.json();
+                
+                // Hide loading
+                loading.style.display = 'none';
+                
+                // Show info
+                info.style.display = 'block';
+                document.getElementById('datasetTotalRecords').textContent = `📈 Total Records: ${result.total_records?.toLocaleString() || 'N/A'}`;
+                document.getElementById('datasetReturnedRecords').textContent = `📄 Showing: ${result.returned_records || result.data?.length || 0} records`;
+                document.getElementById('datasetTableName').textContent = `🗂️ Table: ${config.table}`;
+                
+                // Generate table
+                content.innerHTML = generateDataTable(result.data || []);
+            } catch (error) {
+                console.error('Error loading dataset:', error);
+                loading.style.display = 'none';
+                // Show sample data on error
+                info.style.display = 'block';
+                document.getElementById('datasetTotalRecords').textContent = `📈 Total Records: ${dataset === 'household' ? '101,957' : '413,549'} (Sample)`;
+                document.getElementById('datasetReturnedRecords').textContent = `📄 Showing: ${config.sampleData.length} sample records`;
+                document.getElementById('datasetTableName').textContent = `🗂️ Status: Sample Data (Error loading actual data)`;
+                content.innerHTML = generateDataTable(config.sampleData);
             }
         }
 
-        function exportDataset(dataset) {
+        function generateHouseholdSampleData() {
+            return [
+                { State_Ut_Code: 28, District_Code: 1, Household_Size: 4, Monthly_Consumer_Expenditure: 15000, Household_Type: 'Rural', Social_Group: 'General', Religion: 'Hindu' },
+                { State_Ut_Code: 28, District_Code: 2, Household_Size: 5, Monthly_Consumer_Expenditure: 18000, Household_Type: 'Rural', Social_Group: 'OBC', Religion: 'Hindu' },
+                { State_Ut_Code: 9, District_Code: 1, Household_Size: 3, Monthly_Consumer_Expenditure: 25000, Household_Type: 'Urban', Social_Group: 'General', Religion: 'Hindu' },
+                { State_Ut_Code: 9, District_Code: 3, Household_Size: 6, Monthly_Consumer_Expenditure: 12000, Household_Type: 'Rural', Social_Group: 'SC', Religion: 'Hindu' },
+                { State_Ut_Code: 6, District_Code: 2, Household_Size: 4, Monthly_Consumer_Expenditure: 20000, Household_Type: 'Urban', Social_Group: 'General', Religion: 'Hindu' },
+                { State_Ut_Code: 28, District_Code: 5, Household_Size: 5, Monthly_Consumer_Expenditure: 16000, Household_Type: 'Rural', Social_Group: 'OBC', Religion: 'Muslim' },
+                { State_Ut_Code: 7, District_Code: 1, Household_Size: 3, Monthly_Consumer_Expenditure: 22000, Household_Type: 'Urban', Social_Group: 'General', Religion: 'Hindu' },
+                { State_Ut_Code: 9, District_Code: 4, Household_Size: 4, Monthly_Consumer_Expenditure: 14000, Household_Type: 'Rural', Social_Group: 'ST', Religion: 'Hindu' }
+            ];
+        }
+
+        function generatePersonSampleData() {
+            return [
+                { State_UT_Code: 28, District_Code: 1, Age: 25, Sex: 1, Education_Level: 'Graduate', Current_Weekly_Activity_Status: 11, Industry: 'Manufacturing' },
+                { State_UT_Code: 28, District_Code: 2, Age: 30, Sex: 2, Education_Level: 'Post Graduate', Current_Weekly_Activity_Status: 11, Industry: 'Education' },
+                { State_UT_Code: 9, District_Code: 1, Age: 35, Sex: 1, Education_Level: 'Graduate', Current_Weekly_Activity_Status: 11, Industry: 'IT/Software' },
+                { State_UT_Code: 9, District_Code: 3, Age: 22, Sex: 2, Education_Level: 'Higher Secondary', Current_Weekly_Activity_Status: 81, Industry: 'Not Applicable' },
+                { State_UT_Code: 6, District_Code: 2, Age: 40, Sex: 1, Education_Level: 'Graduate', Current_Weekly_Activity_Status: 11, Industry: 'Banking' },
+                { State_UT_Code: 28, District_Code: 5, Age: 28, Sex: 2, Education_Level: 'Graduate', Current_Weekly_Activity_Status: 11, Industry: 'Healthcare' },
+                { State_UT_Code: 7, District_Code: 1, Age: 45, Sex: 1, Education_Level: 'Secondary', Current_Weekly_Activity_Status: 11, Industry: 'Construction' },
+                { State_UT_Code: 9, District_Code: 4, Age: 19, Sex: 2, Education_Level: 'Higher Secondary', Current_Weekly_Activity_Status: 92, Industry: 'Not Applicable' }
+            ];
+        }
+
+        function closeDatasetViewer() {
+            const modal = document.getElementById('datasetViewerModal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.getElementById('datasetViewerContent').innerHTML = '';
+            }, 300);
+        }
+
+        function generateDataTable(data) {
+            if (!data || data.length === 0) {
+                return '<p style="text-align: center; color: #999; padding: 40px;">No data available</p>';
+            }
+
+            // Get all unique columns from the data
+            const columns = [...new Set(data.flatMap(row => Object.keys(row)))];
+            
+            let html = '<table class="data-table"><thead><tr>';
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col];
+                    const displayValue = value !== null && value !== undefined ? value : '-';
+                    html += `<td>${displayValue}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            return html;
+        }
+
+        async function exportDataset(dataset) {
+            const token = checkAuth();
+            if (!token) return;
+
             const currentRole = localStorage.getItem('user_role')?.toLowerCase();
             if (!['admin', 'super_admin', 'data_admin'].includes(currentRole)) {
                 alert('❌ You do not have permission to export datasets.');
                 return;
             }
-            
-            alert(`📥 Exporting ${dataset} dataset...\n\nExport formats available:\n• CSV\n• Excel\n• JSON\n\nThis feature is being implemented.`);
+
+            const datasetConfig = {
+                'household': {
+                    table: 'household_survey',
+                    filename: 'household_survey_export.json',
+                    limit: 1000,
+                    sampleData: generateHouseholdSampleData(),
+                    totalRecords: '101,957'
+                },
+                'person': {
+                    table: 'person_survey',
+                    filename: 'person_survey_export.json',
+                    limit: 1000,
+                    sampleData: generatePersonSampleData(),
+                    totalRecords: '413,549'
+                }
+            };
+
+            const config = datasetConfig[dataset];
+            if (!config) {
+                alert('Dataset not found!');
+                return;
+            }
+
+            // Show loading indicator
+            const originalButton = event.target;
+            const originalText = originalButton.textContent;
+            originalButton.disabled = true;
+            originalButton.textContent = '⏳ Exporting...';
+
+            try {
+                // Fetch data
+                const response = await fetch(`/api/v1/query/${config.table}?limit=${config.limit}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                let result;
+                let isSampleData = false;
+
+                if (!response.ok) {
+                    // If data not found (404), use sample data
+                    if (response.status === 404) {
+                        result = {
+                            dataset_name: config.table,
+                            total_records: config.totalRecords,
+                            returned_records: config.sampleData.length,
+                            data: config.sampleData,
+                            note: 'This is sample data. Actual database has not been populated yet.'
+                        };
+                        isSampleData = true;
+                    } else {
+                        throw new Error('Failed to export dataset');
+                    }
+                } else {
+                    result = await response.json();
+                }
+                
+                // Create JSON file and download
+                const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = config.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                originalButton.disabled = false;
+                originalButton.textContent = originalText;
+                
+                const recordCount = result.returned_records || result.data?.length || 0;
+                const message = isSampleData 
+                    ? `✅ Successfully exported ${recordCount} sample records to ${config.filename}\n\nNote: This is sample data for demonstration. The actual database needs to be populated.`
+                    : `✅ Successfully exported ${recordCount} records to ${config.filename}`;
+                alert(message);
+            } catch (error) {
+                console.error('Error exporting dataset:', error);
+                originalButton.disabled = false;
+                originalButton.textContent = originalText;
+                
+                // Fallback to sample data on any error
+                const result = {
+                    dataset_name: config.table,
+                    total_records: config.totalRecords,
+                    returned_records: config.sampleData.length,
+                    data: config.sampleData,
+                    note: 'This is sample data. Export failed - using demonstration data.'
+                };
+                
+                const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = config.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                alert(`✅ Exported ${config.sampleData.length} sample records to ${config.filename}\n\nNote: This is sample data for demonstration purposes.`);
+            }
         }
 
         // Initialize on page load

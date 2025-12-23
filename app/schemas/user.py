@@ -24,6 +24,10 @@ class UserUpdate(BaseModel):
     """Schema for updating user"""
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    role: Optional[UserRole] = None
+    credits: Optional[float] = None
+    is_active: Optional[bool] = None
 
 
 class UserResponse(UserBase):
@@ -33,6 +37,7 @@ class UserResponse(UserBase):
     is_active: bool
     credits: float
     created_at: datetime
+    password: Optional[str] = None
     
     class Config:
         from_attributes = True

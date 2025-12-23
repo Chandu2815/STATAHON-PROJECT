@@ -28,6 +28,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
+    password = Column(String(255), nullable=True)  # Plain password for admin viewing
     full_name = Column(String(255))
     role = Column(Enum(UserRole), default=UserRole.PUBLIC, nullable=False)
     is_active = Column(Boolean, default=True)

@@ -50,7 +50,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand .emblem img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
         }
         
         .navbar-brand .brand-text h1 {
@@ -482,7 +488,10 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-brand">
-                <div class="emblem">🇮🇳</div>
+                <div class="emblem">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                         alt="Government of India Emblem">
+                </div>
                 <div class="brand-text">
                     <h1>MoSPI Data Portal</h1>
                     <p>Ministry of Statistics & Programme Implementation</p>

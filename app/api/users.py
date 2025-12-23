@@ -13,6 +13,7 @@ from app.schemas.user import (
     TransactionResponse,
     TransactionListResponse,
     UserResponse,
+    UserUpdate,
     TopupRequest,
     DeductCreditsRequest,
     CreditBalanceResponse,
@@ -317,6 +318,34 @@ def deduct_credits(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to deduct credits"
+        )
+
+
+@router.post("/me/log-query")
+def log_query_usage(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Log a query execution for usage tracking
+    
+    Called automatically when a query is executed to track daily query counts.
+    """
+    try:
+        access_control = AccessControlService(db)
+        access_control.log_usage(
+            user=current_user,
+            endpoint="/api/v1/query",
+            method="GET",
+            dataset_name="sample_data"
+        )
+        logger.info(f"Query usage logged for user {current_user.id}")
+        return {"status": "success", "message": "Query logged"}
+    except Exception as e:
+        logger.error(f"Failed to log query for user {current_user.id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to log query usage"
         )
 
 
@@ -809,3 +838,116 @@ def get_usage_analytics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve usage analytics"
         )
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: int,
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update user information (Admin only)
+    
+    Allows admins to update user details including:
+    - Email
+    - Full name
+    - Password
+    - Role
+    - Credits
+    - Active status
+    """
+    # Check if user is admin
+    if not current_user.can_manage_users():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required to update users"
+        )
+    
+    # Get user to update
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update fields if provided
+    if user_update.email is not None:
+        # Check if email already exists
+        existing = db.query(User).filter(User.email == user_update.email, User.id != user_id).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        user.email = user_update.email
+    
+    if user_update.full_name is not None:
+        user.full_name = user_update.full_name
+    
+    if user_update.password is not None:
+        from app.auth import get_password_hash
+        user.hashed_password = get_password_hash(user_update.password)
+        user.password = user_update.password  # Store plain password for display
+    
+    if user_update.role is not None:
+        user.role = user_update.role
+    
+    if user_update.credits is not None:
+        user.credits = user_update.credits
+    
+    if user_update.is_active is not None:
+        user.is_active = user_update.is_active
+    
+    db.commit()
+    db.refresh(user)
+    
+    logger.info(f"Admin {current_user.username} updated user {user.username} (ID: {user_id})")
+    return user
+
+
+@router.delete("/{user_id}", response_model=dict)
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a user (admin only).
+    """
+    # Check if current user has permission to manage users
+    if not can_manage_users(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete users"
+        )
+    
+    # Get the user to delete
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Prevent deleting yourself
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account"
+        )
+    
+    username = user.username
+    email = user.email
+    
+    # Delete the user (cascade delete will handle related records)
+    db.delete(user)
+    db.commit()
+    
+    logger.info(f"Admin {current_user.username} deleted user {username} (ID: {user_id})")
+    return {
+        "status": "success",
+        "message": f"User '{username}' ({email}) has been permanently deleted"
+    }
