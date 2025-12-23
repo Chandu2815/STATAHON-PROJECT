@@ -646,7 +646,7 @@
                         <select id="dataset" required>
                             <option value="">Select Dataset</option>
                             <option value="1">Household Survey (PLFS)</option>
-                            <option value="5">Person Survey (PLFS)</option>
+                            <option value="2">Person Survey (PLFS)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -911,18 +911,18 @@
         }
 
         // Dataset change handler - show/hide filters based on dataset type
-        document.getElementById('dataset').addEventListener('change', function() {
-            const dataset = this.value;
+        function updateDatasetFilters() {
+            const dataset = document.getElementById('dataset').value;
             const genderGroup = document.getElementById('genderGroup');
             const ageGroupContainer = document.getElementById('ageGroupContainer');
             const datasetInfo = document.getElementById('datasetInfo');
             
-            if (dataset === '5') {
+            if (dataset === '2') {
                 // Person Survey - show all filters
                 genderGroup.style.display = 'block';
                 ageGroupContainer.style.display = 'block';
-                datasetInfo.textContent = '📊 Person Survey: Individual-level data (413,549 records). Filters: State, Gender, Age, Sector';
-            } else if (dataset === '4') {
+                datasetInfo.textContent = '📊 Person Survey: Individual-level data (415,549 records). Filters: State, Gender, Age, Sector';
+            } else if (dataset === '1') {
                 // Household Survey - hide gender and age
                 genderGroup.style.display = 'none';
                 ageGroupContainer.style.display = 'none';
@@ -932,7 +932,12 @@
                 ageGroupContainer.style.display = 'block';
                 datasetInfo.textContent = '';
             }
-        });
+        }
+        
+        document.getElementById('dataset').addEventListener('change', updateDatasetFilters);
+        
+        // Trigger on page load to set initial state
+        updateDatasetFilters();
 
         // Generate sample data for demonstration
         function generateSampleData(datasetId, limit) {
@@ -1004,7 +1009,7 @@
             if (sector) queryUrl += `&year=${sector}`; // Using year parameter for sector temporarily
             
             // Only add gender and age for Person Survey
-            if (dataset === '5') {
+            if (dataset === '2') {
                 if (gender) queryUrl += `&gender=${gender}`;
                 if (ageGroup) queryUrl += `&age_group=${ageGroup}`;
             }
@@ -1150,6 +1155,7 @@
             const resultsSection = document.getElementById('resultsSection');
             const resultsTable = document.getElementById('resultsTable');
             const resultCount = document.getElementById('resultCount');
+            const dataset = document.getElementById('dataset').value;
 
             if (!results || results.length === 0) {
                 resultsTable.innerHTML = '<div class="no-results">No results found for your query</div>';
@@ -1158,28 +1164,82 @@
                 return;
             }
 
-            // Define important columns to display with readable names
-            const displayColumns = {
-                'State_Ut_Code': 'State Code',
-                'District_Code': 'District Code',
-                'Sector': 'Sector',
-                'Quarter': 'Quarter',
-                'Month_of_Survey': 'Survey Month',
-                'Household_Size': 'Household Size',
-                'Household_Type': 'Type',
-                'Religion': 'Religion',
-                'Social_Group': 'Social Group',
-                'Monthly_Consumer_Expenditure': 'Monthly Expenditure (₹)',
-                'Usual_Expenditure': 'Usual Expenditure (₹)',
-                'Annual_Clothing_Expenditure': 'Annual Clothing (₹)',
-                'Annual_Durables_Expenditure': 'Annual Durables (₹)'
-            };
+            let displayColumns, sectorLabels, labelMaps;
 
-            // Map sector codes to labels
-            const sectorLabels = { 1: 'Rural', 2: 'Urban' };
-            const typeLabels = { 1: 'Self-Employed', 2: 'Regular Wage', 3: 'Casual Labour', 9: 'Others' };
-            const religionLabels = { 1: 'Hindu', 2: 'Muslim', 3: 'Christian', 4: 'Sikh', 5: 'Jain', 6: 'Buddhist', 9: 'Others' };
-            const socialLabels = { 1: 'ST', 2: 'SC', 3: 'OBC', 9: 'Others' };
+            // Dataset-specific column configurations
+            if (dataset === '1') {
+                // Household Survey columns
+                displayColumns = {
+                    'State_Ut_Code': 'State Code',
+                    'District_Code': 'District Code',
+                    'Sector': 'Sector',
+                    'Quarter': 'Quarter',
+                    'Month_of_Survey': 'Survey Month',
+                    'Household_Size': 'Household Size',
+                    'Household_Type': 'Type',
+                    'Religion': 'Religion',
+                    'Social_Group': 'Social Group',
+                    'Monthly_Consumer_Expenditure': 'Monthly Expenditure (₹)',
+                    'Usual_Expenditure': 'Usual Expenditure (₹)',
+                    'Annual_Clothing_Expenditure': 'Annual Clothing (₹)',
+                    'Annual_Durables_Expenditure': 'Annual Durables (₹)'
+                };
+
+                sectorLabels = { 1: 'Rural', 2: 'Urban' };
+                labelMaps = {
+                    'Sector': sectorLabels,
+                    'Household_Type': { 1: 'Self-Employed', 2: 'Regular Wage', 3: 'Casual Labour', 9: 'Others' },
+                    'Religion': { 1: 'Hindu', 2: 'Muslim', 3: 'Christian', 4: 'Sikh', 5: 'Jain', 6: 'Buddhist', 9: 'Others' },
+                    'Social_Group': { 1: 'ST', 2: 'SC', 3: 'OBC', 9: 'Others' }
+                };
+            } else if (dataset === '2') {
+                // Person Survey columns - showing employment and earnings data
+                displayColumns = {
+                    'State_UT_Code': 'State Code',
+                    'District_Code': 'District Code',
+                    'Sector': 'Sector',
+                    'Sex': 'Gender',
+                    'Age': 'Age',
+                    'Marital_Status': 'Marital Status',
+                    'General_Education_Level': 'Education Level',
+                    'Principal_Status_Code': 'Principal Activity Status',
+                    'Principal_Industry_Code': 'Industry Code',
+                    'Principal_Occupation_Code': 'Occupation Code',
+                    'CWS_Earnings_Salaried': 'Monthly Salaried Earnings (₹)',
+                    'CWS_Earnings_SelfEmployed': 'Monthly Self-Employed Earnings (₹)',
+                    'Day7_Act1_Hours': 'Work Hours (Last Week)',
+                    'Day7_Act1_Wage': 'Daily Wage (₹)'
+                };
+
+                sectorLabels = { 1: 'Rural', 2: 'Urban' };
+                labelMaps = {
+                    'Sector': sectorLabels,
+                    'Sex': { 1: 'Male', 2: 'Female', 3: 'Other' },
+                    'Marital_Status': { 1: 'Never Married', 2: 'Currently Married', 3: 'Widowed', 4: 'Divorced/Separated' },
+                    'General_Education_Level': { 
+                        1: 'Not Literate', 2: 'Literate (no formal schooling)', 
+                        3: 'Below Primary', 4: 'Primary', 5: 'Middle', 
+                        6: 'Secondary', 7: 'Higher Secondary', 8: 'Diploma',
+                        10: 'Graduate', 11: 'Post Graduate+'
+                    },
+                    'Principal_Status_Code': {
+                        1: 'Working (Self-Employed)',
+                        11: 'Self-Employed (Own Account)',
+                        12: 'Self-Employed (Unpaid Helper)',
+                        21: 'Regular Wage/Salaried',
+                        31: 'Casual Labour',
+                        41: 'Student',
+                        51: 'Domestic Duties',
+                        81: 'Rentiers/Pensioners',
+                        91: 'Rentiers/Pensioners/Others',
+                        92: 'Unable to Work (Disability)',
+                        93: 'Beggars/Others',
+                        94: 'Unemployed (Seeking Work)',
+                        95: 'Not Working (Not Seeking Work)',
+                        97: 'Infant (0-4 years)'
+                    }
+                };
+            }
 
             // Create table with important columns only
             let html = '<table><thead><tr>';
@@ -1194,13 +1254,12 @@
                     let value = row[key] !== null && row[key] !== undefined ? row[key] : '-';
                     
                     // Apply readable labels
-                    if (key === 'Sector' && value !== '-') value = sectorLabels[value] || value;
-                    if (key === 'Household_Type' && value !== '-') value = typeLabels[value] || value;
-                    if (key === 'Religion' && value !== '-') value = religionLabels[value] || value;
-                    if (key === 'Social_Group' && value !== '-') value = socialLabels[value] || value;
+                    if (labelMaps && labelMaps[key] && value !== '-') {
+                        value = labelMaps[key][value] || value;
+                    }
                     
-                    // Format numbers with commas
-                    if (key.includes('Expenditure') && value !== '-') {
+                    // Format numbers with commas (for expenditure/earnings/wage columns)
+                    if ((key.includes('Expenditure') || key.includes('Earnings') || key.includes('Wage')) && value !== '-' && !isNaN(value)) {
                         value = '₹' + Number(value).toLocaleString('en-IN');
                     }
                     
