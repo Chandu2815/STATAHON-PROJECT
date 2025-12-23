@@ -160,8 +160,10 @@ def load_csv_data_if_needed(db):
             else:
                 print(f"✅ Household Survey already has {count:,} records")
     
-    # Load Person Survey (cperv1.csv) - only first 50k records for production
-    csv_path = base_path / "cperv1.csv"
+    # Load Person Survey (cperv1.csv or cperv1_sample.csv)
+    csv_path = base_path / "cperv1_sample.csv"  # Use sample for production
+    if not csv_path.exists():
+        csv_path = base_path / "cperv1.csv"  # Fallback to full file
     if csv_path.exists():
         with engine.connect() as conn:
             if 'person_survey' in tables:
@@ -170,9 +172,9 @@ def load_csv_data_if_needed(db):
                 count = 0
             
             if count == 0:
-                print("📊 Loading Person Survey data from CSV (first 100k rows for faster startup)...")
+                print("📊 Loading Person Survey data from CSV...")
                 try:
-                    df = pd.read_csv(csv_path, nrows=100000)  # Limit for faster startup
+                    df = pd.read_csv(csv_path)  # Load all rows from sample file
                     # Rename columns
                     column_mapping = {
                         'Panel': 'Panel', 'File Identification': 'File_Identification',
