@@ -52,4 +52,5 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
-*.csv
+# Keep csv files for data
+# *.csv
