@@ -38,8 +38,11 @@ class Settings(BaseSettings):
     PAYMENT_GATEWAY_URL: str = "https://mock-payment-gateway.example.com"
     PAYMENT_API_KEY: str = "mock-api-key"
     
-    # CORS
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    # CORS - Include both HTTP (dev) and HTTPS (prod) origins
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://localhost:3000,https://localhost:8000"
+    
+    # Security
+    SECURE_COOKIES: bool = True  # Use secure cookies in production
     
     # Logging
     LOG_LEVEL: str = "INFO"

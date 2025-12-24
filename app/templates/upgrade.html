@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Upgrade to Premium - MoSPI Data Portal</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -480,6 +481,17 @@
                 transform: translateY(-10px);
             }
         }
+
+        /* Utility classes to replace inline styles */
+        .credit-box { background: white; border-radius: 15px; padding: 30px; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .credit-title { color: #1a237e; margin-bottom: 20px; text-align: center; }
+        .credit-flex { display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap; }
+        .credit-item { text-align: center; }
+        .credit-value-orange { font-size: 2.5em; font-weight: bold; color: #FF6B00; }
+        .credit-value-blue { font-size: 2.5em; font-weight: bold; color: #1a237e; }
+        .credit-label { color: #666; }
+        .credit-footer { margin-top: 20px; text-align: center; }
+        .credit-warning { display: none; background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -508,20 +520,20 @@
         </div>
         
         <!-- Credit Progress Section -->
-        <div class="credit-progress-section" style="background: white; border-radius: 15px; padding: 30px; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <h3 style="color: #1a237e; margin-bottom: 20px; text-align: center;">📊 Your Credit Status</h3>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;">
-                <div style="text-align: center;">
-                    <div style="font-size: 2.5em; font-weight: bold; color: #FF6B00;" id="currentCredits">0</div>
-                    <div style="color: #666;">Credits Remaining</div>
+        <div class="credit-progress-section credit-box">
+            <h3 class="credit-title">📊 Your Credit Status</h3>
+            <div class="credit-flex">
+                <div class="credit-item">
+                    <div class="credit-value-orange" id="currentCredits">0</div>
+                    <div class="credit-label">Credits Remaining</div>
                 </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2.5em; font-weight: bold; color: #1a237e;" id="totalCredits">10</div>
-                    <div style="color: #666;">Total Allowed</div>
+                <div class="credit-item">
+                    <div class="credit-value-blue" id="totalCredits">10</div>
+                    <div class="credit-label">Total Allowed</div>
                 </div>
             </div>
-            <div style="margin-top: 20px; text-align: center;">
-                <div id="creditWarning" style="display: none; background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div class="credit-footer">
+                <div id="creditWarning" class="credit-warning">
                     ⚠️ Your credits are running low! Upgrade now to continue using the platform.
                 </div>
             </div>

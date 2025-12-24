@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Admin Dashboard - MoSPI Data Portal</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -397,6 +398,7 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.6);
+            -webkit-backdrop-filter: blur(5px);
             backdrop-filter: blur(5px);
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
@@ -613,6 +615,38 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Utility classes to replace inline styles */
+        .hidden { display: none; }
+        .user-name-text { color: #555; font-weight: 600; }
+        .modal-wide { max-width: 700px; }
+        .modal-full { max-width: 90%; max-height: 90vh; overflow: auto; }
+        .password-display { font-family: monospace; background: #f5f5f5; padding: 8px; border-radius: 6px; }
+        .input-readonly { background: #f5f5f5; cursor: not-allowed; }
+        .label-hint { color: #666; }
+        .checkbox-label { display: flex; align-items: center; cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e0e0e0; transition: all 0.3s; }
+        .checkbox-input { margin-right: 10px; cursor: pointer; width: 20px; height: 20px; }
+        .checkbox-text { font-weight: 600; }
+        .form-message { display: none; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: 600; }
+        .dataset-info { background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .dataset-stat { display: inline-block; margin-right: 20px; font-weight: bold; }
+        .loading-center { text-align: center; padding: 40px; display: none; }
+        .loading-text { margin-top: 15px; }
+        .overflow-x { overflow-x: auto; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-action-margin { margin-top: 10px; }
+        .btn-small { font-size: 0.85em; padding: 5px 10px; }
+        .stats-box { margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px; }
+        .stats-box-title { margin-bottom: 15px; }
+        .create-form-box { display: none; background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .create-form-title { margin-bottom: 15px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .form-label-block { display: block; font-weight: 600; margin-bottom: 5px; }
+        .form-input-full { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
+        .btn-row { display: flex; gap: 10px; }
+        .form-message-mt { margin-top: 15px; display: none; }
+        .warning-box { background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .warning-list { margin: 10px 0 0 20px; }
     </style>
 </head>
 <body>
@@ -626,8 +660,8 @@
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
                      alt="Government of India Emblem" 
                      class="emblem"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="emblem-fallback">🇮🇳</div>
+                     onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+                <div class="emblem-fallback hidden">🇮🇳</div>
                 <div class="govt-text">
                     <span class="small-text">Government of India</span>
                     <span class="ministry-name">Ministry of Statistics & Programme Implementation</span>
@@ -641,7 +675,7 @@
 
             <div class="header-actions">
                 <span class="admin-badge" id="roleBadge">ADMINISTRATOR</span>
-                <span id="userName" style="color: #555; font-weight: 600;">Loading...</span>
+                <span id="userName" class="user-name-text">Loading...</span>
                 <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -692,8 +726,8 @@
         </div>
 
         <!-- View User Modal -->
-        <div id="viewUserModal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 700px;">
+        <div id="viewUserModal" class="modal hidden">
+            <div class="modal-content modal-wide">
                 <div class="modal-header">
                     <h2>👤 User Details</h2>
                     <span class="close" onclick="closeViewUserModal()">&times;</span>
@@ -714,7 +748,7 @@
                         </div>
                         <div class="info-item">
                             <label>🔑 Password</label>
-                            <p id="view_password" style="font-family: monospace; background: #f5f5f5; padding: 8px; border-radius: 6px;"></p>
+                            <p id="view_password" class="password-display"></p>
                         </div>
                         <div class="info-item">
                             <label>🎭 Role</label>
@@ -741,8 +775,8 @@
         </div>
 
         <!-- Edit User Modal -->
-        <div id="editUserModal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 700px;">
+        <div id="editUserModal" class="modal hidden">
+            <div class="modal-content modal-wide">
                 <div class="modal-header">
                     <h2>✏️ Edit User</h2>
                     <span class="close" onclick="closeEditUserModal()">&times;</span>
@@ -754,7 +788,7 @@
                         <div class="info-grid">
                             <div class="form-group">
                                 <label>👤 Username *</label>
-                                <input type="text" id="edit_username" class="form-control" required readonly style="background: #f5f5f5; cursor: not-allowed;">
+                                <input type="text" id="edit_username" class="form-control input-readonly" required readonly>
                             </div>
                             <div class="form-group">
                                 <label>📧 Email *</label>
@@ -768,7 +802,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>🔑 Password <small style="color: #666;">(leave blank to keep current)</small></label>
+                            <label>🔑 Password <small class="label-hint">(leave blank to keep current)</small></label>
                             <input type="text" id="edit_password" class="form-control" placeholder="Enter new password or leave blank">
                         </div>
                         
@@ -788,13 +822,13 @@
                         </div>
                         
                         <div class="form-group">
-                            <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e0e0e0; transition: all 0.3s;">
-                                <input type="checkbox" id="edit_is_active" style="margin-right: 10px; cursor: pointer; width: 20px; height: 20px;">
-                                <span style="font-weight: 600;">✅ Active User</span>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="edit_is_active" class="checkbox-input">
+                                <span class="checkbox-text">✅ Active User</span>
                             </label>
                         </div>
                         
-                        <div id="editUserMessage" style="display: none; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: 600;"></div>
+                        <div id="editUserMessage" class="form-message"></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
@@ -805,8 +839,8 @@
         </div>
 
         <!-- View Admin Modal -->
-        <div id="viewAdminModal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 700px;">
+        <div id="viewAdminModal" class="modal hidden">
+            <div class="modal-content modal-wide">
                 <div class="modal-header">
                     <h2>👑 Administrator Details</h2>
                     <span class="close" onclick="closeViewAdminModal()">&times;</span>
@@ -827,7 +861,7 @@
                         </div>
                         <div class="info-item">
                             <label>🔑 Password</label>
-                            <p id="view_admin_password" style="font-family: monospace; background: #f5f5f5; padding: 8px; border-radius: 6px;"></p>
+                            <p id="view_admin_password" class="password-display"></p>
                         </div>
                         <div class="info-item">
                             <label>🎭 Role</label>
@@ -854,8 +888,8 @@
         </div>
 
         <!-- Edit Admin Modal -->
-        <div id="editAdminModal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 700px;">
+        <div id="editAdminModal" class="modal hidden">
+            <div class="modal-content modal-wide">
                 <div class="modal-header">
                     <h2>✏️ Edit Administrator</h2>
                     <span class="close" onclick="closeEditAdminModal()">&times;</span>
@@ -867,7 +901,7 @@
                         <div class="info-grid">
                             <div class="form-group">
                                 <label>👤 Username *</label>
-                                <input type="text" id="edit_admin_username" class="form-control" required readonly style="background: #f5f5f5; cursor: not-allowed;">
+                                <input type="text" id="edit_admin_username" class="form-control input-readonly" required readonly>
                             </div>
                             <div class="form-group">
                                 <label>📧 Email *</label>
@@ -881,7 +915,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>🔑 Password <small style="color: #666;">(leave blank to keep current)</small></label>
+                            <label>🔑 Password <small class="label-hint">(leave blank to keep current)</small></label>
                             <input type="text" id="edit_admin_password" class="form-control" placeholder="Enter new password or leave blank">
                         </div>
                         
@@ -903,13 +937,13 @@
                         </div>
                         
                         <div class="form-group">
-                            <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e0e0e0; transition: all 0.3s;">
-                                <input type="checkbox" id="edit_admin_is_active" style="margin-right: 10px; cursor: pointer; width: 20px; height: 20px;">
-                                <span style="font-weight: 600;">✅ Active Administrator</span>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="edit_admin_is_active" class="checkbox-input">
+                                <span class="checkbox-text">✅ Active Administrator</span>
                             </label>
                         </div>
                         
-                        <div id="editAdminMessage" style="display: none; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: 600;"></div>
+                        <div id="editAdminMessage" class="form-message"></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="closeEditAdminModal()">Cancel</button>
@@ -920,23 +954,23 @@
         </div>
 
         <!-- Dataset Viewer Modal -->
-        <div id="datasetViewerModal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow: auto;">
+        <div id="datasetViewerModal" class="modal hidden">
+            <div class="modal-content modal-full">
                 <div class="modal-header">
                     <h2 id="datasetViewerTitle">📊 Dataset Viewer</h2>
                     <span class="close" onclick="closeDatasetViewer()">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <div id="datasetViewerInfo" style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
-                        <span id="datasetTotalRecords" style="display: inline-block; margin-right: 20px; font-weight: bold;"></span>
-                        <span id="datasetReturnedRecords" style="display: inline-block; margin-right: 20px; font-weight: bold;"></span>
-                        <span id="datasetTableName" style="display: inline-block; font-weight: bold;"></span>
+                    <div id="datasetViewerInfo" class="dataset-info">
+                        <span id="datasetTotalRecords" class="dataset-stat"></span>
+                        <span id="datasetReturnedRecords" class="dataset-stat"></span>
+                        <span id="datasetTableName" class="dataset-stat"></span>
                     </div>
-                    <div id="datasetViewerLoading" style="text-align: center; padding: 40px; display: none;">
+                    <div id="datasetViewerLoading" class="loading-center hidden">
                         <div class="spinner"></div>
-                        <p style="margin-top: 15px;">Loading dataset...</p>
+                        <p class="loading-text">Loading dataset...</p>
                     </div>
-                    <div id="datasetViewerContent" style="overflow-x: auto;"></div>
+                    <div id="datasetViewerContent" class="overflow-x"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeDatasetViewer()">Close</button>
@@ -947,7 +981,7 @@
         <!-- Datasets Tab -->
         <div id="datasets-tab" class="tab-content">
             <div class="admin-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="flex-between">
                     <h2 class="section-title">📊 Dataset Management</h2>
                     <button class="btn btn-primary" onclick="showUploadDataset()" id="uploadDatasetBtn">➕ Upload New Dataset</button>
                 </div>
@@ -963,24 +997,24 @@
                             <div class="action-icon">📁</div>
                             <strong>Household Survey (PLFS)</strong>
                             <p>101,957 records</p>
-                            <div style="margin-top: 10px;">
-                                <button class="btn btn-secondary" style="font-size: 0.85em; padding: 5px 10px;" onclick="viewDataset('household')">View</button>
-                                <button class="btn btn-primary" style="font-size: 0.85em; padding: 5px 10px;" onclick="exportDataset('household')">Export</button>
+                            <div class="btn-action-margin">
+                                <button class="btn btn-secondary btn-small" onclick="viewDataset('household')">View</button>
+                                <button class="btn btn-primary btn-small" onclick="exportDataset('household')">Export</button>
                             </div>
                         </div>
                         <div class="action-card">
                             <div class="action-icon">👤</div>
                             <strong>Person Survey (PLFS)</strong>
                             <p>413,549 records</p>
-                            <div style="margin-top: 10px;">
-                                <button class="btn btn-secondary" style="font-size: 0.85em; padding: 5px 10px;" onclick="viewDataset('person')">View</button>
-                                <button class="btn btn-primary" style="font-size: 0.85em; padding: 5px 10px;" onclick="exportDataset('person')">Export</button>
+                            <div class="btn-action-margin">
+                                <button class="btn btn-secondary btn-small" onclick="viewDataset('person')">View</button>
+                                <button class="btn btn-primary btn-small" onclick="exportDataset('person')">Export</button>
                             </div>
                         </div>
                     </div>
                     
-                    <div style="margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px;">
-                        <h3 style="margin-bottom: 15px;">📈 Dataset Statistics</h3>
+                    <div class="stats-box">
+                        <h3 class="stats-box-title">📈 Dataset Statistics</h3>
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -1016,31 +1050,31 @@
         <!-- Admin Management Tab -->
         <div id="admins-tab" class="tab-content">
             <div class="admin-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="flex-between">
                     <h2 class="section-title">👑 Administrator Management</h2>
                     <button class="btn btn-primary" onclick="showCreateAdminForm()" id="createAdminBtn">➕ Create New Admin</button>
                 </div>
 
                 <!-- Create Admin Form -->
-                <div id="createAdminForm" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Create New Administrator</h3>
+                <div id="createAdminForm" class="create-form-box">
+                    <h3 class="create-form-title">Create New Administrator</h3>
                     <form id="newAdminForm">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-grid">
                             <div>
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Full Name</label>
-                                <input type="text" id="adminFullName" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                                <label class="form-label-block">Full Name</label>
+                                <input type="text" id="adminFullName" required class="form-input-full">
                             </div>
                             <div>
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Username</label>
-                                <input type="text" id="adminUsername" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                                <label class="form-label-block">Username</label>
+                                <input type="text" id="adminUsername" required class="form-input-full">
                             </div>
                             <div>
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Email</label>
-                                <input type="email" id="adminEmail" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                                <label class="form-label-block">Email</label>
+                                <input type="email" id="adminEmail" required class="form-input-full">
                             </div>
                             <div>
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Admin Role</label>
-                                <select id="adminRole" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                                <label class="form-label-block">Admin Role</label>
+                                <select id="adminRole" required class="form-input-full">
                                     <option value="super_admin">👑 Super Admin (Full Control)</option>
                                     <option value="data_admin">📊 Data Admin (Datasets Only)</option>
                                     <option value="user_admin">👥 User Admin (Users Only)</option>
@@ -1048,25 +1082,25 @@
                                 </select>
                             </div>
                             <div>
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Password</label>
-                                <input type="password" id="adminPassword" required minlength="6" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                                <label class="form-label-block">Password</label>
+                                <input type="password" id="adminPassword" required minlength="6" class="form-input-full">
                             </div>
                             <div>
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Confirm Password</label>
-                                <input type="password" id="adminConfirmPassword" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                                <label class="form-label-block">Confirm Password</label>
+                                <input type="password" id="adminConfirmPassword" required class="form-input-full">
                             </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
+                        <div class="btn-row">
                             <button type="submit" class="btn btn-success">✓ Create Admin</button>
                             <button type="button" class="btn btn-secondary" onclick="hideCreateAdminForm()">✗ Cancel</button>
                         </div>
                     </form>
-                    <div id="adminFormMessage" style="margin-top: 15px; display: none;"></div>
+                    <div id="adminFormMessage" class="form-message-mt"></div>
                 </div>
 
-                <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <div class="warning-box">
                     <strong>📋 Admin Hierarchy:</strong>
-                    <ul style="margin: 10px 0 0 20px;">
+                    <ul class="warning-list">
                         <li><strong>Super Admin (👑):</strong> Full system control, can manage all admins</li>
                         <li><strong>Data Admin (📊):</strong> Manage and upload datasets only</li>
                         <li><strong>User Admin (👥):</strong> Manage user accounts only</li>

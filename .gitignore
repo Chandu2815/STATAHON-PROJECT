@@ -52,5 +52,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
-# Keep csv files for data
-# *.csv
+
+# Large CSV files (exclude large ones, keep small ones)
+cperv1.csv

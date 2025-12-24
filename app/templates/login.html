@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Login - MoSPI Data Portal</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -263,7 +264,8 @@
         
         <div class="logo">
             <div class="emblem">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
+                <img src="/static/government-of-india-emblem.png" 
+                     onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png';"
                      alt="Government of India Emblem">
             </div>
             <h1>User Login</h1>

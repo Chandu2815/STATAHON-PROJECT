@@ -6,10 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import time
+import os
 from pathlib import Path
 from app.config import get_settings
 from app.database import init_db
 from app.api import auth, datasets, query, users, plfs, frontend, export  # , dataset_info
+from app.middleware.security import (
+    SecurityHeadersMiddleware,
+    HTTPSRedirectMiddleware
+)
 
 settings = get_settings()
 
@@ -96,13 +101,39 @@ static_path = Path(__file__).parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
+# Determine if running in production (Railway)
+is_production = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PROJECT_ID")
+
+# Build allowed origins dynamically
+allowed_origins = settings.allowed_origins_list.copy()
+if is_production:
+    # Add Railway domains and HTTPS origins
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
+    if railway_domain:
+        allowed_origins.extend([
+            f"https://{railway_domain}",
+            f"https://*.railway.app"
+        ])
+    # Ensure HTTPS versions are included
+    allowed_origins = list(set([
+        origin.replace("http://", "https://") if "localhost" not in origin else origin
+        for origin in allowed_origins
+    ] + allowed_origins))
+
+# Security middleware - HTTPS redirect (must be first)
+app.add_middleware(HTTPSRedirectMiddleware)
+
+# Security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins_list,
+    allow_origins=allowed_origins if not is_production else ["*"],  # Allow all in production with proper headers
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["X-Process-Time", "X-Request-ID"],
 )
 
 

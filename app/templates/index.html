@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>MoSPI Data Portal - Ministry of Statistics & Programme Implementation</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -456,6 +457,11 @@
             opacity: 0.9;
         }
 
+        /* Utility classes to replace inline styles */
+        .hidden { display: none; }
+        .btn-hero { padding: 15px 40px; font-size: 1.1em; }
+        .footer-subtitle { margin-top: 10px; font-size: 0.9em; }
+
         @media (max-width: 768px) {
             .hero h2 { font-size: 2em; }
             .hero p { font-size: 1.1em; }
@@ -475,8 +481,8 @@
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
                      alt="Government of India Emblem" 
                      class="emblem"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="emblem-fallback" style="display: none;">🇮🇳</div>
+                     onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+                <div class="emblem-fallback hidden">🇮🇳</div>
                 <div class="govt-text">
                     <span class="small-text">Government Of India</span>
                     <span class="ministry-name">Ministry of Statistics and<br>Programme Implementation</span>
@@ -495,7 +501,7 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <video autoplay muted loop playsinline class="hero-video">
+        <video autoplay muted loop class="hero-video">
             <source src="/static/videos/background.mp4" type="video/mp4">
             <source src="/static/videos/background.webm" type="video/webm">
             Your browser does not support the video tag.
@@ -505,7 +511,7 @@
             <h2>Empowering India with Data</h2>
             <p>Access comprehensive statistical data and insights from India's official data infrastructure platform</p>
             <div class="hero-actions">
-                <a href="/register" class="btn btn-secondary" style="padding: 15px 40px; font-size: 1.1em;">Get Started</a>
+                <a href="/register" class="btn btn-secondary btn-hero">Get Started</a>
             </div>
         </div>
     </section>
@@ -608,13 +614,13 @@
             <div>
                 <h4>About</h4>
                 <ul>
-                    <li><a href="https://www.mospi.gov.in" target="_blank">MoSPI Official Website</a></li>
+                    <li><a href="https://www.mospi.gov.in" target="_blank" rel="noopener noreferrer">MoSPI Official Website</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Reference</h4>
                 <ul>
-                    <li><a href="https://microdata.gov.in" target="_blank">Microdata Portal</a></li>
+                    <li><a href="https://microdata.gov.in" target="_blank" rel="noopener noreferrer">Microdata Portal</a></li>
                 </ul>
             </div>
             <div>
@@ -628,7 +634,7 @@
         </div>
         <div class="footer-bottom">
             <p>© 2025 Ministry of Statistics & Programme Implementation, Government of India</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">Built for STATATHON 2025 - Data Dissemination Track</p>
+            <p class="footer-subtitle">Built for STATATHON 2025 - Data Dissemination Track</p>
         </div>
     </footer>
 
