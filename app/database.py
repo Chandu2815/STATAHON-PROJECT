@@ -52,33 +52,56 @@ def init_db():
     
     Base.metadata.create_all(bind=engine)
     
-    # Create default admin if not exists
+    # Create or update default users
     db = SessionLocal()
     try:
-        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
-        if not admin:
-            admin = db.query(User).filter(User.username == 'admin').first()
-        
-        if not admin:
-            print("Creating default admin user...")
-            password = "admin123"
-            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        # Helper function to create/update user
+        def ensure_user(username, email, full_name, password, role, credits):
+            user = db.query(User).filter(User.username == username).first()
+            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             
-            admin = User(
-                username="admin",
-                email="admin@mospi.gov.in",
-                full_name="System Administrator",
-                hashed_password=hashed.decode('utf-8'),
-                password=password,  # Store plain password for admin viewing
-                role=UserRole.ADMIN,
-                is_active=True,
-                credits=999999.0
-            )
-            db.add(admin)
-            db.commit()
-            print(f"✅ Default admin created - Username: admin, Password: admin123")
-        else:
-            print(f"✅ Admin user exists: {admin.username}")
+            if not user:
+                print(f"Creating {role} user: {username}...")
+                user = User(
+                    username=username,
+                    email=email,
+                    full_name=full_name,
+                    hashed_password=hashed,
+                    password=password,
+                    role=role,
+                    is_active=True,
+                    credits=credits
+                )
+                db.add(user)
+                db.commit()
+                print(f"✅ Created {username} (Password: {password})")
+            else:
+                # Update password to ensure it's correct
+                user.hashed_password = hashed
+                user.password = password
+                db.commit()
+                print(f"✅ User {username} exists - password reset to: {password}")
+            return user
+        
+        # Create admin user
+        ensure_user(
+            username="admin",
+            email="admin@mospi.gov.in",
+            full_name="System Administrator",
+            password="admin123",
+            role=UserRole.ADMIN,
+            credits=999999.0
+        )
+        
+        # Create test user for demo
+        ensure_user(
+            username="testuser",
+            email="testuser@mospi.gov.in",
+            full_name="Test User",
+            password="test123",
+            role=UserRole.RESEARCHER,
+            credits=100.0
+        )
         
         # Auto-load CSV data if tables are empty
         load_csv_data_if_needed(db)
