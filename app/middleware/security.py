@@ -25,12 +25,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         # Content Security Policy - Prevents XSS attacks
         # Allow same-origin content, inline scripts/styles (needed for templates), 
-        # and trusted CDNs for images
+        # and trusted CDNs for images and scripts
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
             "img-src 'self' data: https: blob:",
             "connect-src 'self' https:",
             "frame-ancestors 'self'",
