@@ -249,8 +249,8 @@
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required minlength="6">
-                <small>Minimum 6 characters</small>
+                <input type="password" id="password" name="password" required minlength="8">
+                <small>Minimum 8 characters</small>
             </div>
 
             <div class="form-group">
@@ -328,8 +328,8 @@
                 return;
             }
 
-            if (password.length < 6) {
-                showError('Password must be at least 6 characters long');
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters long');
                 return;
             }
 
@@ -367,7 +367,22 @@
                         window.location.href = '/login';
                     }, 2000);
                 } else {
-                    showError(data.detail || 'Registration failed. Please try again.');
+                    // Handle different error formats
+                    let errorMsg = 'Registration failed. Please try again.';
+                    if (data.detail) {
+                        if (typeof data.detail === 'string') {
+                            errorMsg = data.detail;
+                        } else if (Array.isArray(data.detail)) {
+                            // Pydantic validation errors come as array
+                            errorMsg = data.detail.map(err => {
+                                const field = err.loc ? err.loc[err.loc.length - 1] : 'field';
+                                return `${field}: ${err.msg}`;
+                            }).join(', ');
+                        } else if (typeof data.detail === 'object') {
+                            errorMsg = JSON.stringify(data.detail);
+                        }
+                    }
+                    showError(errorMsg);
                     registerBtn.disabled = false;
                     loading.style.display = 'none';
                 }
