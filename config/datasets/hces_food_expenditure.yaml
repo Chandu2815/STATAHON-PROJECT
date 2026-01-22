@@ -1,0 +1,78 @@
+dataset:
+  name: "HCES Food Expenditure"
+  description: "Household Consumption Expenditure Survey (HCES) - Food expenditure data by household and item"
+  table_name: "hces_food_expenditure"
+  source: "Ministry of Statistics and Programme Implementation (MoSPI)"
+  
+  schema:
+    - name: "Survey_Name"
+      type: "string"
+      filterable: true
+      description: "Survey name (HCES)"
+    
+    - name: "Year"
+      type: "integer"
+      filterable: true
+      description: "Survey year"
+    
+    - name: "Sector"
+      type: "integer"
+      filterable: true
+      description: "Sector code (1: Rural, 2: Urban)"
+      allowed_values: [1, 2]
+    
+    - name: "State_Code"
+      type: "integer"
+      filterable: true
+      description: "State code as per NSS classification"
+    
+    - name: "District_Code"
+      type: "integer"
+      filterable: true
+      description: "District code"
+    
+    - name: "Household_ID"
+      type: "string"
+      filterable: true
+      description: "Household identifier"
+    
+    - name: "Item_Code"
+      type: "integer"
+      filterable: true
+      description: "Food item code"
+    
+    - name: "Quantity"
+      type: "float"
+      filterable: true
+      description: "Quantity of food item consumed"
+    
+    - name: "Value"
+      type: "float"
+      filterable: true
+      description: "Expenditure value on food item"
+    
+    - name: "Multiplier"
+      type: "float"
+      filterable: false
+      description: "Statistical weight/multiplier"
+    
+  filters:
+    state:
+      field: "State_Code"
+      type: "integer"
+    
+    sector:
+      field: "Sector"
+      type: "integer"
+    
+    district:
+      field: "District_Code"
+      type: "integer"
+    
+    item_code:
+      field: "Item_Code"
+      type: "integer"
+    
+    value_range:
+      field: "Value"
+      type: "range"

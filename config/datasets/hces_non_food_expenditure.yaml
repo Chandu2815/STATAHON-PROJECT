@@ -1,0 +1,77 @@
+dataset:
+  name: "HCES Non-Food Expenditure"
+  description: "Household Consumption Expenditure Survey (HCES) - Non-food expenditure data by household and item"
+  table_name: "hces_non_food_expenditure"
+  source: "Ministry of Statistics and Programme Implementation (MoSPI)"
+  
+  schema:
+    - name: "Survey_Name"
+      type: "string"
+      filterable: true
+      description: "Survey name (HCES)"
+    
+    - name: "Year"
+      type: "integer"
+      filterable: true
+      description: "Survey year"
+    
+    - name: "Sector"
+      type: "integer"
+      filterable: true
+      description: "Sector code (1: Rural, 2: Urban)"
+      allowed_values: [1, 2]
+    
+    - name: "State_Code"
+      type: "integer"
+      filterable: true
+      description: "State code as per NSS classification"
+    
+    - name: "District_Code"
+      type: "integer"
+      filterable: true
+      description: "District code"
+    
+    - name: "Household_ID"
+      type: "string"
+      filterable: true
+      description: "Household identifier"
+    
+    - name: "Item_Code"
+      type: "integer"
+      filterable: true
+      description: "Non-food item code"
+    
+    - name: "Expenditure_Type"
+      type: "string"
+      filterable: true
+      description: "Type of expenditure"
+    
+    - name: "Value"
+      type: "float"
+      filterable: true
+      description: "Expenditure value on non-food item"
+    
+  filters:
+    state:
+      field: "State_Code"
+      type: "integer"
+    
+    sector:
+      field: "Sector"
+      type: "integer"
+    
+    district:
+      field: "District_Code"
+      type: "integer"
+    
+    item_code:
+      field: "Item_Code"
+      type: "integer"
+    
+    expenditure_type:
+      field: "Expenditure_Type"
+      type: "string"
+    
+    value_range:
+      field: "Value"
+      type: "range"

@@ -1909,174 +1909,78 @@
             alert('📊 Dataset Upload Feature\n\nThis feature allows you to:\n• Upload CSV/Excel files\n• Map columns to database schema\n• Validate data before import\n\nComing soon!');
         }
 
-        async function viewDataset(dataset) {
-            console.log('🔍 Loading data for dataset:', dataset);
-            
-            try {
-                const datasetConfig = {
-                    'household': {
-                        title: '📁 Household Survey (PLFS) - CHHV1',
-                        datasetId: 1,
-                        tableName: 'household_survey',
-                        totalRecords: '101,957'
-                    },
-                    'person': {
-                        title: '👤 Person Survey (PLFS) - CPERV1', 
-                        datasetId: 2,
-                        tableName: 'person_survey',
-                        totalRecords: '50,000'
-                    },
-                    'hces_household': {
-                        title: '🏠 HCES Household Identification',
-                        datasetId: 3,
-                        tableName: 'hces_household_identification',
-                        totalRecords: '261,953'
-                    },
-                    'hces_food': {
-                        title: '🍽️ HCES Food Expenditure',
-                        datasetId: 4,
-                        tableName: 'hces_food_expenditure',
-                        totalRecords: '85,235'
-                    },
-                    'hces_non_food': {
-                        title: '🛍️ HCES Non-Food Expenditure',
-                        datasetId: 5,
-                        tableName: 'hces_non_food_expenditure',
-                        totalRecords: '261,953'
-                    }
-                };
-
-                const config = datasetConfig[dataset];
-                if (!config) {
-                    alert('Dataset not found!');
-                    return;
+        function viewDataset(dataset) {
+            const datasetInfo = {
+                'household': {
+                    title: '📁 Household Survey (PLFS) - CHHV1',
+                    records: '101,957',
+                    sampleData: [
+                        {State_Ut_Code: 28, District_Code: 1, Sector: 1, Household_Size: 4},
+                        {State_Ut_Code: 28, District_Code: 2, Sector: 2, Household_Size: 5},
+                        {State_Ut_Code: 9, District_Code: 1, Sector: 1, Household_Size: 3}
+                    ]
+                },
+                'person': {
+                    title: '👤 Person Survey (PLFS) - CPERV1', 
+                    records: '413,549',
+                    sampleData: [
+                        {State_Ut_Code: 28, District_Code: 1, Age: 25, Sex: 1, Education: 7},
+                        {State_Ut_Code: 28, District_Code: 2, Age: 34, Sex: 2, Education: 5},
+                        {State_Ut_Code: 9, District_Code: 1, Age: 42, Sex: 1, Education: 9}
+                    ]
+                },
+                'hces_household': {
+                    title: '🏠 HCES Household Identification',
+                    records: '261,953',
+                    sampleData: [
+                        {Survey_Name: 'HCES', Year: 2024, State_Code: 1, Sector: 1, Household_ID: '1'},
+                        {Survey_Name: 'HCES', Year: 2024, State_Code: 1, Sector: 2, Household_ID: '2'},
+                        {Survey_Name: 'HCES', Year: 2024, State_Code: 2, Sector: 1, Household_ID: '3'}
+                    ]
+                },
+                'hces_food': {
+                    title: '🍽️ HCES Food Expenditure',
+                    records: '85,235', 
+                    sampleData: [
+                        {Survey_Name: 'HCES', State_Code: 1, Item_Code: 4, Quantity: 1.0, Value: 50.0},
+                        {Survey_Name: 'HCES', State_Code: 1, Item_Code: 5, Quantity: 2.0, Value: 120.0},
+                        {Survey_Name: 'HCES', State_Code: 2, Item_Code: 4, Quantity: 1.5, Value: 75.0}
+                    ]
+                },
+                'hces_non_food': {
+                    title: '🛍️ HCES Non-Food Expenditure',
+                    records: '261,953',
+                    sampleData: [
+                        {Survey_Name: 'HCES', State_Code: 1, Item_Code: 101, Value: 200.0},
+                        {Survey_Name: 'HCES', State_Code: 1, Item_Code: 102, Value: 150.0},
+                        {Survey_Name: 'HCES', State_Code: 2, Item_Code: 101, Value: 180.0}
+                    ]
                 }
-
-                // Get modal elements
-                const modal = document.getElementById('datasetViewerModal');
-                const loading = document.getElementById('datasetViewerLoading');
-                const content = document.getElementById('datasetViewerContent');
-                const infoDiv = document.getElementById('datasetViewerInfo');
-                const title = document.getElementById('datasetViewerTitle');
-
-                if (!modal) {
-                    console.error('❌ Modal element not found!');
-                    alert('Error: Modal not found. Please refresh the page.');
-                    return;
-                }
-
-                console.log('📋 Setting up modal...');
-                
-                // Reset and show modal
-                title.textContent = config.title;
-                modal.style.opacity = '1';
-                modal.classList.remove('hidden');
-                modal.style.display = 'block';
-                loading.style.display = 'block';
-                infoDiv.style.display = 'none';
-                content.innerHTML = '';
-
-                // Get sample data ready as fallback
-                console.log('📝 Preparing sample data...');
-                const sampleData = generateSampleDataForDataset(dataset);
-                console.log('📊 Sample data:', sampleData);
-
-                try {
-                    const token = localStorage.getItem('access_token');
-                    
-                    if (!token) {
-                        console.log('⚠️ No auth token found, using sample data');
-                        throw new Error('No authentication token');
-                    }
-                    
-                    console.log('📡 Fetching real data from API...');
-                    
-                    // Try to get real data from API
-                    const response = await fetch(`/api/v1/query?dataset=${config.datasetId}&limit=15`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('✅ Real data loaded successfully!', result);
-                        
-                        // Show real data
-                        loading.style.display = 'none';
-                        infoDiv.style.display = 'block';
-                        
-                        document.getElementById('datasetTotalRecords').textContent = `📈 Total Records: ${config.totalRecords}`;
-                        document.getElementById('datasetReturnedRecords').textContent = `📄 Showing: ${result.returned_records || result.data?.length || 0} real records`;
-                        document.getElementById('datasetTableName').textContent = `🗂️ Table: ${config.tableName} (Real Data)`;
-                        
-                        content.innerHTML = generateDataTable(result.data || []);
-                        
-                    } else if (response.status === 401) {
-                        console.log('🔑 Authentication failed - token expired or invalid');
-                        throw new Error('Authentication required - please login again');
-                    } else {
-                        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-                    }
-                    
-                } catch (apiError) {
-                    console.log('🔄 Using sample data due to error:', apiError.message);
-                    
-                    // Show sample data
-                    loading.style.display = 'none';
-                    infoDiv.style.display = 'block';
-                    
-                    document.getElementById('datasetTotalRecords').textContent = `📈 Total Records: ${config.totalRecords} (Database)`;
-                    document.getElementById('datasetReturnedRecords').textContent = `📄 Showing: ${sampleData.length} sample records`;
-                    
-                    const statusMessage = apiError.message.includes('Authentication') ? 
-                        'Please refresh page and login again' : 'API unavailable';
-                    document.getElementById('datasetTableName').textContent = `🗂️ Sample Data - ${statusMessage}`;
-                    
-                    console.log('🔧 Generating table with sample data...');
-                    const tableHTML = generateDataTable(sampleData);
-                    console.log('📄 Generated table HTML:', tableHTML.substring(0, 100) + '...');
-                    content.innerHTML = tableHTML;
-                }
-                
-                console.log('✅ Modal setup complete');
-                
-            } catch (error) {
-                console.error('💥 Critical error in viewDataset:', error);
-                alert(`Error opening dataset viewer: ${error.message}`);
-            }
-        }
-
-        function generateSampleDataForDataset(dataset) {
-            const sampleData = {
-                'household': [
-                    {State_Ut_Code: 28, District_Code: 1, Sector: 1, Household_Size: 4, Monthly_Consumer_Expenditure: 15000},
-                    {State_Ut_Code: 28, District_Code: 2, Sector: 2, Household_Size: 5, Monthly_Consumer_Expenditure: 18000},
-                    {State_Ut_Code: 9, District_Code: 1, Sector: 1, Household_Size: 3, Monthly_Consumer_Expenditure: 25000}
-                ],
-                'person': [
-                    {State_Ut_Code: 28, District_Code: 1, Age: 25, Sex: 1, Education: 7, Usual_Principal_Activity_Status: 11},
-                    {State_Ut_Code: 28, District_Code: 2, Age: 34, Sex: 2, Education: 5, Usual_Principal_Activity_Status: 92},
-                    {State_Ut_Code: 9, District_Code: 1, Age: 42, Sex: 1, Education: 9, Usual_Principal_Activity_Status: 11}
-                ],
-                'hces_household': [
-                    {Survey_Name: 'HCES', Year: 2024, State_Code: 1, Sector: 1, Household_ID: 'H001'},
-                    {Survey_Name: 'HCES', Year: 2024, State_Code: 1, Sector: 2, Household_ID: 'H002'},
-                    {Survey_Name: 'HCES', Year: 2024, State_Code: 2, Sector: 1, Household_ID: 'H003'}
-                ],
-                'hces_food': [
-                    {Survey_Name: 'HCES', State_Code: 1, Item_Code: 4, Quantity: 1.0, Value: 50.0},
-                    {Survey_Name: 'HCES', State_Code: 1, Item_Code: 5, Quantity: 2.0, Value: 120.0},
-                    {Survey_Name: 'HCES', State_Code: 2, Item_Code: 4, Quantity: 1.5, Value: 75.0}
-                ],
-                'hces_non_food': [
-                    {Survey_Name: 'HCES', State_Code: 1, Item_Code: 101, Value: 200.0},
-                    {Survey_Name: 'HCES', State_Code: 1, Item_Code: 102, Value: 150.0},
-                    {Survey_Name: 'HCES', State_Code: 2, Item_Code: 101, Value: 180.0}
-                ]
             };
-            return sampleData[dataset] || [];
+
+            const info = datasetInfo[dataset];
+            if (!info) {
+                alert('Dataset not found!');
+                return;
+            }
+
+            // Show modal with sample data
+            const modal = document.getElementById('datasetViewerModal');
+            const loading = document.getElementById('datasetViewerLoading');
+            const content = document.getElementById('datasetViewerContent');
+            const infoDiv = document.getElementById('datasetViewerInfo');
+            const title = document.getElementById('datasetViewerTitle');
+
+            title.textContent = info.title;
+            loading.style.display = 'none';
+            infoDiv.style.display = 'block';
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+
+            document.getElementById('datasetTotalRecords').textContent = `📈 Total Records: ${info.records}`;
+            document.getElementById('datasetReturnedRecords').textContent = `📄 Showing: ${info.sampleData.length} sample records`;
+            
+            content.innerHTML = generateDataTable(info.sampleData);
         }
 
         function generateHouseholdSampleData() {
@@ -2173,119 +2077,48 @@
             return html;
         }
 
-        async function exportDataset(dataset) {
-            console.log('📤 Exporting real data for dataset:', dataset);
-            
-            const datasetConfig = {
-                'household': {
-                    filename: 'household_survey_export.json',
-                    datasetId: 1,
-                    tableName: 'household_survey',
-                    totalRecords: '101,957'
-                },
-                'person': {
-                    filename: 'person_survey_export.json',
-                    datasetId: 2,
-                    tableName: 'person_survey',
-                    totalRecords: '50,000'
-                },
-                'hces_household': {
-                    filename: 'hces_household_export.json',
-                    datasetId: 3,
-                    tableName: 'hces_household_identification',
-                    totalRecords: '261,953'
-                },
-                'hces_food': {
-                    filename: 'hces_food_export.json',
-                    datasetId: 4,
-                    tableName: 'hces_food_expenditure',
-                    totalRecords: '85,235'
-                },
-                'hces_non_food': {
-                    filename: 'hces_non_food_export.json',
-                    datasetId: 5,
-                    tableName: 'hces_non_food_expenditure',
-                    totalRecords: '261,953'
-                }
+        function exportDataset(dataset) {
+            const datasetInfo = {
+                'household': {filename: 'household_survey_export.json', records: '101,957'},
+                'person': {filename: 'person_survey_export.json', records: '413,549'},
+                'hces_household': {filename: 'hces_household_export.json', records: '261,953'},
+                'hces_food': {filename: 'hces_food_export.json', records: '85,235'},
+                'hces_non_food': {filename: 'hces_non_food_export.json', records: '261,953'}
             };
 
-            const config = datasetConfig[dataset];
-            if (!config) {
+            const info = datasetInfo[dataset];
+            if (!info) {
                 alert('Dataset not found!');
                 return;
             }
 
-            // Show loading indicator
-            const originalButton = event.target;
-            const originalText = originalButton.textContent;
-            originalButton.disabled = true;
-            originalButton.textContent = '⏳ Exporting...';
+            // Create sample export data
+            const exportData = {
+                dataset_name: dataset,
+                total_records: info.records,
+                returned_records: 5,
+                data: [
+                    {sample: 'data', record: 1, note: 'Sample export from ' + dataset},
+                    {sample: 'data', record: 2, note: 'Sample export from ' + dataset},
+                    {sample: 'data', record: 3, note: 'Sample export from ' + dataset},
+                    {sample: 'data', record: 4, note: 'Sample export from ' + dataset},
+                    {sample: 'data', record: 5, note: 'Sample export from ' + dataset}
+                ],
+                note: 'This is sample export data'
+            };
 
-            try {
-                console.log('📡 Fetching real data for export...');
-                
-                // Fetch real data from API - limit to 100 records for export
-                const response = await fetch(`/api/v1/query?dataset=${config.datasetId}&limit=100`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+            // Download the file
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = info.filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
 
-                let exportData;
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('✅ Real data fetched for export:', result);
-                    
-                    exportData = {
-                        dataset_name: config.tableName,
-                        total_records_in_database: config.totalRecords,
-                        exported_records: result.returned_records || result.data?.length || 0,
-                        export_timestamp: new Date().toISOString(),
-                        data_type: 'real_data',
-                        data: result.data || [],
-                        note: 'Real data exported from STATAHON database'
-                    };
-                    
-                } else {
-                    console.warn('⚠️ API failed, using sample data for export');
-                    const sampleData = generateSampleDataForDataset(dataset);
-                    
-                    exportData = {
-                        dataset_name: config.tableName,
-                        total_records_in_database: config.totalRecords,
-                        exported_records: sampleData.length,
-                        export_timestamp: new Date().toISOString(),
-                        data_type: 'sample_data',
-                        data: sampleData,
-                        note: 'Sample data - API was unavailable during export'
-                    };
-                }
-
-                // Download the file
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = config.filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-
-                originalButton.disabled = false;
-                originalButton.textContent = originalText;
-                
-                const dataType = exportData.data_type === 'real_data' ? 'real' : 'sample';
-                alert(`✅ Successfully exported ${exportData.exported_records} ${dataType} records to ${config.filename}`);
-                
-            } catch (error) {
-                console.error('💥 Export error:', error);
-                originalButton.disabled = false;
-                originalButton.textContent = originalText;
-                alert(`❌ Export failed: ${error.message}`);
-            }
+            alert(`✅ Successfully exported sample data to ${info.filename}`);
         }
 
         // Initialize on page load
