@@ -71,3 +71,9 @@ class QueryResponse(BaseModel):
     returned_records: int
     data: List[Dict[str, Any]]
     query_time_ms: float
+    # Optional fields for filter information
+    filters_applied: Optional[Dict[str, Any]] = Field(None, description="Filters that were applied to the query")
+    skipped_filters: Optional[List[Dict[str, str]]] = Field(None, description="Filters that were skipped due to missing columns")
+    filter_notes: Optional[str] = Field(None, description="Notes about filter application")
+    limit: Optional[int] = Field(None, description="Limit applied to query")
+    offset: Optional[int] = Field(None, description="Offset applied to query")

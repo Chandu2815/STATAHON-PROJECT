@@ -947,20 +947,47 @@
             const ageGroupContainer = document.getElementById('ageGroupContainer');
             const datasetInfo = document.getElementById('datasetInfo');
             
+            // Person Survey (ID: 2) is the only individual-level dataset with Gender/Age filters
+            // All other datasets (1, 3, 4, 5) are household-level
             if (dataset === '2') {
-                // Person Survey - show all filters
+                // Person Survey - show all filters (individual-level data)
                 genderGroup.style.display = 'block';
                 ageGroupContainer.style.display = 'block';
-                datasetInfo.textContent = '📊 Person Survey: Individual-level data (415,549 records). Filters: State, Gender, Age, Sector';
+                datasetInfo.textContent = '📊 Person Survey: Individual-level data (50,000 records). Filters: State, Gender, Age, Sector';
             } else if (dataset === '1') {
-                // Household Survey - hide gender and age
+                // Household Survey (PLFS) - hide gender and age (household-level data)
                 genderGroup.style.display = 'none';
                 ageGroupContainer.style.display = 'none';
-                datasetInfo.textContent = '🏠 Household Survey: Household-level data (101,957 records). Filters: State, Sector';
+                datasetInfo.textContent = '🏠 Household Survey (PLFS): Household-level data (101,957 records). Filters: State, Sector';
+                // Clear hidden filter values to prevent accidental submission
+                document.getElementById('gender').value = '';
+                document.getElementById('ageGroup').value = '';
+            } else if (dataset === '3') {
+                // HCES Household Identification - hide gender and age (household-level data)
+                genderGroup.style.display = 'none';
+                ageGroupContainer.style.display = 'none';
+                datasetInfo.textContent = '🏠 HCES Household Identification: Household-level data. Filters: State, Sector';
+                document.getElementById('gender').value = '';
+                document.getElementById('ageGroup').value = '';
+            } else if (dataset === '4') {
+                // HCES Food Expenditure - hide gender and age (household-level data)
+                genderGroup.style.display = 'none';
+                ageGroupContainer.style.display = 'none';
+                datasetInfo.textContent = '🍽️ HCES Food Expenditure: Household-level data. Filters: State, Sector';
+                document.getElementById('gender').value = '';
+                document.getElementById('ageGroup').value = '';
+            } else if (dataset === '5') {
+                // HCES Non-Food Expenditure - hide gender and age (household-level data)
+                genderGroup.style.display = 'none';
+                ageGroupContainer.style.display = 'none';
+                datasetInfo.textContent = '🛒 HCES Non-Food Expenditure: Household-level data. Filters: State, Sector';
+                document.getElementById('gender').value = '';
+                document.getElementById('ageGroup').value = '';
             } else {
+                // Default state - show all filters but with empty info
                 genderGroup.style.display = 'block';
                 ageGroupContainer.style.display = 'block';
-                datasetInfo.textContent = '';
+                datasetInfo.textContent = 'Please select a dataset to see available filters';
             }
         }
         
@@ -971,33 +998,81 @@
 
         // Generate sample data for demonstration
         function generateSampleData(datasetId, limit) {
-            if (datasetId === '4') {
-                // Household Survey sample data
+            if (datasetId === '1') {
+                // PLFS Household Survey sample data
                 const sampleData = [];
                 for (let i = 0; i < Math.min(limit, 20); i++) {
                     sampleData.push({
                         State_Ut_Code: Math.floor(Math.random() * 35) + 1,
                         District_Code: Math.floor(Math.random() * 10) + 1,
+                        Sector: Math.floor(Math.random() * 2) + 1,
                         Household_Size: Math.floor(Math.random() * 6) + 2,
                         Monthly_Consumer_Expenditure: Math.floor(Math.random() * 30000) + 10000,
-                        Household_Type: Math.random() > 0.5 ? 'Rural' : 'Urban',
                         Social_Group: ['General', 'OBC', 'SC', 'ST'][Math.floor(Math.random() * 4)],
                         Religion: ['Hindu', 'Muslim', 'Christian', 'Others'][Math.floor(Math.random() * 4)]
                     });
                 }
                 return sampleData;
-            } else if (datasetId === '5') {
-                // Person Survey sample data
+            } else if (datasetId === '2') {
+                // PLFS Person Survey sample data
                 const sampleData = [];
                 for (let i = 0; i < Math.min(limit, 20); i++) {
                     sampleData.push({
                         State_UT_Code: Math.floor(Math.random() * 35) + 1,
                         District_Code: Math.floor(Math.random() * 10) + 1,
+                        Sector: Math.floor(Math.random() * 2) + 1,
                         Age: Math.floor(Math.random() * 60) + 18,
                         Sex: Math.floor(Math.random() * 2) + 1,
-                        Education_Level: ['Illiterate', 'Primary', 'Secondary', 'Higher Secondary', 'Graduate', 'Post Graduate'][Math.floor(Math.random() * 6)],
-                        Current_Weekly_Activity_Status: [11, 12, 21, 31, 41, 51, 81, 91, 92][Math.floor(Math.random() * 9)],
-                        Industry: ['Agriculture', 'Manufacturing', 'Construction', 'Trade', 'IT/Software', 'Education', 'Healthcare', 'Other'][Math.floor(Math.random() * 8)]
+                        General_Education: ['Illiterate', 'Primary', 'Secondary', 'Graduate'][Math.floor(Math.random() * 4)],
+                        Total_Earnings_Received: Math.floor(Math.random() * 50000) + 5000
+                    });
+                }
+                return sampleData;
+            } else if (datasetId === '3') {
+                // HCES Household Identification sample data
+                const sampleData = [];
+                for (let i = 0; i < Math.min(limit, 20); i++) {
+                    sampleData.push({
+                        Survey_Name: 'HCES',
+                        Year: 2024,
+                        Sector: Math.floor(Math.random() * 2) + 1,
+                        State_Code: Math.floor(Math.random() * 35) + 1,
+                        District_Code: Math.floor(Math.random() * 20) + 1,
+                        Household_ID: i + 1,
+                        Multiplier: Math.floor(Math.random() * 50000) + 10000
+                    });
+                }
+                return sampleData;
+            } else if (datasetId === '4') {
+                // HCES Food Expenditure sample data
+                const sampleData = [];
+                for (let i = 0; i < Math.min(limit, 20); i++) {
+                    sampleData.push({
+                        Survey_Name: 'HCES',
+                        Year: 2024,
+                        Sector: Math.floor(Math.random() * 2) + 1,
+                        State_Code: Math.floor(Math.random() * 35) + 1,
+                        District_Code: Math.floor(Math.random() * 20) + 1,
+                        Household_ID: i + 1,
+                        Item_Code: Math.floor(Math.random() * 100) + 1,
+                        Value: Math.floor(Math.random() * 5000) + 100
+                    });
+                }
+                return sampleData;
+            } else if (datasetId === '5') {
+                // HCES Non-Food Expenditure sample data
+                const sampleData = [];
+                for (let i = 0; i < Math.min(limit, 20); i++) {
+                    sampleData.push({
+                        Survey_Name: 'HCES',
+                        Year: 2024,
+                        Sector: Math.floor(Math.random() * 2) + 1,
+                        State_Code: Math.floor(Math.random() * 35) + 1,
+                        District_Code: Math.floor(Math.random() * 20) + 1,
+                        Household_ID: i + 1,
+                        Item_Code: Math.floor(Math.random() * 200) + 1,
+                        Expenditure_Type: Math.floor(Math.random() * 5) + 1,
+                        Value: Math.floor(Math.random() * 10000) + 500
                     });
                 }
                 return sampleData;
@@ -1057,12 +1132,28 @@
 
                 let data;
                 if (!response.ok) {
-                    // If API fails (404 or other error), use sample data
-                    console.log('API returned error, using sample data');
-                    data = {
-                        data: generateSampleData(dataset, parseInt(limit)),
-                        note: 'Sample data - Database not populated yet'
-                    };
+                    // Handle different error codes gracefully
+                    if (response.status === 401) {
+                        console.warn('Unauthorized - token may be expired, using sample data');
+                        // For datasets 3, 4, 5 (HCES), handle 401 gracefully with sample data
+                        if (dataset === '3' || dataset === '4' || dataset === '5') {
+                            data = {
+                                data: generateSampleData(dataset, parseInt(limit)),
+                                note: 'Sample data - Authentication required for full access'
+                            };
+                        } else {
+                            // For datasets 1 and 2, redirect to login
+                            window.location.href = '/login';
+                            return;
+                        }
+                    } else {
+                        // If API fails (404 or other error), use sample data
+                        console.log('API returned error, using sample data');
+                        data = {
+                            data: generateSampleData(dataset, parseInt(limit)),
+                            note: 'Sample data - Database not populated yet'
+                        };
+                    }
                 } else {
                     data = await response.json();
                     // If no data returned, use sample data
@@ -1082,45 +1173,91 @@
                 document.getElementById('resultsSection').style.display = 'block';
                 document.getElementById('chartsSection').style.display = 'none';
                 
-                // Deduct 2 credits per query and log usage
-                try {
-                    const deductResponse = await fetch('/api/v1/users/me/deduct-credits', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ 
-                            amount: 2.0,
-                            reason: 'Query execution'
-                        })
-                    });
-                    
-                    if (!deductResponse.ok) {
-                        console.error('Failed to deduct credits');
-                    }
-                } catch (err) {
-                    console.error('Error deducting credits:', err);
-                }
-                
-                // Log query for tracking
-                try {
-                    await fetch('/api/v1/users/me/log-query', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
+                // Deduct 2 credits per query and log usage - with graceful error handling
+                // For datasets 3, 4, 5, don't let credit/logging failures break the flow
+                if (dataset === '3' || dataset === '4' || dataset === '5') {
+                    // HCES datasets - graceful handling of credit deduction
+                    try {
+                        const deductResponse = await fetch('/api/v1/users/me/deduct-credits', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                amount: 2.0,
+                                reason: 'Query execution'
+                            })
+                        });
+                        
+                        if (!deductResponse.ok && deductResponse.status !== 401) {
+                            console.warn('Credit deduction failed for HCES dataset, continuing anyway');
                         }
-                    });
-                    
-                    // Immediately increment the query counter in the UI
-                    const queryCountElement = document.getElementById('queryCount');
-                    if (queryCountElement) {
-                        const currentCount = parseInt(queryCountElement.textContent) || 0;
-                        queryCountElement.textContent = currentCount + 1;
+                    } catch (err) {
+                        console.warn('Credit deduction error for HCES dataset:', err.message);
                     }
-                } catch (err) {
-                    console.error('Error logging query:', err);
+                    
+                    // Log query - graceful handling
+                    try {
+                        const logResponse = await fetch('/api/v1/users/me/log-query', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (logResponse.ok) {
+                            const queryCountElement = document.getElementById('queryCount');
+                            if (queryCountElement) {
+                                const currentCount = parseInt(queryCountElement.textContent) || 0;
+                                queryCountElement.textContent = currentCount + 1;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Query logging error for HCES dataset:', err.message);
+                    }
+                } else {
+                    // Datasets 1 and 2 - original behavior
+                    try {
+                        const deductResponse = await fetch('/api/v1/users/me/deduct-credits', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                amount: 2.0,
+                                reason: 'Query execution'
+                            })
+                        });
+                        
+                        if (!deductResponse.ok) {
+                            console.error('Failed to deduct credits');
+                        }
+                    } catch (err) {
+                        console.error('Error deducting credits:', err);
+                    }
+                    
+                    // Log query for tracking
+                    try {
+                        await fetch('/api/v1/users/me/log-query', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        // Immediately increment the query counter in the UI
+                        const queryCountElement = document.getElementById('queryCount');
+                        if (queryCountElement) {
+                            const currentCount = parseInt(queryCountElement.textContent) || 0;
+                            queryCountElement.textContent = currentCount + 1;
+                        }
+                    } catch (err) {
+                        console.error('Error logging query:', err);
+                    }
                 }
                 
                 // Reload user info to get updated credits (but counter already updated above)
@@ -1136,45 +1273,90 @@
                 document.getElementById('resultsSection').style.display = 'block';
                 document.getElementById('chartsSection').style.display = 'none';
                 
-                // Deduct 2 credits per query and log usage
-                try {
-                    const deductResponse = await fetch('/api/v1/users/me/deduct-credits', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ 
-                            amount: 2.0,
-                            reason: 'Query execution'
-                        })
-                    });
-                    
-                    if (!deductResponse.ok) {
-                        console.error('Failed to deduct credits');
-                    }
-                } catch (err) {
-                    console.error('Error deducting credits:', err);
-                }
-                
-                // Log query for tracking
-                try {
-                    await fetch('/api/v1/users/me/log-query', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
+                // For datasets 3, 4, 5 (HCES), handle credit deduction gracefully
+                if (dataset === '3' || dataset === '4' || dataset === '5') {
+                    // HCES datasets - graceful handling
+                    try {
+                        const deductResponse = await fetch('/api/v1/users/me/deduct-credits', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                amount: 2.0,
+                                reason: 'Query execution'
+                            })
+                        });
+                        
+                        if (!deductResponse.ok && deductResponse.status !== 401) {
+                            console.warn('Credit deduction failed for HCES dataset in error handler');
                         }
-                    });
-                    
-                    // Immediately increment the query counter in the UI
-                    const queryCountElement = document.getElementById('queryCount');
-                    if (queryCountElement) {
-                        const currentCount = parseInt(queryCountElement.textContent) || 0;
-                        queryCountElement.textContent = currentCount + 1;
+                    } catch (err) {
+                        console.warn('Credit deduction error for HCES dataset:', err.message);
                     }
-                } catch (err) {
-                    console.error('Error logging query:', err);
+                    
+                    // Log query - graceful handling
+                    try {
+                        const logResponse = await fetch('/api/v1/users/me/log-query', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (logResponse.ok) {
+                            const queryCountElement = document.getElementById('queryCount');
+                            if (queryCountElement) {
+                                const currentCount = parseInt(queryCountElement.textContent) || 0;
+                                queryCountElement.textContent = currentCount + 1;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Query logging error for HCES dataset:', err.message);
+                    }
+                } else {
+                    // Datasets 1 and 2 - original behavior
+                    try {
+                        const deductResponse = await fetch('/api/v1/users/me/deduct-credits', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                amount: 2.0,
+                                reason: 'Query execution'
+                            })
+                        });
+                        
+                        if (!deductResponse.ok) {
+                            console.error('Failed to deduct credits');
+                        }
+                    } catch (err) {
+                        console.error('Error deducting credits:', err);
+                    }
+                    
+                    // Log query for tracking
+                    try {
+                        await fetch('/api/v1/users/me/log-query', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        // Immediately increment the query counter in the UI
+                        const queryCountElement = document.getElementById('queryCount');
+                        if (queryCountElement) {
+                            const currentCount = parseInt(queryCountElement.textContent) || 0;
+                            queryCountElement.textContent = currentCount + 1;
+                        }
+                    } catch (err) {
+                        console.error('Error logging query:', err);
+                    }
                 }
                 
                 // Reload user info
@@ -1191,8 +1373,17 @@
             const resultCount = document.getElementById('resultCount');
             const dataset = document.getElementById('dataset').value;
 
-            if (!results || results.length === 0) {
-                resultsTable.innerHTML = '<div class="no-results">No results found for your query</div>';
+            // Defensive check: handle null, undefined, or non-array results
+            if (!results || !Array.isArray(results) || results.length === 0) {
+                resultsTable.innerHTML = '<div class="no-results">No data available for selected filters</div>';
+                resultCount.textContent = '0';
+                resultsSection.style.display = 'block';
+                return;
+            }
+
+            // Additional check: ensure first result is a valid object
+            if (!results[0] || typeof results[0] !== 'object') {
+                resultsTable.innerHTML = '<div class="no-results">No data available for selected filters</div>';
                 resultCount.textContent = '0';
                 resultsSection.style.display = 'block';
                 return;
@@ -1273,6 +1464,83 @@
                         97: 'Infant (0-4 years)'
                     }
                 };
+            } else if (dataset === '3') {
+                // HCES Household Identification columns
+                displayColumns = {
+                    'Survey_Name': 'Survey',
+                    'Year': 'Year',
+                    'Sector': 'Sector',
+                    'State_Code': 'State Code',
+                    'NSS_Region': 'NSS Region',
+                    'District_Code': 'District Code',
+                    'Household_ID': 'Household ID',
+                    'Multiplier': 'Multiplier'
+                };
+
+                sectorLabels = { 1: 'Rural', 2: 'Urban' };
+                labelMaps = {
+                    'Sector': sectorLabels
+                };
+            } else if (dataset === '4') {
+                // HCES Food Expenditure columns
+                displayColumns = {
+                    'Survey_Name': 'Survey',
+                    'Year': 'Year',
+                    'Sector': 'Sector',
+                    'State_Code': 'State Code',
+                    'District_Code': 'District Code',
+                    'Household_ID': 'Household ID',
+                    'Item_Code': 'Item Code',
+                    'Quantity': 'Quantity',
+                    'Value': 'Value (₹)',
+                    'Multiplier': 'Multiplier'
+                };
+
+                sectorLabels = { 1: 'Rural', 2: 'Urban' };
+                labelMaps = {
+                    'Sector': sectorLabels
+                };
+            } else if (dataset === '5') {
+                // HCES Non-Food Expenditure columns
+                displayColumns = {
+                    'Survey_Name': 'Survey',
+                    'Year': 'Year',
+                    'Sector': 'Sector',
+                    'State_Code': 'State Code',
+                    'District_Code': 'District Code',
+                    'Household_ID': 'Household ID',
+                    'Item_Code': 'Item Code',
+                    'Expenditure_Type': 'Expenditure Type',
+                    'Value': 'Value (₹)'
+                };
+
+                sectorLabels = { 1: 'Rural', 2: 'Urban' };
+                labelMaps = {
+                    'Sector': sectorLabels,
+                    'Expenditure_Type': { 1: 'Cash', 2: 'Kind', 3: 'Credit', 4: 'Other' }
+                };
+            } else {
+                // Fallback: dynamically generate columns from the first result
+                if (results && results.length > 0 && results[0]) {
+                    displayColumns = {};
+                    Object.keys(results[0]).forEach(key => {
+                        displayColumns[key] = key.replace(/_/g, ' ');
+                    });
+                    labelMaps = {};
+                } else {
+                    resultsTable.innerHTML = '<div class="no-results">No data available for selected filters</div>';
+                    resultCount.textContent = '0';
+                    resultsSection.style.display = 'block';
+                    return;
+                }
+            }
+
+            // Safety check: ensure displayColumns is defined before proceeding
+            if (!displayColumns || Object.keys(displayColumns).length === 0) {
+                resultsTable.innerHTML = '<div class="no-results">No data available for selected filters</div>';
+                resultCount.textContent = '0';
+                resultsSection.style.display = 'block';
+                return;
             }
 
             // Create table with important columns only
@@ -1405,9 +1673,14 @@
         };
 
         function createCharts(data, datasetId) {
-            if (!data || data.length === 0) return;
+            // Defensive check for null/undefined/empty data
+            if (!data || !Array.isArray(data) || data.length === 0) return;
+            
+            // Additional check: ensure first item is valid object
+            if (!data[0] || typeof data[0] !== 'object') return;
 
-            const isPerson = datasetId === '5';
+            // Only Person Survey (dataset 2) has gender/age data
+            const isPerson = datasetId === '2';
             
             // Show/hide charts based on dataset
             const genderCard = document.getElementById('genderChartCard');
@@ -1415,21 +1688,35 @@
             if (genderCard) genderCard.style.display = isPerson ? 'block' : 'none';
             if (ageCard) ageCard.style.display = isPerson ? 'block' : 'none';
 
-            // State Distribution
-            createStateChart(data);
+            // State Distribution - works for all datasets
+            createStateChart(data, datasetId);
 
-            // Sector Distribution
+            // Sector Distribution - works for all datasets
             createSectorChart(data);
 
-            // Gender and Age only for Person Survey
+            // Gender and Age only for Person Survey (dataset 2)
             if (isPerson) {
                 createGenderChart(data);
                 createAgeChart(data);
             }
         }
 
-        function createStateChart(data) {
-            const stateKey = data[0].hasOwnProperty('State_UT_Code') ? 'State_UT_Code' : 'State_Ut_Code';
+        function createStateChart(data, datasetId) {
+            // Defensive check
+            if (!data || data.length === 0 || !data[0]) return;
+            
+            // Different datasets use different state column names
+            let stateKey;
+            if (data[0].hasOwnProperty('State_UT_Code')) {
+                stateKey = 'State_UT_Code';
+            } else if (data[0].hasOwnProperty('State_Ut_Code')) {
+                stateKey = 'State_Ut_Code';
+            } else if (data[0].hasOwnProperty('State_Code')) {
+                stateKey = 'State_Code';  // HCES datasets use State_Code
+            } else {
+                stateKey = 'State_Ut_Code';  // fallback
+            }
+            
             const stateCounts = {};
             
             data.forEach(row => {
@@ -1473,9 +1760,13 @@
         }
 
         function createGenderChart(data) {
+            // Defensive check - only called for Person Survey (dataset 2)
+            if (!data || !Array.isArray(data) || data.length === 0) return;
+            
             const genderCounts = { Male: 0, Female: 0, Transgender: 0 };
             
             data.forEach(row => {
+                if (!row) return;
                 const sex = row.Sex;
                 if (sex === 1) genderCounts.Male++;
                 else if (sex === 2) genderCounts.Female++;
@@ -1514,6 +1805,9 @@
         }
 
         function createAgeChart(data) {
+            // Defensive check - only called for Person Survey (dataset 2)
+            if (!data || !Array.isArray(data) || data.length === 0) return;
+            
             const ageBuckets = {
                 '0-14': 0,
                 '15-29': 0,
@@ -1523,7 +1817,9 @@
             };
             
             data.forEach(row => {
+                if (!row) return;
                 const age = row.Age;
+                if (age === undefined || age === null) return;
                 if (age <= 14) ageBuckets['0-14']++;
                 else if (age <= 29) ageBuckets['15-29']++;
                 else if (age <= 44) ageBuckets['30-44']++;
@@ -1569,9 +1865,13 @@
         }
 
         function createSectorChart(data) {
+            // Defensive check
+            if (!data || !Array.isArray(data) || data.length === 0) return;
+            
             const sectorCounts = { Rural: 0, Urban: 0, Unknown: 0 };
             
             data.forEach(row => {
+                if (!row) return;
                 const sector = row.Sector;
                 if (sector === 1) sectorCounts.Rural++;
                 else if (sector === 2) sectorCounts.Urban++;

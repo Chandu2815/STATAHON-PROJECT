@@ -109,6 +109,71 @@ def init_db():
         db.close()
 
 
+def load_hces_datasets(db):
+    """Load HCES (Household Consumption Expenditure Survey) datasets"""
+    from sqlalchemy import text, inspect
+    from pathlib import Path
+    import pandas as pd
+    from app.models.dataset import Dataset
+    
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    base_path = Path(__file__).parent.parent
+    
+    hces_datasets = [
+        {
+            'name': 'HCES Household Identification',
+            'table_name': 'hces_household_identification',
+            'csv_file': 'hces_household_identification_clean.csv',
+            'description': 'HCES Household Identification data'
+        },
+        {
+            'name': 'HCES Food Expenditure',
+            'table_name': 'hces_food_expenditure',
+            'csv_file': 'hces_food_expenditure_clean.csv',
+            'description': 'HCES Food Expenditure data'
+        },
+        {
+            'name': 'HCES Non-Food Expenditure',
+            'table_name': 'hces_non_food_expenditure',
+            'csv_file': 'hces_non_food_expenditure_clean.csv',
+            'description': 'HCES Non-Food Expenditure data'
+        }
+    ]
+    
+    for hces in hces_datasets:
+        csv_path = base_path / hces['csv_file']
+        if csv_path.exists():
+            with engine.connect() as conn:
+                if hces['table_name'] in tables:
+                    count = conn.execute(text(f"SELECT COUNT(*) FROM {hces['table_name']}")).fetchone()[0]
+                else:
+                    count = 0
+                
+                if count == 0:
+                    print(f"📊 Loading {hces['name']} from CSV...")
+                    try:
+                        df = pd.read_csv(csv_path)
+                        df.to_sql(hces['table_name'], engine, if_exists='replace', index=False)
+                        print(f"✅ Loaded {len(df):,} records into {hces['table_name']}")
+                        
+                        # Register dataset
+                        existing = db.query(Dataset).filter(Dataset.table_name == hces['table_name']).first()
+                        if not existing:
+                            dataset = Dataset(
+                                name=hces['name'],
+                                description=f"{hces['description']} ({len(df):,} records)",
+                                table_name=hces['table_name'],
+                                config={"source": "MoSPI", "survey_type": "HCES", "record_count": len(df)}
+                            )
+                            db.add(dataset)
+                            db.commit()
+                    except Exception as e:
+                        print(f"❌ Error loading {hces['name']}: {e}")
+                else:
+                    print(f"✅ {hces['name']} already has {count:,} records")
+
+
 def load_csv_data_if_needed(db):
     """Load CSV data into database if tables are empty"""
     try:
@@ -239,6 +304,10 @@ def load_csv_data_if_needed(db):
                         print(f"❌ Error loading person data: {e}")
                 else:
                     print(f"✅ Person Survey already has {count:,} records")
+        
+        # Load HCES datasets (3, 4, 5)
+        load_hces_datasets(db)
+        
     except Exception as e:
         print(f"⚠️ CSV loading skipped due to error: {e}")
 

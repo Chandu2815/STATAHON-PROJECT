@@ -102,55 +102,115 @@ def query_data(
     
     # Build filters - map generic names to actual column names
     filters = {}
+    skipped_filters = []  # Track filters that were skipped due to missing columns
     print(f"DEBUG: Query parameters - dataset={dataset}, state={state}, district={district}, gender={gender}, age={age}, year={year}")
     
     if has_dedicated_table:
-        # For dedicated tables (household_survey, person_survey), map to actual columns
+        # For dedicated tables, dynamically check which columns exist
+        from sqlalchemy import MetaData, Table
+        metadata = MetaData()
+        table = Table(dataset_obj.table_name, metadata, autoload_with=db.bind)
+        available_columns = [col.name.lower() for col in table.columns]
+        print(f"DEBUG: Available columns in {dataset_obj.table_name}: {available_columns}")
+        
         table_name = dataset_obj.table_name.lower()
         
+        # State filter - check for various column name variants
         if state:
-            # Try to convert state name to code
-            # Note: person_survey uses State_UT_Code, household_survey uses State_Ut_Code
-            state_column = 'State_UT_Code' if 'person' in table_name else 'State_Ut_Code'
-            if state.isdigit():
-                filters[state_column] = int(state)
-            elif state.upper() in STATE_CODES:
-                state_code = STATE_CODES[state.upper()]
-                filters[state_column] = state_code
-                print(f"DEBUG: Mapped state '{state}' to code {state_code} (column: {state_column})")
+            state_column = None
+            # Include State_Code for HCES datasets (3, 4, 5)
+            for col_variant in ['State_UT_Code', 'State_Ut_Code', 'State_Code', 'state_ut_code', 'state_code', 'state', 'State']:
+                if col_variant.lower() in available_columns:
+                    # Get the actual column name with correct casing
+                    state_column = next((col.name for col in table.columns if col.name.lower() == col_variant.lower()), None)
+                    break
+            
+            if state_column:
+                if state.isdigit():
+                    filters[state_column] = int(state)
+                elif state.upper() in STATE_CODES:
+                    state_code = STATE_CODES[state.upper()]
+                    filters[state_column] = state_code
+                    print(f"DEBUG: Mapped state '{state}' to code {state_code} (column: {state_column})")
+                else:
+                    print(f"DEBUG: State '{state}' not found in STATE_CODES")
             else:
-                print(f"DEBUG: State '{state}' not found in STATE_CODES")
+                skipped_filters.append({'filter': 'state', 'reason': 'No state column found in dataset'})
         
+        # District filter
         if district:
-            # District should be a code
-            if district.isdigit():
-                filters['District_Code'] = int(district)
-            elif district.upper() == 'NIRMAL':
-                filters['District_Code'] = 4  # Nirmal district code
+            district_column = None
+            for col_variant in ['District_Code', 'district_code', 'district', 'District']:
+                if col_variant.lower() in available_columns:
+                    district_column = next((col.name for col in table.columns if col.name.lower() == col_variant.lower()), None)
+                    break
+            
+            if district_column:
+                if district.isdigit():
+                    filters[district_column] = int(district)
+                elif district.upper() == 'NIRMAL':
+                    filters[district_column] = 4  # Nirmal district code
+            else:
+                skipped_filters.append({'filter': 'district', 'reason': 'No district column found in dataset'})
         
-        # Sex and Age filters only apply to Person Survey
-        if 'person' in table_name:
-            if gender:
-                # For person survey: Sex column (1=Male, 2=Female, 3=Transgender)
+        # Sector filter (mapped from year parameter)
+        if year:
+            sector_column = None
+            for col_variant in ['Sector', 'sector']:
+                if col_variant.lower() in available_columns:
+                    sector_column = next((col.name for col in table.columns if col.name.lower() == col_variant.lower()), None)
+                    break
+            
+            if sector_column:
+                filters[sector_column] = year
+            else:
+                skipped_filters.append({'filter': 'sector', 'reason': 'No sector column found in dataset'})
+        
+        # Gender/Sex filter - ONLY apply if Sex column exists in the table
+        if gender:
+            sex_column = None
+            for col_variant in ['Sex', 'sex', 'Gender', 'gender']:
+                if col_variant.lower() in available_columns:
+                    sex_column = next((col.name for col in table.columns if col.name.lower() == col_variant.lower()), None)
+                    break
+            
+            if sex_column:
                 gender_upper = gender.upper()
                 if gender_upper in ['MALE', 'M', '1']:
-                    filters['Sex'] = 1
+                    filters[sex_column] = 1
                 elif gender_upper in ['FEMALE', 'F', '2']:
-                    filters['Sex'] = 2
+                    filters[sex_column] = 2
                 elif gender_upper in ['TRANSGENDER', 'T', '3']:
-                    filters['Sex'] = 3
+                    filters[sex_column] = 3
+            else:
+                skipped_filters.append({'filter': 'gender', 'reason': 'No gender/sex column found in dataset (household-level data)'})
+                print(f"DEBUG: Gender filter skipped - no Sex/Gender column in {dataset_obj.table_name}")
+        
+        # Age filter - ONLY apply if Age column exists in the table
+        if age:
+            age_column = None
+            for col_variant in ['Age', 'age']:
+                if col_variant.lower() in available_columns:
+                    age_column = next((col.name for col in table.columns if col.name.lower() == col_variant.lower()), None)
+                    break
             
-            if age:
+            if age_column:
                 # Parse age range like "15-29"
                 if '-' in age:
                     age_parts = age.split('-')
                     if len(age_parts) == 2:
-                        filters['Age'] = {
+                        filters[age_column] = {
                             '$gte': int(age_parts[0]),
                             '$lte': int(age_parts[1])
                         }
-            elif age.isdigit():
-                filters['Age'] = int(age)
+                elif age.isdigit():
+                    filters[age_column] = int(age)
+            else:
+                skipped_filters.append({'filter': 'age_group', 'reason': 'No age column found in dataset (household-level data)'})
+                print(f"DEBUG: Age filter skipped - no Age column in {dataset_obj.table_name}")
+        
+        if skipped_filters:
+            print(f"DEBUG: Skipped filters due to missing columns: {skipped_filters}")
     else:
         # For JSON-based storage (data_records)
         if state:
@@ -163,9 +223,11 @@ def query_data(
             filters['age_group'] = age
         if year:
             filters['year'] = year
+        skipped_filters = []  # No column checks for JSON storage
     
     print(f"DEBUG: Final filters dictionary: {filters}")
     print(f"DEBUG: Dataset table name: {dataset_obj.table_name if has_dedicated_table else 'data_records'}")
+    print(f"DEBUG: Skipped filters: {skipped_filters}")
     
     # Execute query
     query_builder = QueryBuilderService(db)
@@ -187,6 +249,10 @@ def query_data(
             limit=limit,
             offset=offset
         )
+        # Add info about skipped filters to help debug and inform frontend
+        if skipped_filters:
+            result['skipped_filters'] = skipped_filters
+            result['filter_notes'] = f"{len(skipped_filters)} filter(s) were not applied because the selected dataset does not have those columns"
     else:
         # Use generic query for data_records JSON storage
         result = query_builder.execute_generic_query(
