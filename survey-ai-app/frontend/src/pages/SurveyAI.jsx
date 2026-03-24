@@ -32,7 +32,7 @@ export default function SurveyAI() {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/datasets`);
       if (response.data.success) {
-        setDatasets(response.data.tables || []);
+        setDatasets(response.data.datasets || []);
       }
     } catch (err) {
       setError('Failed to fetch datasets: ' + err.message);
@@ -46,9 +46,9 @@ export default function SurveyAI() {
       setSelectedDataset(dataset);
       setSelectedColumns([]);
       setData([]);
+      setError('');
       setFilters({});
       setPagination({ page: 0, pageSize: 10 });
-      setLoading(true);
 
       // Fetch columns for selected dataset
       const response = await axios.get(`${API_BASE_URL}/columns/${dataset}`);
@@ -61,8 +61,7 @@ export default function SurveyAI() {
       }
     } catch (err) {
       setError('Failed to fetch columns: ' + err.message);
-    } finally {
-      setLoading(false);
+      setColumns([]);
     }
   };
 
@@ -157,14 +156,14 @@ export default function SurveyAI() {
       )}
 
       {/* Loading State */}
-      {loading && (
+      {loading && selectedColumns.length === 0 && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="animate-spin text-blue-600" size={32} />
           <span className="ml-2 text-gray-600">Loading data...</span>
         </div>
       )}
 
-      {!loading && (
+      {!loading || selectedColumns.length > 0 && (
         <>
           {/* Selectors Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

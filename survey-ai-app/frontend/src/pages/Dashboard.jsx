@@ -14,7 +14,7 @@ export default function Dashboard() {
       try {
         const response = await axios.get(`${API_BASE_URL}/datasets`);
         if (response.data.success) {
-          setDatasets(response.data.tables?.length || 0);
+          setDatasets(response.data.datasets?.length || 0);
         }
       } catch (err) {
         console.error('Failed to fetch stats:', err);
