@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Square, CheckSquare2 } from 'lucide-react';
+import { Check, Square, CheckSquare } from 'lucide-react';
 
 export default function ColumnSelector({
   columns,
@@ -56,7 +56,7 @@ export default function ColumnSelector({
                   }`}
                 >
                   {isSelected ? (
-                    <CheckSquare2 size={18} className="text-blue-600 flex-shrink-0" />
+                    <CheckSquare size={18} className="text-blue-600 flex-shrink-0" />
                   ) : (
                     <Square size={18} className="text-gray-400 flex-shrink-0" />
                   )}
