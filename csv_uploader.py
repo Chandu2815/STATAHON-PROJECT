@@ -3,6 +3,7 @@ import psycopg2
 from psycopg2 import sql, Error
 import json
 import sys
+import os
 import logging
 from typing import Dict, Tuple
 from datetime import datetime
@@ -203,13 +204,14 @@ class CSVUploader:
             bool: True if upload completed, False if failed
         """
         try:
-            # Verify file exists
-            try:
-                file_size = pd.io.common.get_filepath_or_buffer(file_path)[0]
-                logger.info(f"Starting CSV upload from: {file_path}")
-            except FileNotFoundError:
+            # Verify file exists using standard Python file handling
+            if not os.path.exists(file_path):
                 logger.error(f"✗ File not found: {file_path}")
                 return False
+            
+            file_size_bytes = os.path.getsize(file_path)
+            file_size_mb = file_size_bytes / (1024 * 1024)
+            logger.info(f"Starting CSV upload from: {file_path} ({file_size_mb:.2f} MB)")
             
             # Connect to database
             if not self.connect():
