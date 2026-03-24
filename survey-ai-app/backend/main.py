@@ -385,6 +385,142 @@ async def get_nmds_metadata():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching metadata: {str(e)}")
 
+@app.get("/analytics/summary")
+async def get_analytics_summary():
+    """Get analytics summary across all datasets"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get table counts
+        cur.execute("""
+            SELECT 
+                schemaname,
+                tablename,
+                (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = tablename) as column_count,
+                (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = tablename AND data_type LIKE '%int%' OR data_type LIKE '%numeric%') as numeric_columns
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename
+        """)
+        
+        tables = cur.fetchall()
+        summary = []
+        
+        for table_info in tables:
+            table_name = table_info[1]
+            # Get row count
+            cur.execute(f'SELECT COUNT(*) FROM "{table_name}"')
+            row_count = cur.fetchone()[0]
+            summary.append({
+                'table': table_name,
+                'rows': row_count,
+                'columns': table_info[2],
+                'numeric_columns': table_info[3]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        total_rows = sum(s['rows'] for s in summary)
+        
+        return {
+            "success": True,
+            "summary": summary,
+            "total_tables": len(summary),
+            "total_rows": total_rows
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
+
+@app.get("/analytics/data-quality/{table}")
+async def get_data_quality(table: str):
+    """Analyze data quality for a table"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Get column info
+        cur.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = %s
+            ORDER BY ordinal_position
+        """, (table,))
+        
+        columns = cur.fetchall()
+        quality_metrics = []
+        
+        # Get total rows
+        total_rows_query = f'SELECT COUNT(*) as total FROM "{table}"'
+        cur.execute(total_rows_query)
+        total_result = cur.fetchone()
+        total_rows = total_result['total'] if total_result else 0
+        
+        for col in columns:
+            col_name = col['column_name']
+            col_type = col['data_type']
+            
+            # Count nulls
+            cur.execute(f'SELECT COUNT(*) as null_count FROM "{table}" WHERE "{col_name}" IS NULL')
+            null_result = cur.fetchone()
+            null_count = null_result['null_count'] if null_result else 0
+            
+            completeness = 100 * (total_rows - null_count) / total_rows if total_rows > 0 else 0
+            
+            quality_metrics.append({
+                'column': col_name,
+                'type': col_type,
+                'null_count': null_count,
+                'completeness': round(completeness, 2)
+            })
+        
+        cur.close()
+        conn.close()
+        
+        avg_completeness = sum(m['completeness'] for m in quality_metrics) / len(quality_metrics) if quality_metrics else 0
+        
+        return {
+            "success": True,
+            "table": table,
+            "total_rows": total_rows,
+            "total_columns": len(quality_metrics),
+            "average_completeness": round(avg_completeness, 2),
+            "columns": quality_metrics
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing data quality: {str(e)}")
+
+@app.get("/analytics/column-distribution/{table}/{column}")
+async def get_column_distribution(table: str, column: str):
+    """Get value distribution for a column"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # For categorical data - get top values
+        cur.execute(f"""
+            SELECT "{column}" as value, COUNT(*) as count
+            FROM "{table}"
+            WHERE "{column}" IS NOT NULL
+            GROUP BY "{column}"
+            ORDER BY count DESC
+            LIMIT 20
+        """)
+        
+        distribution = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "table": table,
+            "column": column,
+            "distribution": distribution
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting distribution: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

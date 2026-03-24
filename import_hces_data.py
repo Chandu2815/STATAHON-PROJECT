@@ -36,61 +36,6 @@ CSV_FILES = [
         'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 04 (Section 4_1).csv',
         'table': 'hces_level_04',
         'description': 'HCES Level 04 - Section 4_1 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 05 ( Sec 5  6).csv',
-        'table': 'hces_level_05',
-        'description': 'HCES Level 05 - Section 5 & 6 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 06 (Section 7).csv',
-        'table': 'hces_level_06',
-        'description': 'HCES Level 06 - Section 7 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 07 (Section 4_2).csv',
-        'table': 'hces_level_07',
-        'description': 'HCES Level 07 - Section 4_2 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 08 (Section 8_1).csv',
-        'table': 'hces_level_08',
-        'description': 'HCES Level 08 - Section 8_1 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 09 (Section 9  10  11).csv',
-        'table': 'hces_level_09',
-        'description': 'HCES Level 09 - Section 9, 10 & 11 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 10 (Section 12).csv',
-        'table': 'hces_level_10',
-        'description': 'HCES Level 10 - Section 12 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 11 (Section 4_3).csv',
-        'table': 'hces_level_11',
-        'description': 'HCES Level 11 - Section 4_3 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 12 (Section 13).csv',
-        'table': 'hces_level_12',
-        'description': 'HCES Level 12 - Section 13 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/Level - 13 (Section 14).csv',
-        'table': 'hces_level_13',
-        'description': 'HCES Level 13 - Section 14 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 14 (Section  A1,B1  C1).csv',
-        'table': 'hces_level_14',
-        'description': 'HCES Level 14 - Section A1, B1 & C1 Data'
-    },
-    {
-        'path': '/Users/arunsudhaveni/Desktop/HCES_Data_2023-24_Csv/LEVEL - 15 (Section 1_1, A2,B2  C2).csv',
-        'table': 'hces_level_15',
-        'description': 'HCES Level 15 - Section 1_1, A2, B2 & C2 Data'
     }
 ]
 
