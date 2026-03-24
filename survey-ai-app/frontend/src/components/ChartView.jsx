@@ -14,6 +14,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { Download } from 'lucide-react';
 
 const COLORS = [
   '#3b82f6',
@@ -28,6 +29,45 @@ const COLORS = [
 
 export default function ChartView({ data, columns, statistics }) {
   if (!data || data.length === 0) return null;
+
+  // Export chart data as CSV
+  const exportChartData = () => {
+    // Prepare all chart data
+    const chartableData = data.slice(0, 20).map((row) => {
+      const obj = {};
+      columns.forEach((col) => {
+        obj[col] = row[col];
+      });
+      return obj;
+    });
+
+    // Convert to CSV
+    const headers = Object.keys(chartableData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...chartableData.map((row) =>
+        headers.map((header) => {
+          const value = row[header];
+          // Escape quotes and wrap in quotes if contains comma
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        }).join(',')
+      ),
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `chart-data-${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Get numeric columns
   const numericColumns = columns.filter((col) => {
@@ -66,9 +106,19 @@ export default function ChartView({ data, columns, statistics }) {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-      <h3 className="text-lg font-semibold text-gray-800 mb-6">
-        Data Visualization
-      </h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-800">
+          Data Visualization
+        </h3>
+        <button
+          onClick={exportChartData}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-900 hover:bg-blue-800 rounded border border-blue-900 transition"
+          title="Export chart data as CSV"
+        >
+          <Download size={16} />
+          Export Data
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Bar Chart - First Numeric Column */}
@@ -78,12 +128,28 @@ export default function ChartView({ data, columns, statistics }) {
               {numericColumns[0]} Distribution
             </h4>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartableData}>
+              <BarChart
+                data={chartableData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
-                <Bar dataKey={numericColumns[0]} fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                  }}
+                />
+                <Bar
+                  dataKey={numericColumns[0]}
+                  fill="#3b82f6"
+                  radius={[8, 8, 0, 0]}
+                  isAnimationActive={true}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -96,18 +162,30 @@ export default function ChartView({ data, columns, statistics }) {
               {numericColumns[1]} Trend
             </h4>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartableData}>
+              <LineChart
+                data={chartableData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                  }}
+                />
                 <Line
                   type="monotone"
                   dataKey={numericColumns[1]}
                   stroke="#8b5cf6"
                   strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  dot={{ r: 4, fill: '#8b5cf6' }}
+                  activeDot={{ r: 6, fill: '#8b5cf6' }}
+                  isAnimationActive={true}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -121,7 +199,7 @@ export default function ChartView({ data, columns, statistics }) {
               Category Distribution
             </h4>
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
+              <PieChart margin={{ top: 20, right: 30, bottom: 0, left: 0 }}>
                 <Pie
                   data={categoryChartData}
                   cx="50%"
@@ -131,12 +209,21 @@ export default function ChartView({ data, columns, statistics }) {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
+                  isAnimationActive={true}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
                 >
                   {categoryChartData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -149,11 +236,20 @@ export default function ChartView({ data, columns, statistics }) {
               Numeric Comparison
             </h4>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartableData}>
+              <BarChart
+                data={chartableData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                  }}
+                />
                 <Legend />
                 {numericColumns.slice(0, 3).map((col, idx) => (
                   <Bar
@@ -161,6 +257,9 @@ export default function ChartView({ data, columns, statistics }) {
                     dataKey={col}
                     fill={COLORS[idx % COLORS.length]}
                     radius={[8, 8, 0, 0]}
+                    isAnimationActive={true}
+                    animationDuration={800}
+                    animationEasing="ease-in-out"
                   />
                 ))}
               </BarChart>
