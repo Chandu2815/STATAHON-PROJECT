@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = str(PROJECT_ROOT / ".env")
         case_sensitive = True
+        extra = "allow"  # Allow extra fields from .env
 
 
 @lru_cache()
