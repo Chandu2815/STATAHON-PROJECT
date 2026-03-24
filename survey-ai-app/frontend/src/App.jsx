@@ -46,7 +46,12 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <Login onLogin={handleLogin} />
+        <>
+          <Login onLogin={handleLogin} />
+          <div style={{ position: 'fixed', bottom: '10px', right: '10px', padding: '10px', background: '#000', color: '#0f0', fontFamily: 'monospace', fontSize: '12px', zIndex: 9999 }}>
+            Survey AI Loading... ✓
+          </div>
+        </>
       )}
     </Router>
   );

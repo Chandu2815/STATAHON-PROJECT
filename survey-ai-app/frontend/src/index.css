@@ -1,12 +1,17 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
 * {
+  /* stylelint-disable-next-line at-rule-no-unknown */
   @apply scroll-smooth;
 }
 
 body {
+  /* stylelint-disable-next-line at-rule-no-unknown */
   @apply bg-gray-50;
 }
 
@@ -35,6 +40,7 @@ a,
 input,
 select,
 textarea {
+  /* stylelint-disable-next-line at-rule-no-unknown */
   @apply transition-all duration-200;
 }
 
@@ -51,15 +57,18 @@ textarea {
 
 /* Glassmorphism effect */
 .glass {
+  /* stylelint-disable-next-line at-rule-no-unknown */
   @apply backdrop-blur-md bg-white/30 border border-white/20;
 }
 
 /* Gradient text */
 .gradient-text {
+  /* stylelint-disable-next-line at-rule-no-unknown */
   @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
 }
 
 /* Focus ring */
 .focus-ring {
+  /* stylelint-disable-next-line at-rule-no-unknown */
   @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
 }
