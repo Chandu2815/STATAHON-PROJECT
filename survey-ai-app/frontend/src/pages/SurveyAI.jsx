@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2, AlertCircle, Database, Layers, Filter as FilterIcon, TrendingUp } from 'lucide-react';
+import { Loader2, AlertCircle, Database, Layers, Filter as FilterIcon, TrendingUp, BarChart3 } from 'lucide-react';
 import HierarchicalDatasetSelector from '../components/HierarchicalDatasetSelector';
 import ColumnSelector from '../components/ColumnSelector';
 import FiltersPanel from '../components/FiltersPanel';
@@ -8,6 +8,7 @@ import DataTable from '../components/DataTable';
 import ChartView from '../components/ChartView';
 import DataExportActions from '../components/DataExportActions';
 import HelpAndShortcuts from '../components/HelpAndShortcuts';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 const API_BASE_URL = 'http://localhost:8001';
 
@@ -23,6 +24,7 @@ export default function SurveyAI() {
   const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
   const [chartData, setChartData] = useState(null);
+  const [activeTab, setActiveTab] = useState('explore'); // 'explore' or 'analytics'
 
   // Fetch datasets on mount
   useEffect(() => {
@@ -204,6 +206,32 @@ export default function SurveyAI() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-10 space-y-8">
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-4 border-b border-gray-300 -mx-8 px-8 sticky top-20 bg-white z-40">
+          <button
+            onClick={() => setActiveTab('explore')}
+            className={`px-6 py-3 font-semibold text-sm transition border-b-2 ${
+              activeTab === 'explore'
+                ? 'text-blue-900 border-b-blue-900'
+                : 'text-gray-600 border-b-transparent hover:text-gray-900'
+            }`}
+          >
+            <Layers size={16} className="inline mr-2" />
+            Data Explorer
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-6 py-3 font-semibold text-sm transition border-b-2 ${
+              activeTab === 'analytics'
+                ? 'text-blue-900 border-b-blue-900'
+                : 'text-gray-600 border-b-transparent hover:text-gray-900'
+            }`}
+          >
+            <BarChart3 size={16} className="inline mr-2" />
+            Analytics
+          </button>
+        </div>
+
         {/* Error Alert */}
         {error && (
           <div className="p-5 bg-red-50 border-l-4 border-red-600 rounded flex gap-4">
@@ -237,7 +265,7 @@ export default function SurveyAI() {
           </div>
         )}
 
-        {(!loading || datasets.length > 0) && (
+        {(!loading || datasets.length > 0) && activeTab === 'explore' && (
           <div className="space-y-8">
             {/* Step 1: Dataset Selection Card */}
             <div>
@@ -425,6 +453,11 @@ export default function SurveyAI() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <AnalyticsDashboard />
         )}
       </div>
 
