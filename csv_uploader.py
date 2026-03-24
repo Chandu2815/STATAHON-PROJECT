@@ -282,16 +282,50 @@ class CSVUploader:
 
 def main():
     """
-    Example usage of CSVUploader.
+    Production-ready CSV uploader runner.
     """
+    print("\n" + "=" * 80)
+    print("CSV TO POSTGRESQL UPLOADER")
+    print("=" * 80)
+    
     # Configuration
     DB_HOST = 'localhost'
     DB_PORT = 5432
     DB_NAME = 'survey_db'
     DB_USER = 'postgres'
     DB_PASSWORD = '1234'
-    CSV_FILE_PATH = '/path/to/your/large_dataset.csv'  # UPDATE THIS
-    CHUNK_SIZE = 5000  # Adjust based on your memory available
+    
+    # Use actual CSV file from workspace
+    CSV_FILE_PATH = 'data/sample_census_data.csv'
+    
+    # Check if file exists, fallback to other available CSV files
+    if not os.path.exists(CSV_FILE_PATH):
+        print(f"\n⚠ File not found: {CSV_FILE_PATH}")
+        print("Looking for alternative CSV files...")
+        
+        alternative_files = [
+            'cperv1_sample.csv',
+            'hces_food_expenditure_clean.csv',
+            'data/Data in CSV (1)/chhv1.csv'
+        ]
+        
+        for alt_file in alternative_files:
+            if os.path.exists(alt_file):
+                CSV_FILE_PATH = alt_file
+                print(f"✓ Using: {CSV_FILE_PATH}")
+                break
+        else:
+            print("✗ No CSV files found. Please provide a valid CSV file path.")
+            return 1
+    
+    CHUNK_SIZE = 5000
+    
+    print(f"\nConfiguration:")
+    print(f"  Database: {DB_NAME}@{DB_HOST}:{DB_PORT}")
+    print(f"  CSV File: {CSV_FILE_PATH}")
+    print(f"  Chunk Size: {CHUNK_SIZE} rows")
+    print(f"  User: {DB_USER}")
+    print("\n" + "=" * 80)
     
     # Create uploader instance
     uploader = CSVUploader(
@@ -304,19 +338,35 @@ def main():
     )
     
     # Upload CSV file
+    print("\n🚀 Starting upload...\n")
     success = uploader.upload_csv(CSV_FILE_PATH)
+    
+    # Print results
+    print("\n" + "=" * 80)
+    print("UPLOAD RESULTS")
+    print("=" * 80)
     
     # Get summary
     summary = uploader.get_summary()
-    print("\nFinal Summary:")
-    print(f"Rows Inserted: {summary['total_inserted']}")
-    print(f"Rows Failed: {summary['total_failed']}")
     
-    if summary['failed_rows']:
-        print(f"\nFailed rows (first 5):")
-        for failed_row in summary['failed_rows'][:5]:
-            print(f"  - {failed_row}")
+    if success:
+        print(f"\n✅ UPLOAD SUCCESSFUL!")
+        print(f"   Rows Inserted: {summary['total_inserted']:,}")
+        print(f"   Rows Failed: {summary['total_failed']:,}")
+        
+        if summary['total_inserted'] > 0:
+            print(f"\n✓ Verify in PostgreSQL:")
+            print(f"  $ psql -U {DB_USER} -d {DB_NAME} -c 'SELECT COUNT(*) FROM survey_data;'")
+        
+        if summary['failed_rows']:
+            print(f"\n⚠ Failed rows (first 5):")
+            for failed_row in summary['failed_rows'][:5]:
+                print(f"  - Row {failed_row['row_index']}: {failed_row['reason']}")
+    else:
+        print(f"\n❌ UPLOAD FAILED")
+        print(f"   Check logs: tail -f /tmp/csv_uploader.log")
     
+    print("\n" + "=" * 80 + "\n")
     return 0 if success else 1
 
 
