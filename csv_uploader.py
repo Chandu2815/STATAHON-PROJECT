@@ -295,28 +295,13 @@ def main():
     DB_USER = 'postgres'
     DB_PASSWORD = '1234'
     
-    # Use actual CSV file from workspace
-    CSV_FILE_PATH = 'data/sample_census_data.csv'
+    # Use the specified CSV file
+    CSV_FILE_PATH = '/Users/arunsudhaveni/Desktop/DataSet1.csv'
     
-    # Check if file exists, fallback to other available CSV files
+    # Check if file exists
     if not os.path.exists(CSV_FILE_PATH):
-        print(f"\n⚠ File not found: {CSV_FILE_PATH}")
-        print("Looking for alternative CSV files...")
-        
-        alternative_files = [
-            'cperv1_sample.csv',
-            'hces_food_expenditure_clean.csv',
-            'data/Data in CSV (1)/chhv1.csv'
-        ]
-        
-        for alt_file in alternative_files:
-            if os.path.exists(alt_file):
-                CSV_FILE_PATH = alt_file
-                print(f"✓ Using: {CSV_FILE_PATH}")
-                break
-        else:
-            print("✗ No CSV files found. Please provide a valid CSV file path.")
-            return 1
+        print(f"\n✗ File not found: {CSV_FILE_PATH}")
+        return 1
     
     CHUNK_SIZE = 5000
     
