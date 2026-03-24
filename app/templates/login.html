@@ -88,6 +88,11 @@
             font-weight: 600;
             margin-bottom: 8px;
         }
+        .required-star {
+            color: #c62828;
+            margin-left: 4px;
+            font-weight: 700;
+        }
         .form-group input {
             width: 100%;
             padding: 12px 15px;
@@ -286,6 +291,11 @@
                 <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
             </div>
 
+            <div class="form-group" id="otpGroup" style="display: none;">
+                <label for="otp">Authenticator Code</label>
+                <input type="text" id="otp" name="otp" minlength="6" maxlength="6" placeholder="Enter 6-digit authenticator code">
+            </div>
+
             <button type="submit" class="btn-login" id="loginBtn">Login</button>
 
             <div class="loading" id="loading">
@@ -309,6 +319,60 @@
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('errorMessage');
         const infoMessage = document.getElementById('infoMessage');
+        const otpGroup = document.getElementById('otpGroup');
+
+        let loginChallengeId = null;
+
+        function setupRequiredFieldUX(formEl) {
+            const requiredControls = Array.from(
+                formEl.querySelectorAll('input[required], select[required], textarea[required]')
+            );
+
+            requiredControls.forEach((control, index) => {
+                const label = formEl.querySelector(`label[for="${control.id}"]`);
+                if (label && !label.querySelector('.required-star')) {
+                    const star = document.createElement('span');
+                    star.className = 'required-star';
+                    star.textContent = '*';
+                    label.appendChild(star);
+                }
+
+                control.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter') {
+                        return;
+                    }
+
+                    const currentRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                    const currentIndex = currentRequired.indexOf(control);
+                    const nextControl = currentRequired[currentIndex + 1];
+
+                    if (nextControl) {
+                        event.preventDefault();
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            control.reportValidity();
+                            return;
+                        }
+                        nextControl.focus();
+                    }
+                });
+
+                if (control.tagName === 'SELECT') {
+                    control.addEventListener('change', () => {
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            return;
+                        }
+                        const visibleRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                        const visibleIndex = visibleRequired.indexOf(control);
+                        const nextControl = visibleRequired[visibleIndex + 1];
+                        if (nextControl) {
+                            nextControl.focus();
+                        }
+                    });
+                }
+            });
+        }
+
+        setupRequiredFieldUX(loginForm);
 
         function showError(message) {
             errorMessage.textContent = message;
@@ -340,45 +404,71 @@
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const otp = document.getElementById('otp').value;
 
             // Show loading
             loginBtn.disabled = true;
             loading.style.display = 'block';
 
             try {
-                // Create form data
-                const formData = new URLSearchParams();
-                formData.append('username', username);
-                formData.append('password', password);
+                if (!loginChallengeId) {
+                    const startResponse = await fetch('/api/v1/auth/login/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
 
-                // Login request
-                const response = await fetch('/api/v1/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData
-                });
+                    const startData = await startResponse.json();
+                    if (!startResponse.ok) {
+                        showError(startData.detail || 'Login failed. Please check your credentials.');
+                        loginBtn.disabled = false;
+                        loading.style.display = 'none';
+                        return;
+                    }
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Store token
-                    localStorage.setItem('access_token', data.access_token);
-                    localStorage.setItem('user_role', data.user_role);
-                    localStorage.setItem('username', data.username);
-
-                    showInfo('Login successful! Redirecting...');
-
-                    // Redirect to dashboard (admins should use /admin/login)
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1000);
-                } else {
-                    showError(data.detail || 'Login failed. Please check your credentials.');
+                    loginChallengeId = startData.challenge_id;
+                    otpGroup.style.display = 'block';
+                    const otpMessage = 'Open your Authenticator app and enter the current 6-digit code.';
+                    showInfo(otpMessage);
+                    loginBtn.textContent = 'Verify Authenticator Code';
                     loginBtn.disabled = false;
                     loading.style.display = 'none';
+                    return;
                 }
+
+                if (!otp || otp.length !== 6) {
+                    showError('Please enter the 6-digit OTP.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const verifyResponse = await fetch('/api/v1/auth/login/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ challenge_id: loginChallengeId, otp })
+                });
+
+                const verifyData = await verifyResponse.json();
+                if (!verifyResponse.ok) {
+                    showError(verifyData.detail || 'OTP verification failed.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                localStorage.setItem('access_token', verifyData.access_token);
+                localStorage.setItem('user_role', verifyData.user_role);
+                localStorage.setItem('username', verifyData.username);
+
+                showInfo('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
             } catch (error) {
                 showError('Connection error. Please try again.');
                 loginBtn.disabled = false;

@@ -1,7 +1,7 @@
 """
 User and authentication models
 """
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum, Float, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -20,6 +20,12 @@ class UserRole(str, enum.Enum):
     ADMIN = "admin"  # Legacy compatibility, treated as SUPER_ADMIN
 
 
+class OtpPurpose(str, enum.Enum):
+    """OTP purpose enumeration"""
+    LOGIN = "login"
+    REGISTER = "register"
+
+
 class User(Base):
     """User model for authentication and access control"""
     __tablename__ = "users"
@@ -34,6 +40,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     credits = Column(Float, default=0.0)  # For micro-payment system
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # Track who created this user
+    totp_secret = Column(String(64), nullable=True)
+    totp_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -91,3 +99,20 @@ class Transaction(Base):
     
     # Relationships
     user = relationship("User", back_populates="transactions")
+
+
+class OtpChallenge(Base):
+    """Stores one-time password challenge for login/register verification"""
+    __tablename__ = "otp_challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(String(64), unique=True, nullable=False, index=True)
+    purpose = Column(Enum(OtpPurpose), nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    otp_hash = Column(String(255), nullable=False)
+    payload = Column(Text, nullable=True)  # JSON payload for pending registration
+    attempts = Column(Integer, default=0, nullable=False)
+    consumed = Column(Boolean, default=False, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

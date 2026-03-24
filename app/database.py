@@ -1,7 +1,7 @@
 """
 Database configuration and session management
 """
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import get_settings
@@ -51,6 +51,7 @@ def init_db():
     import bcrypt
     
     Base.metadata.create_all(bind=engine)
+    _ensure_user_totp_columns()
     
     # Create or update default users
     db = SessionLocal()
@@ -59,6 +60,7 @@ def init_db():
         def ensure_user(username, email, full_name, password, role, credits):
             user = db.query(User).filter(User.username == username).first()
             hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            import pyotp
             
             if not user:
                 print(f"Creating {role} user: {username}...")
@@ -70,7 +72,9 @@ def init_db():
                     password=password,
                     role=role,
                     is_active=True,
-                    credits=credits
+                    credits=credits,
+                    totp_secret=pyotp.random_base32(),
+                    totp_enabled=True,
                 )
                 db.add(user)
                 db.commit()
@@ -79,6 +83,9 @@ def init_db():
                 # Update password to ensure it's correct
                 user.hashed_password = hashed
                 user.password = password
+                if not user.totp_secret:
+                    user.totp_secret = pyotp.random_base32()
+                user.totp_enabled = True
                 db.commit()
                 print(f"✅ User {username} exists - password reset to: {password}")
             return user
@@ -310,6 +317,21 @@ def load_csv_data_if_needed(db):
         
     except Exception as e:
         print(f"⚠️ CSV loading skipped due to error: {e}")
+
+
+def _ensure_user_totp_columns() -> None:
+    """Add TOTP columns for existing databases without running migrations."""
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    user_columns = {col["name"] for col in inspector.get_columns("users")}
+
+    with engine.begin() as conn:
+        if "totp_secret" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64)"))
+        if "totp_enabled" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0"))
 
 
 if __name__ == "__main__":

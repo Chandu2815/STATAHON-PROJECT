@@ -69,9 +69,11 @@ app = FastAPI(
     
     ### 🔐 Authentication:
     
-    1. Register: `POST /api/v1/auth/register`
-    2. Login: `POST /api/v1/auth/login` → Get JWT token
-    3. Use token: `Authorization: Bearer <your_token>`
+    1. Register start: `POST /api/v1/auth/register/start` (email OTP sent)
+    2. Register verify: `POST /api/v1/auth/register/verify`
+    3. Login start: `POST /api/v1/auth/login/start` (email OTP sent)
+    4. Login verify: `POST /api/v1/auth/login/verify` → Get JWT token
+    5. Use token: `Authorization: Bearer <your_token>`
     
     ### 👥 User Roles:
     
