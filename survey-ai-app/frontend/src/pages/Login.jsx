@@ -10,6 +10,21 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Check for token from MoSPI on component mount
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    const urlEmail = params.get('email');
+    
+    if (urlToken && urlEmail) {
+      // Auto-login with token from MoSPI
+      localStorage.setItem('authToken', urlToken);
+      localStorage.setItem('userEmail', urlEmail);
+      onLogin(true);
+      navigate('/survey-ai');
+    }
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');

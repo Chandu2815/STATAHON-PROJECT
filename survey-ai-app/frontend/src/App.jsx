@@ -9,7 +9,25 @@ import Settings from './pages/Settings';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('authToken');
+    // Check if token exists in localStorage
+    const token = localStorage.getItem('authToken');
+    if (token) return true;
+    
+    // Check if token passed from MoSPI in URL
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    const email = params.get('email');
+    
+    if (urlToken && email) {
+      // Store the token and email from MoSPI
+      localStorage.setItem('authToken', urlToken);
+      localStorage.setItem('userEmail', email);
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/survey-ai');
+      return true;
+    }
+    
+    return false;
   });
 
   const handleLogin = (status) => {
@@ -40,7 +58,7 @@ export default function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/survey-ai" element={<SurveyAI />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<Navigate to="/" />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
           </div>

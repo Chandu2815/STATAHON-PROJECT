@@ -107,6 +107,18 @@ def upgrade_page():
     return "<h1>Upgrade page not found</h1>"
 
 
+@router.get("/survey-ai", response_class=HTMLResponse)
+def survey_ai_page():
+    """
+    Survey AI data collection form
+    """
+    survey_file = TEMPLATES_DIR / "survey.html"
+    if survey_file.exists():
+        with open(survey_file, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "<h1>Survey page not found</h1>"
+
+
 @router.get("/admin", response_class=HTMLResponse)
 def admin_redirect():
     """

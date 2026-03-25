@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, ArrowLeft } from 'lucide-react';
 
 export default function Navbar({ onLogout }) {
   const userEmail = localStorage.getItem('userEmail') || 'User';
@@ -7,8 +7,14 @@ export default function Navbar({ onLogout }) {
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm">
       <div className="px-6 py-4 flex items-center justify-between">
-        {/* Left: Empty space */}
-        <div className="w-10 h-10"></div>
+        {/* Left: Back to Dashboard Button */}
+        <a 
+          href="http://localhost:8000/dashboard"
+          className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+        >
+          <ArrowLeft size={18} />
+          Back to MoSPI
+        </a>
 
         {/* Center: Title */}
         <div className="text-center">

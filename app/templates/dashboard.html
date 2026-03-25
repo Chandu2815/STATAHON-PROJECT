@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Dashboard - MoSPI Data Portal</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -612,7 +611,7 @@
                     <div id="userName">Loading...</div>
                     <div class="user-role" id="userRole">Loading...</div>
                 </div>
-                <a href="/upgrade" class="btn-upgrade hidden" id="upgradeBtn">⭐ Upgrade to Premium</a>
+                <a href="http://localhost:5173" class="btn-upgrade" id="surveyAiBtn">📊 Survey AI</a>
                 <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -876,18 +875,12 @@
             if (userNameEl) userNameEl.textContent = username || 'User';
             if (userRoleEl) userRoleEl.textContent = role || 'public';
             
-            // Show/hide upgrade button based on role and update text
-            const upgradeBtn = document.getElementById('upgradeBtn');
-            if (upgradeBtn) {
-                if (role === 'public') {
-                    upgradeBtn.classList.remove('hidden');
-                    upgradeBtn.textContent = '🔬 Upgrade to Researcher';
-                } else if (role === 'researcher') {
-                    upgradeBtn.classList.remove('hidden');
-                    upgradeBtn.textContent = '💎 Upgrade to Premium';
-                } else {
-                    upgradeBtn.classList.add('hidden');
-                }
+            // Survey AI button - always visible with token for auto-login
+            const surveyAiBtn = document.getElementById('surveyAiBtn');
+            if (surveyAiBtn) {
+                surveyAiBtn.style.display = 'inline-flex';
+                // Set token and email as URL parameters for Survey AI auto-login
+                surveyAiBtn.href = `http://localhost:5173?token=${encodeURIComponent(token)}&email=${encodeURIComponent(username || 'User')}`;
             }
 
             // Fetch user data and usage statistics
@@ -906,29 +899,32 @@
                     }
                 });
                 
+                // Only process if response is successful (silently ignore 401 errors)
                 if (userResponse.ok) {
-                    const userData = await userResponse.json();
-                    const creditsDisplay = userData.credits >= 999999 ? 'Unlimited' : userData.credits.toFixed(1);
-                    const userCreditsEl = document.getElementById('userCredits');
-                    const creditsAmountEl = document.getElementById('creditsAmount');
-                    if (userCreditsEl) userCreditsEl.textContent = creditsDisplay;
-                    if (creditsAmountEl) creditsAmountEl.textContent = creditsDisplay;
-                    
-                    // Show low credits warning
-                    const creditLimits = { 'public': 10, 'researcher': 100, 'premium': 999999 };
-                    const limit = creditLimits[role] || 10;
-                    if (userData.credits <= 2 && role !== 'premium' && upgradeBtn) {
-                        upgradeBtn.style.animation = 'pulse 1s infinite';
+                    try {
+                        const userData = await userResponse.json();
+                        const creditsDisplay = userData.credits >= 999999 ? 'Unlimited' : userData.credits.toFixed(1);
+                        const userCreditsEl = document.getElementById('userCredits');
+                        const creditsAmountEl = document.getElementById('creditsAmount');
+                        if (userCreditsEl) userCreditsEl.textContent = creditsDisplay;
+                        if (creditsAmountEl) creditsAmountEl.textContent = creditsDisplay;
+                    } catch (parseError) {
+                        // Silently ignore JSON parse errors
                     }
                 }
                 
                 if (usageResponse.ok) {
-                    const usageData = await usageResponse.json();
-                    const queryCountEl = document.getElementById('queryCount');
-                    if (queryCountEl) queryCountEl.textContent = usageData.total_requests || 0;
+                    try {
+                        const usageData = await usageResponse.json();
+                        const queryCountEl = document.getElementById('queryCount');
+                        if (queryCountEl) queryCountEl.textContent = usageData.total_requests || 0;
+                    } catch (parseError) {
+                        // Silently ignore JSON parse errors
+                    }
                 }
+                // 401/404 errors are silently ignored - this is optional user data
             } catch (error) {
-                console.error('Error loading user data:', error);
+                // Silently ignore fetch errors for optional API calls
             }
         }
 
