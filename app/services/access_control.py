@@ -4,7 +4,7 @@ Access control service for role-based permissions
 from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models.user import User, UsageLog, UserRole
 from app.config import get_settings
 
@@ -37,7 +37,7 @@ class AccessControlService:
         """Check if user has exceeded rate limit"""
         
         # Get usage count for today
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
         usage_count = self.db.query(UsageLog).filter(
             UsageLog.user_id == user.id,
@@ -58,7 +58,7 @@ class AccessControlService:
         """Check if user has exceeded data volume limit"""
         
         # Get total data transferred today (in bytes)
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
         total_bytes = self.db.query(UsageLog).filter(
             UsageLog.user_id == user.id,
@@ -102,7 +102,7 @@ class AccessControlService:
     def get_usage_stats(self, user: User) -> dict:
         """Get usage statistics for a user"""
         
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
         # Total requests
         total_requests = self.db.query(UsageLog).filter(
@@ -167,7 +167,7 @@ class AccessControlService:
     def get_rate_limit_info(self, user: User) -> dict:
         """Get rate limit status information"""
         
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
         
         # Requests today

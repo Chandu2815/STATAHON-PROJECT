@@ -4,7 +4,7 @@ User and billing API endpoints with enhanced validation and security
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import (
@@ -215,7 +215,7 @@ def topup_credits(
     # Rate limiting check (max 5 topups per hour)
     try:
         from app.models.user import Transaction
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         recent_topups = db.query(Transaction).filter(
             Transaction.user_id == current_user.id,
             Transaction.transaction_type == "topup",
@@ -517,7 +517,7 @@ def upgrade_plan(
             transaction_type="upgrade",
             description=f"Upgraded to {plan.upper()} plan via {payment_method}. Credits: {new_credits}",
             status="completed",
-            payment_gateway_ref=f"{payment_method.upper()}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            payment_gateway_ref=f"{payment_method.upper()}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         )
         db.add(transaction)
         db.commit()
@@ -774,7 +774,7 @@ def get_usage_analytics(
         from datetime import date, timedelta
         from sqlalchemy import func
         
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
         
         # Get usage logs
         logs = db.query(UsageLog).filter(

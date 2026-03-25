@@ -256,6 +256,33 @@
             line-height: 1.6;
             text-align: left;
         }
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-container input {
+            width: 100%;
+            padding-right: 45px;
+        }
+        .toggle-password-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.2em;
+            transition: color 0.2s ease;
+            z-index: 10;
+        }
+        .toggle-password-btn:hover {
+            color: #1a237e;
+        }
     </style>
 </head>
 <body>
@@ -287,12 +314,19 @@
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+                    <button type="button" class="toggle-password-btn" id="togglePassword" title="Show/hide password">
+                        👁️
+                    </button>
+                </div>
             </div>
 
             <div class="form-group" id="otpGroup" style="display: none;">
                 <label for="otp">Authenticator Code</label>
-                <input type="text" id="otp" name="otp" minlength="6" maxlength="6" placeholder="Enter 6-digit authenticator code">
+                <div class="password-container">
+                    <input type="text" id="otp" name="otp" minlength="6" maxlength="6" placeholder="Enter 6-digit authenticator code" style="font-family: monospace; letter-spacing: 2px;">
+                </div>
             </div>
 
             <button type="submit" class="btn-login" id="loginBtn">Login</button>
@@ -321,6 +355,25 @@
         const otpGroup = document.getElementById('otpGroup');
 
         let loginChallengeId = null;
+
+        // Password visibility toggle - Safe initialization
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const input = document.getElementById('password');
+                const btn = e.currentTarget;
+                if (input && btn) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        btn.textContent = '🙈';
+                    } else {
+                        input.type = 'password';
+                        btn.textContent = '👁️';
+                    }
+                }
+            });
+        }
 
         function setupRequiredFieldUX(formEl) {
             const requiredControls = Array.from(

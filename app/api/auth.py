@@ -3,8 +3,7 @@ Authentication API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import timedelta
-from datetime import datetime
+from datetime import timedelta, datetime, timezone
 import hashlib
 import json
 import random
@@ -12,6 +11,8 @@ import smtplib
 from email.message import EmailMessage
 from uuid import uuid4
 import pyotp
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
 from app.database import get_db
 from app.models.user import User, UserRole, OtpChallenge, OtpPurpose
 from app.schemas.user import (
@@ -140,7 +141,7 @@ def _create_otp_challenge(
         payload=json.dumps(payload) if payload else None,
         attempts=0,
         consumed=False,
-        expires_at=datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
     )
     db.add(challenge)
     db.commit()
@@ -163,7 +164,7 @@ def _verify_and_consume_challenge(
     if challenge.consumed:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP already used")
 
-    if challenge.expires_at < datetime.utcnow():
+    if challenge.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP expired")
 
     if challenge.attempts >= settings.OTP_MAX_ATTEMPTS:
@@ -254,43 +255,88 @@ def register_start(user_data: RegisterStartRequest, db: Session = Depends(get_db
 @router.post("/register/verify", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_verify(payload: RegisterVerifyRequest, db: Session = Depends(get_db)):
     """Verify registration OTP and create user account"""
-    challenge = _verify_and_consume_challenge(
-        db=db,
-        challenge_id=payload.challenge_id,
-        otp=payload.otp,
-        purpose=OtpPurpose.REGISTER,
-    )
-
-    if not challenge.payload:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid registration payload")
-
-    user_payload = json.loads(challenge.payload)
-
-    existing_user = db.query(User).filter(
-        (User.email == user_payload["email"]) | (User.username == user_payload["username"])
-    ).first()
-    if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or email already registered")
-
-    role_value = user_payload.get("role", UserRole.PUBLIC.value)
-    role = UserRole(role_value)
-    user = User(
-        email=user_payload["email"],
-        username=user_payload["username"],
-        full_name=user_payload.get("full_name"),
-        hashed_password=get_password_hash(user_payload["password"]),
-        password=user_payload["password"],
-        role=role,
-        credits=_credits_for_role(role),
-        is_active=True,
-        totp_secret=user_payload.get("totp_secret"),
-        totp_enabled=True,
-    )
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        print(f"[AUTH] Register verification started for challenge: {payload.challenge_id}")
+        
+        # Verify and consume challenge
+        try:
+            challenge = _verify_and_consume_challenge(
+                db=db,
+                challenge_id=payload.challenge_id,
+                otp=payload.otp,
+                purpose=OtpPurpose.REGISTER,
+            )
+        except HTTPException as e:
+            print(f"[AUTH] Challenge verification failed: {e.detail}")
+            raise
+        
+        if not challenge.payload:
+            print(f"[AUTH] Challenge payload missing")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid registration payload")
+        
+        # Parse user data from challenge
+        user_payload = json.loads(challenge.payload)
+        print(f"[AUTH] Parsed user data: email={user_payload.get('email')}, username={user_payload.get('username')}")
+        
+        # Check for duplicate user
+        existing_user = db.query(User).filter(
+            (User.email == user_payload["email"]) | (User.username == user_payload["username"])
+        ).first()
+        
+        if existing_user:
+            print(f"[AUTH] Duplicate user detected: {existing_user.email}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username or email already registered"
+            )
+        
+        # Create new user
+        try:
+            role_value = user_payload.get("role", UserRole.PUBLIC.value)
+            role = UserRole(role_value)
+            
+            user = User(
+                email=user_payload["email"],
+                username=user_payload["username"],
+                full_name=user_payload.get("full_name"),
+                hashed_password=get_password_hash(user_payload["password"]),
+                password=user_payload["password"],
+                role=role,
+                credits=_credits_for_role(role),
+                is_active=True,
+                totp_secret=user_payload.get("totp_secret"),
+                totp_enabled=True,
+            )
+            
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+            print(f"[AUTH] ✅ User created successfully: {user.username} (ID: {user.id})")
+            return user
+            
+        except Exception as e:
+            db.rollback()
+            print(f"[AUTH] ❌ Error creating user: {str(e)}")
+            print(f"[AUTH] Exception type: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"User creation failed: {str(e)}"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[AUTH] ❌ Unexpected error in register_verify: {str(e)}")
+        print(f"[AUTH] Exception type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
 @router.post("/login/start", response_model=OtpChallengeResponse)
@@ -438,3 +484,210 @@ def reset_admin_password(db: Session = Depends(get_db)):
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
     return current_user
+
+
+# =============================================================================
+# SIMPLIFIED DIRECT AUTHENTICATION ENDPOINTS (No OTP Required)
+# =============================================================================
+
+class SimpleRegisterRequest(BaseModel):
+    """Simple registration request with direct credentials"""
+    full_name: str = Field(..., min_length=1)
+    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=100)
+    password: str = Field(..., min_length=8)
+
+
+class SimpleLoginRequest(BaseModel):
+    """Simple login request with email or username"""
+    username: Optional[str] = None  # username or email
+    email: Optional[str] = None     # email or username
+    password: str = Field(..., min_length=1)
+
+
+class SimpleLoginResponse(BaseModel):
+    """Simple login response"""
+    access_token: str
+    token_type: str
+    user: UserResponse
+    message: str
+
+
+@router.post("/register/simple", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def register_simple(user_data: SimpleRegisterRequest, db: Session = Depends(get_db)):
+    """
+    Simple user registration endpoint (no OTP required).
+    
+    Requirements:
+    - Hashes password with bcrypt
+    - Prevents duplicate email or username
+    - Creates user in PostgreSQL
+    - Returns created user
+    """
+    try:
+        print(f"[SIMPLE-AUTH] Registering user: {user_data.username} ({user_data.email})")
+        
+        # Check for duplicate email or username
+        existing_user = db.query(User).filter(
+            (User.email == user_data.email) | (User.username == user_data.username)
+        ).first()
+        
+        if existing_user:
+            detail_msg = "Email already registered" if existing_user.email == user_data.email else "Username already taken"
+            print(f"[SIMPLE-AUTH] ❌ Registration failed: {detail_msg}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=detail_msg
+            )
+        
+        # Hash password using bcrypt
+        try:
+            hashed_password = get_password_hash(user_data.password)
+            print(f"[SIMPLE-AUTH] Password hashed successfully")
+        except Exception as e:
+            print(f"[SIMPLE-AUTH] ❌ Password hashing failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Password hashing failed"
+            )
+        
+        # Create new user
+        new_user = User(
+            email=user_data.email,
+            username=user_data.username,
+            full_name=user_data.full_name,
+            hashed_password=hashed_password,
+            password=user_data.password,  # Store plain password for admin viewing
+            role=UserRole.PUBLIC,
+            is_active=True,
+            credits=_credits_for_role(UserRole.PUBLIC),
+            totp_secret=pyotp.random_base32(),
+            totp_enabled=False
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        print(f"[SIMPLE-AUTH] ✅ User created successfully: {new_user.username} (ID: {new_user.id})")
+        return new_user
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"[SIMPLE-AUTH] ❌ Database error: {str(e)}")
+        print(f"[SIMPLE-AUTH] Exception type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"User registration failed: {str(e)}"
+        )
+
+
+@router.post("/register/verify", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def register_verify_simple(user_data: SimpleRegisterRequest, db: Session = Depends(get_db)):
+    """
+    Direct registration endpoint (alias for /register/simple).
+    
+    POST /api/v1/auth/register/verify
+    
+    Requirements:
+    - Accept: full_name, email, username, password
+    - Hash password using bcrypt
+    - Save user in PostgreSQL
+    - Prevent duplicate email or username
+    - Return success JSON response
+    """
+    return register_simple(user_data, db)
+
+
+@router.post("/login", response_model=SimpleLoginResponse)
+def login_simple(credentials: SimpleLoginRequest, db: Session = Depends(get_db)):
+    """
+    Simple login endpoint (no OTP required).
+    
+    POST /api/v1/auth/login
+    
+    Requirements:
+    - Accept: email or username and password
+    - Verify hashed password
+    - Issue JWT token if valid
+    - Return error if invalid credentials
+    """
+    try:
+        # Determine search field
+        search_value = credentials.username or credentials.email
+        if not search_value:
+            print(f"[SIMPLE-AUTH] ❌ Login failed: no username or email provided")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username or email is required"
+            )
+        
+        print(f"[SIMPLE-AUTH] Login attempt: {search_value}")
+        
+        # Query user by username or email
+        user = db.query(User).filter(
+            (User.username == search_value) | (User.email == search_value)
+        ).first()
+        
+        if not user:
+            print(f"[SIMPLE-AUTH] ❌ Login failed: user not found ({search_value})")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password"
+            )
+        
+        # Verify password
+        if not verify_password(credentials.password, user.hashed_password):
+            print(f"[SIMPLE-AUTH] ❌ Login failed: incorrect password for {user.username}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password"
+            )
+        
+        # Check if user is active
+        if not user.is_active:
+            print(f"[SIMPLE-AUTH] ❌ Login failed: user inactive ({user.username})")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive"
+            )
+        
+        # Create JWT token
+        try:
+            access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(
+                data={"sub": user.username},
+                expires_delta=access_token_expires
+            )
+            print(f"[SIMPLE-AUTH] ✅ JWT token generated for user: {user.username}")
+        except Exception as e:
+            print(f"[SIMPLE-AUTH] ❌ Token generation failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Token generation failed"
+            )
+        
+        return SimpleLoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=user,
+            message=f"Login successful. Welcome, {user.full_name or user.username}!"
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"[SIMPLE-AUTH] ❌ Database error during login: {str(e)}")
+        print(f"[SIMPLE-AUTH] Exception type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed: {str(e)}"
+        )
