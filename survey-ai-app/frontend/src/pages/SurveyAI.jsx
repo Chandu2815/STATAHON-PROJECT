@@ -28,7 +28,6 @@ export default function SurveyAI() {
 
   // Fetch datasets on mount
   useEffect(() => {
-    console.log('🚀 SurveyAI page mounted, fetching datasets...');
     fetchDatasets();
 
     // Keyboard shortcuts
@@ -51,12 +50,9 @@ export default function SurveyAI() {
   const fetchDatasets = async () => {
     try {
       setLoading(true);
-      console.log('📡 Fetching datasets from:', API_BASE_URL);
       const response = await axios.get(`${API_BASE_URL}/datasets`);
-      console.log('✅ Datasets response:', response.data);
       if (response.data.success) {
         setDatasets(response.data.datasets || []);
-        console.log('📊 Datasets loaded:', response.data.datasets);
       }
     } catch (err) {
       console.error('❌ Error fetching datasets:', err);
@@ -68,7 +64,6 @@ export default function SurveyAI() {
 
   const handleDatasetSelect = async (dataset) => {
     try {
-      console.log('🔄 Selected dataset:', dataset);
       setSelectedDataset(dataset);
       setSelectedColumns([]);
       setData([]);
@@ -77,16 +72,13 @@ export default function SurveyAI() {
       setPagination({ page: 0, pageSize: 10 });
 
       // Fetch columns for selected dataset
-      console.log('📡 Fetching columns for:', dataset);
       const response = await axios.get(`${API_BASE_URL}/columns/${dataset}`);
-      console.log('✅ Columns API response:', response.data);
       if (response.data.success) {
         const cols = response.data.columns.map((col) => ({
           name: col.name,
           type: col.type,
         }));
         setColumns(cols);
-        console.log('📋 Columns loaded - Total:', cols.length);
       }
     } catch (err) {
       console.error('❌ Error fetching columns:', err);
@@ -111,7 +103,6 @@ export default function SurveyAI() {
 
   const fetchData = async () => {
     if (!selectedDataset || selectedColumns.length === 0) {
-      console.warn('⚠️ Cannot fetch data: dataset or columns missing');
       setError('Please select a dataset and at least one column');
       return;
     }
@@ -119,7 +110,6 @@ export default function SurveyAI() {
     try {
       setLoading(true);
       setError('');
-      console.log('📥 Fetching data for dataset:', selectedDataset, 'columns:', selectedColumns);
 
       // Build filter conditions
       const filterConditions = {};
@@ -137,18 +127,13 @@ export default function SurveyAI() {
         offset: pagination.page * pagination.pageSize,
       };
 
-      console.log('📦 Payload:', payload);
       const response = await axios.post(`${API_BASE_URL}/data`, payload);
-      console.log('✅ Data response:', response.data);
       if (response.data.success) {
         setData(response.data.data || []);
-        console.log('✅ Data set successfully:', response.data.data?.length || 0, 'rows');
       } else {
         setError('Failed to fetch data: ' + (response.data.message || 'Unknown error'));
-        console.error('❌ API returned success=false:', response.data.message);
       }
     } catch (err) {
-      console.error('❌ Error fetching data:', err);
       setError('Failed to fetch data: ' + err.message);
     } finally {
       setLoading(false);
@@ -170,7 +155,6 @@ export default function SurveyAI() {
 
   useEffect(() => {
     if (selectedDataset && selectedColumns.length > 0) {
-      console.log('🔄 useEffect triggered: fetching data...');
       fetchData();
       fetchStatistics();
     }

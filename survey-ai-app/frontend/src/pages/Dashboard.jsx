@@ -6,15 +6,30 @@ const API_BASE_URL = 'http://localhost:8001';
 
 export default function Dashboard() {
   const [datasets, setDatasets] = useState(0);
-  const [totalRows, setTotalRows] = useState(0);
+  const [totalRows, setTotalRows] = useState('0');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/datasets`);
-        if (response.data.success) {
-          setDatasets(response.data.datasets?.length || 0);
+        // Fetch datasets
+        const datasetsResponse = await axios.get(`${API_BASE_URL}/datasets`);
+        if (datasetsResponse.data.success) {
+          setDatasets(datasetsResponse.data.datasets?.length || 0);
+        }
+
+        // Fetch total records from analytics summary
+        const analyticsResponse = await axios.get(`${API_BASE_URL}/analytics/summary`);
+        if (analyticsResponse.data.success && analyticsResponse.data.total_rows) {
+          const rows = analyticsResponse.data.total_rows;
+          // Format total rows (if > 1M show as M, else show as K)
+          if (rows >= 1000000) {
+            setTotalRows((rows / 1000000).toFixed(1) + 'M');
+          } else if (rows >= 1000) {
+            setTotalRows(Math.round(rows / 1000) + 'K');
+          } else {
+            setTotalRows(rows.toString());
+          }
         }
       } catch (err) {
         console.error('Failed to fetch stats:', err);
@@ -28,7 +43,7 @@ export default function Dashboard() {
 
   const stats = [
     { icon: Database, label: 'Datasets', value: datasets, color: 'blue' },
-    { icon: TrendingUp, label: 'Total Records', value: '101K+', color: 'purple' },
+    { icon: TrendingUp, label: 'Total Records', value: totalRows, color: 'purple' },
     { icon: BarChart3, label: 'Active Queries', value: '0', color: 'green' },
     { icon: Users, label: 'Team Members', value: '1', color: 'pink' },
   ];

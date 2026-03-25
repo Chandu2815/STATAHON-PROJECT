@@ -122,8 +122,8 @@ if is_production:
         for origin in allowed_origins
     ] + allowed_origins))
 
-# Security middleware - HTTPS redirect (must be first)
-app.add_middleware(HTTPSRedirectMiddleware)
+# Security middleware - HTTPS redirect (disabled for development)
+# app.add_middleware(HTTPSRedirectMiddleware)
 
 # Security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
