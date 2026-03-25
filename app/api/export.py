@@ -111,11 +111,11 @@ def get_chart_data(
     
     # Get usage data for charts
     from app.models.user import UsageLog
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     from sqlalchemy import func
     
     # Get last N days of usage
-    start_date = datetime.utcnow() - timedelta(days=limit)
+    start_date = datetime.now(timezone.utc) - timedelta(days=limit)
     
     usage_by_date = db.query(
         func.date(UsageLog.timestamp).label('date'),

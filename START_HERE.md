@@ -98,6 +98,32 @@ python3.13 -m uvicorn main:app --host 127.0.0.1 --port 8000
 3. **Access home page** → http://127.0.0.1:8000/
 4. **Register new user** → http://127.0.0.1:8000/register
 5. **Login to account** → http://127.0.0.1:8000/login
+
+---
+
+## 🔐 MICROSOFT AUTHENTICATOR SETUP
+
+Your project uses **Time-Based One-Time Password (TOTP)** via Microsoft Authenticator.
+
+### Quick Start:
+1. **Install Microsoft Authenticator** (App Store / Google Play)
+2. **Go to register**: http://127.0.0.1:8000/register
+3. **Scan QR code** with Authenticator app
+4. **Enter 6-digit code** to complete registration
+5. **Login** with username + Authenticator code
+
+### 📖 Documentation:
+- **Quick Reference**: `AUTHENTICATOR_QUICK_REFERENCE.md` (5 min read)
+- **Full Setup Guide**: `MICROSOFT_AUTHENTICATOR_SETUP.md` (detailed)
+- **Troubleshooting**: `TROUBLESHOOT_MFA.md` (if issues arise)
+- **Testing**: `verify_mfa_system.py` (automated testing)
+
+### 🧪 Test the MFA System:
+```bash
+python verify_mfa_system.py --interactive
+```
+
+---
 6. **Use dashboard** → http://127.0.0.1:8000/dashboard
 7. **Admin functions** → http://127.0.0.1:8000/admin
 

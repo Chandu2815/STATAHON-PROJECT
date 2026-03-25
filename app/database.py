@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import get_settings
+import sys
 
 settings = get_settings()
 
@@ -19,12 +20,14 @@ if settings.DATABASE_URL.startswith("sqlite"):
         connect_args=connect_args
     )
 else:
+    # PostgreSQL with proper connection pooling
     engine = create_engine(
         settings.DATABASE_URL,
         echo=settings.DATABASE_ECHO,
-        pool_pre_ping=True,
+        pool_pre_ping=True,  # Test connections before using
         pool_size=10,
-        max_overflow=20
+        max_overflow=20,
+        connect_args={"connect_timeout": 10}
     )
 
 # Create session factory
@@ -44,61 +47,104 @@ def get_db():
 
 
 def init_db():
-    """Initialize database tables"""
-    # Import all models to ensure they're registered
-    from app.models import dataset, user
-    from app.models.user import User, UserRole
-    import bcrypt
-    
-    Base.metadata.create_all(bind=engine)
-    _ensure_user_totp_columns()
-    
-    # Create or update default users
-    db = SessionLocal()
+    """Initialize database tables with error handling"""
     try:
-        # Helper function to create/update user
-        def ensure_user(username, email, full_name, password, role, credits):
-            user = db.query(User).filter(User.username == username).first()
-            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            import pyotp
-            
-            if not user:
-                print(f"Creating {role} user: {username}...")
-                user = User(
-                    username=username,
-                    email=email,
-                    full_name=full_name,
-                    hashed_password=hashed,
-                    password=password,
-                    role=role,
-                    is_active=True,
-                    credits=credits,
-                    totp_secret=pyotp.random_base32(),
-                    totp_enabled=True,
-                )
-                db.add(user)
-                db.commit()
-                print(f"✅ Created {username} (Password: {password})")
-            else:
-                # Update password to ensure it's correct
-                user.hashed_password = hashed
-                user.password = password
-                if not user.totp_secret:
-                    user.totp_secret = pyotp.random_base32()
-                user.totp_enabled = True
-                db.commit()
-                print(f"✅ User {username} exists - password reset to: {password}")
-            return user
+        print("[DB] Initializing database...")
         
-        # Create admin user
-        ensure_user(
-            username="admin",
-            email="admin@mospi.gov.in",
-            full_name="System Administrator",
-            password="admin123",
-            role=UserRole.ADMIN,
-            credits=999999.0
-        )
+        # Import all models to ensure they're registered
+        from app.models import dataset, user
+        from app.models.user import User, UserRole, OtpChallenge
+        import bcrypt
+        import pyotp
+        
+        # Create all tables
+        print("[DB] Creating tables from models...")
+        Base.metadata.create_all(bind=engine)
+        print("[DB] ✅ Tables created successfully")
+        
+        # Ensure TOTP columns exist for backward compatibility
+        _ensure_user_totp_columns()
+        
+        # Create or update default users
+        db = SessionLocal()
+        try:
+            def ensure_user(username, email, full_name, password, role, credits):
+                """Create or update user account"""
+                try:
+                    user = db.query(User).filter(User.username == username).first()
+                    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                    
+                    if not user:
+                        print(f"[USER] Creating {role} user: {username}...")
+                        user = User(
+                            username=username,
+                            email=email,
+                            full_name=full_name,
+                            hashed_password=hashed,
+                            password=password,
+                            role=role,
+                            is_active=True,
+                            credits=credits,
+                            totp_secret=pyotp.random_base32(),
+                            totp_enabled=True,
+                        )
+                        db.add(user)
+                        db.commit()
+                        print(f"[USER] ✅ Created {username} (Password: {password})")
+                    else:
+                        # Update password to ensure it's correct
+                        user.hashed_password = hashed
+                        user.password = password
+                        if not user.totp_secret:
+                            user.totp_secret = pyotp.random_base32()
+                        user.totp_enabled = True
+                        db.commit()
+                        print(f"[USER] ✅ User {username} exists - password reset to: {password}")
+                    return user
+                except Exception as e:
+                    print(f"[USER] ❌ Error creating user {username}: {str(e)}")
+                    db.rollback()
+                    raise
+            
+            # Create admin user
+            ensure_user(
+                username="admin",
+                email="admin@mospi.gov.in",
+                full_name="System Administrator",
+                password="admin123",
+                role=UserRole.ADMIN,
+                credits=999999.0
+            )
+            
+            # Create test user
+            ensure_user(
+                username="testuser",
+                email="testuser@mospi.gov.in",
+                full_name="Test User",
+                password="test123",
+                role=UserRole.RESEARCHER,
+                credits=100.0
+            )
+            
+            # Load CSV data if needed
+            load_csv_data_if_needed(db)
+            
+        except Exception as e:
+            print(f"[USER] ❌ Fatal error during user initialization: {str(e)}")
+            db.rollback()
+            raise
+        finally:
+            db.close()
+            
+        print("[DB] ✅ Database initialization complete")
+        
+    except Exception as e:
+        print(f"[DB] ❌ CRITICAL: Database initialization failed")
+        print(f"[DB] Error: {str(e)}")
+        print(f"[DB] Type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
         
         # Create test user for demo
         ensure_user(
@@ -331,7 +377,7 @@ def _ensure_user_totp_columns() -> None:
         if "totp_secret" not in user_columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64)"))
         if "totp_enabled" not in user_columns:
-            conn.execute(text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE"))
 
 
 if __name__ == "__main__":
