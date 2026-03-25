@@ -17,6 +17,11 @@ from app.schemas.user import (
     Token,
     TokenData,
     LoginRequest,
+    OtpChallengeResponse,
+    LoginStartRequest,
+    LoginVerifyRequest,
+    RegisterStartRequest,
+    RegisterVerifyRequest,
     UsageStatsResponse,
     TransactionCreate,
     TransactionResponse
@@ -36,6 +41,11 @@ __all__ = [
     "Token",
     "TokenData",
     "LoginRequest",
+    "OtpChallengeResponse",
+    "LoginStartRequest",
+    "LoginVerifyRequest",
+    "RegisterStartRequest",
+    "RegisterVerifyRequest",
     "UsageStatsResponse",
     "TransactionCreate",
     "TransactionResponse"

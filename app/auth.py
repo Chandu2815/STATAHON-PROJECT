@@ -16,7 +16,7 @@ from app.schemas.user import TokenData
 settings = get_settings()
 
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login/verify")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

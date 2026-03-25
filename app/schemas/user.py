@@ -2,6 +2,7 @@
 Pydantic schemas for users and authentication
 """
 from pydantic import BaseModel, EmailStr, Field
+from pydantic import field_validator
 from typing import Optional
 from datetime import datetime
 from app.models.user import UserRole
@@ -18,6 +19,20 @@ class UserCreate(UserBase):
     """Schema for user registration"""
     password: str = Field(..., min_length=8)
     role: Optional[UserRole] = UserRole.PUBLIC
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        """Require strong password policy for all user registrations"""
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(ch.isupper() for ch in value):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(ch.isdigit() for ch in value):
+            raise ValueError("Password must contain at least one number")
+        if not any(not ch.isalnum() for ch in value):
+            raise ValueError("Password must contain at least one special character")
+        return value
 
 
 class UserUpdate(BaseModel):
@@ -58,6 +73,56 @@ class LoginRequest(BaseModel):
     """Login request schema"""
     username: str
     password: str
+
+
+class OtpChallengeResponse(BaseModel):
+    """Response returned after OTP is generated and emailed"""
+    challenge_id: str
+    message: str
+    email: str
+    expires_in_seconds: int
+    otp: Optional[str] = None  # Included only in DEBUG mode
+    otp_method: str = "totp"
+    otpauth_url: Optional[str] = None
+    setup_key: Optional[str] = None
+
+
+class LoginStartRequest(BaseModel):
+    """Login start request schema"""
+    username: str
+    password: str
+
+
+class LoginVerifyRequest(BaseModel):
+    """Login OTP verification request schema"""
+    challenge_id: str
+    otp: str = Field(..., min_length=6, max_length=6)
+
+
+class RegisterStartRequest(UserBase):
+    """Register start request schema"""
+    password: str = Field(..., min_length=8)
+    role: Optional[UserRole] = UserRole.PUBLIC
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        """Require strong password policy for OTP registration flow"""
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(ch.isupper() for ch in value):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(ch.isdigit() for ch in value):
+            raise ValueError("Password must contain at least one number")
+        if not any(not ch.isalnum() for ch in value):
+            raise ValueError("Password must contain at least one special character")
+        return value
+
+
+class RegisterVerifyRequest(BaseModel):
+    """Register OTP verification request schema"""
+    challenge_id: str
+    otp: str = Field(..., min_length=6, max_length=6)
 
 
 class UsageStatsResponse(BaseModel):

@@ -101,6 +101,11 @@
             font-weight: 600;
             margin-bottom: 8px;
         }
+        .required-star {
+            color: #c62828;
+            margin-left: 4px;
+            font-weight: 700;
+        }
         .form-group input, .form-group select {
             width: 100%;
             padding: 12px 15px;
@@ -118,6 +123,31 @@
             color: #666;
             margin-top: 5px;
             font-size: 0.85em;
+        }
+        .password-rules {
+            margin-top: 8px;
+            display: grid;
+            gap: 6px;
+        }
+        .password-rule {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.9em;
+            transition: color 0.2s ease;
+        }
+        .password-rule .rule-icon {
+            width: 18px;
+            text-align: center;
+            color: #9e9e9e;
+            font-weight: 700;
+        }
+        .password-rule.valid {
+            color: #2e7d32;
+        }
+        .password-rule.valid .rule-icon {
+            color: #2e7d32;
         }
         .btn-register {
             width: 100%;
@@ -199,6 +229,28 @@
             color: #333;
             margin-bottom: 10px;
         }
+        .auth-setup-box {
+            background: #f0f6ff;
+            border: 1px solid #c7dcff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .auth-setup-box h4 {
+            color: #1a237e;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        .auth-code {
+            font-family: Consolas, 'Courier New', monospace;
+            word-break: break-all;
+            background: #fff;
+            border: 1px solid #d8e7ff;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 6px;
+        }
         .role-info ul {
             margin-left: 20px;
             color: #666;
@@ -249,7 +301,12 @@
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required minlength="8">
-                <small>Minimum 8 characters</small>
+                <div class="password-rules" id="passwordRules">
+                    <div class="password-rule" id="ruleLength"><span class="rule-icon">○</span><span>At least 8 characters</span></div>
+                    <div class="password-rule" id="ruleUpper"><span class="rule-icon">○</span><span>At least 1 uppercase letter</span></div>
+                    <div class="password-rule" id="ruleNumber"><span class="rule-icon">○</span><span>At least 1 number</span></div>
+                    <div class="password-rule" id="ruleSpecial"><span class="rule-icon">○</span><span>At least 1 special character</span></div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -263,6 +320,21 @@
                     <option value="public">Public User (Free - 10 credits)</option>
                     <option value="researcher">Researcher (100 credits)</option>
                 </select>
+            </div>
+
+            <div class="form-group" id="otpGroup" style="display: none;">
+                <label for="otp">Authenticator Code</label>
+                <input type="text" id="otp" name="otp" minlength="6" maxlength="6" placeholder="Enter 6-digit authenticator code">
+                <small>Use your authenticator app code to complete registration.</small>
+            </div>
+
+            <div id="authSetupBox" class="auth-setup-box">
+                <h4>Authenticator Setup</h4>
+                <div>1. Add a new account in Google/Microsoft Authenticator.</div>
+                <div>2. Use this setup key:</div>
+                <div id="setupKey" class="auth-code"></div>
+                <div style="margin-top: 8px;">Optional otpauth URL:</div>
+                <div id="setupUri" class="auth-code"></div>
             </div>
 
             <div class="role-info">
@@ -292,6 +364,104 @@
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
+        const otpGroup = document.getElementById('otpGroup');
+        const authSetupBox = document.getElementById('authSetupBox');
+        const setupKeyEl = document.getElementById('setupKey');
+        const setupUriEl = document.getElementById('setupUri');
+        const passwordInput = document.getElementById('password');
+        const passwordRules = {
+            length: document.getElementById('ruleLength'),
+            upper: document.getElementById('ruleUpper'),
+            number: document.getElementById('ruleNumber'),
+            special: document.getElementById('ruleSpecial')
+        };
+
+        let registerChallengeId = null;
+
+        function togglePasswordRule(ruleElement, isValid) {
+            const icon = ruleElement.querySelector('.rule-icon');
+            ruleElement.classList.toggle('valid', isValid);
+            icon.textContent = isValid ? '✓' : '○';
+        }
+
+        function evaluatePasswordRules(password) {
+            const rules = {
+                length: password.length >= 8,
+                upper: /[A-Z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[^A-Za-z0-9]/.test(password)
+            };
+
+            togglePasswordRule(passwordRules.length, rules.length);
+            togglePasswordRule(passwordRules.upper, rules.upper);
+            togglePasswordRule(passwordRules.number, rules.number);
+            togglePasswordRule(passwordRules.special, rules.special);
+
+            const isValid = rules.length && rules.upper && rules.number && rules.special;
+            if (isValid) {
+                passwordInput.setCustomValidity('');
+            } else {
+                passwordInput.setCustomValidity('Password must meet all required conditions.');
+            }
+
+            return rules;
+        }
+
+        function setupRequiredFieldUX(formEl) {
+            const requiredControls = Array.from(
+                formEl.querySelectorAll('input[required], select[required], textarea[required]')
+            );
+
+            requiredControls.forEach((control) => {
+                const label = formEl.querySelector(`label[for="${control.id}"]`);
+                if (label && !label.querySelector('.required-star')) {
+                    const star = document.createElement('span');
+                    star.className = 'required-star';
+                    star.textContent = '*';
+                    label.appendChild(star);
+                }
+
+                control.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter') {
+                        return;
+                    }
+
+                    const currentRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                    const currentIndex = currentRequired.indexOf(control);
+                    const nextControl = currentRequired[currentIndex + 1];
+
+                    if (nextControl) {
+                        event.preventDefault();
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            control.reportValidity();
+                            return;
+                        }
+                        nextControl.focus();
+                    }
+                });
+
+                if (control.tagName === 'SELECT') {
+                    control.addEventListener('change', () => {
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            return;
+                        }
+                        const visibleRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                        const visibleIndex = visibleRequired.indexOf(control);
+                        const nextControl = visibleRequired[visibleIndex + 1];
+                        if (nextControl) {
+                            nextControl.focus();
+                        }
+                    });
+                }
+            });
+        }
+
+        setupRequiredFieldUX(registerForm);
+
+        passwordInput.addEventListener('input', () => {
+            evaluatePasswordRules(passwordInput.value);
+        });
+        evaluatePasswordRules(passwordInput.value);
 
         function showError(message) {
             errorMessage.textContent = message;
@@ -320,19 +490,25 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const role = document.getElementById('role').value;
+            const otp = document.getElementById('otp').value;
 
             // Validation
-            if (password !== confirmPassword) {
+            if (!registerChallengeId && password !== confirmPassword) {
                 showError('Passwords do not match!');
                 return;
             }
 
-            if (password.length < 8) {
-                showError('Password must be at least 8 characters long');
+            const rules = evaluatePasswordRules(password);
+            const hasUppercase = rules.upper;
+            const hasNumber = rules.number;
+            const hasSpecial = rules.special;
+
+            if (!registerChallengeId && (password.length < 8 || !hasUppercase || !hasNumber || !hasSpecial)) {
+                showError('Password must be at least 8 characters and include 1 uppercase letter, 1 number, and 1 special character.');
                 return;
             }
 
-            if (username.length < 3) {
+            if (!registerChallengeId && username.length < 3) {
                 showError('Username must be at least 3 characters long');
                 return;
             }
@@ -342,49 +518,76 @@
             loading.style.display = 'block';
 
             try {
-                const response = await fetch('/api/v1/auth/register', {
+                if (!registerChallengeId) {
+                    const startResponse = await fetch('/api/v1/auth/register/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            username: username,
+                            password: password,
+                            full_name: fullName,
+                            role: role
+                        })
+                    });
+
+                    const startData = await startResponse.json();
+                    if (!startResponse.ok) {
+                        let errorMsg = 'Registration failed. Please try again.';
+                        if (startData.detail) {
+                            errorMsg = typeof startData.detail === 'string' ? startData.detail : JSON.stringify(startData.detail);
+                        }
+                        showError(errorMsg);
+                        registerBtn.disabled = false;
+                        loading.style.display = 'none';
+                        return;
+                    }
+
+                    registerChallengeId = startData.challenge_id;
+                    setupKeyEl.textContent = startData.setup_key || 'Not provided';
+                    setupUriEl.textContent = startData.otpauth_url || 'Not provided';
+                    authSetupBox.style.display = 'block';
+                    otpGroup.style.display = 'block';
+                    registerBtn.textContent = 'Verify Authenticator & Create Account';
+                    const otpMessage = 'Set up authenticator with the key above, then enter the 6-digit code.';
+                    showSuccess(otpMessage);
+                    registerBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                if (!otp || otp.length !== 6) {
+                    showError('Please enter the 6-digit OTP.');
+                    registerBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const verifyResponse = await fetch('/api/v1/auth/register/verify', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        email: email,
-                        username: username,
-                        password: password,
-                        full_name: fullName,
-                        role: role
+                        challenge_id: registerChallengeId,
+                        otp: otp
                     })
                 });
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    showSuccess('Account created successfully! Redirecting to login...');
-                    
-                    // Redirect to login after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
-                } else {
-                    // Handle different error formats
-                    let errorMsg = 'Registration failed. Please try again.';
-                    if (data.detail) {
-                        if (typeof data.detail === 'string') {
-                            errorMsg = data.detail;
-                        } else if (Array.isArray(data.detail)) {
-                            // Pydantic validation errors come as array
-                            errorMsg = data.detail.map(err => {
-                                const field = err.loc ? err.loc[err.loc.length - 1] : 'field';
-                                return `${field}: ${err.msg}`;
-                            }).join(', ');
-                        } else if (typeof data.detail === 'object') {
-                            errorMsg = JSON.stringify(data.detail);
-                        }
-                    }
-                    showError(errorMsg);
+                const verifyData = await verifyResponse.json();
+                if (!verifyResponse.ok) {
+                    showError(verifyData.detail || 'OTP verification failed.');
                     registerBtn.disabled = false;
                     loading.style.display = 'none';
+                    return;
                 }
+
+                showSuccess('Account created successfully! Redirecting to login...');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
             } catch (error) {
                 showError('Connection error. Please try again.');
                 registerBtn.disabled = false;
