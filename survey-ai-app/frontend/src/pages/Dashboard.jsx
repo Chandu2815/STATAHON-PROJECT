@@ -2,8 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { BarChart3, Database, Users, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 
-// API base URL - uses relative path for NGINX reverse proxy
-const API_BASE_URL = '/api';
+// Create axios instance with proper baseURL configuration
+// In development: Vite proxy routes /api/ai/* to http://localhost:8001/*
+// In production: NGINX reverse proxy routes /api/ai/* to backend
+const API = axios.create({
+  baseURL: '/api/ai',
+  timeout: 10000,
+});
 
 export default function Dashboard() {
   const [datasets, setDatasets] = useState(0);
@@ -13,14 +18,23 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch datasets
-        const datasetsResponse = await axios.get(`${API_BASE_URL}/datasets`);
+        // Fetch hierarchical datasets
+        console.log('🔄 Fetching hierarchical datasets...');
+        const datasetsResponse = await API.get('/datasets/hierarchical');
+        console.log('✅ Hierarchical datasets response:', datasetsResponse.data);
         if (datasetsResponse.data.success) {
-          setDatasets(datasetsResponse.data.datasets?.length || 0);
+          // Count total datasets from hierarchical structure
+          const hierarchicalData = datasetsResponse.data.data || {};
+          const totalDatasets = Object.values(hierarchicalData)
+            .reduce((sum, datasets) => sum + (Array.isArray(datasets) ? datasets.length : 0), 0);
+          setDatasets(totalDatasets);
+          console.log('✅ Total datasets:', totalDatasets);
         }
 
         // Fetch total records from analytics summary
-        const analyticsResponse = await axios.get(`${API_BASE_URL}/analytics/summary`);
+        console.log('🔄 Fetching analytics summary...');
+        const analyticsResponse = await API.get('/analytics/summary');
+        console.log('✅ Analytics response:', analyticsResponse.data);
         if (analyticsResponse.data.success && analyticsResponse.data.total_rows) {
           const rows = analyticsResponse.data.total_rows;
           // Format total rows (if > 1M show as M, else show as K)
@@ -33,7 +47,10 @@ export default function Dashboard() {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch stats:', err);
+        console.error('❌ Error fetching stats:');
+        console.error('   Error:', err.message);
+        console.error('   Status:', err.response?.status);
+        console.error('   Data:', err.response?.data);
       } finally {
         setLoading(false);
       }

@@ -10,13 +10,16 @@ import DataExportActions from '../components/DataExportActions.jsx';
 import HelpAndShortcuts from '../components/HelpAndShortcuts.jsx';
 import AnalyticsDashboard from '../components/AnalyticsDashboard.jsx';
 
-// API base URL - uses relative path for NGINX reverse proxy
-// In development: proxied via Vite dev server
-// In production: served via NGINX at /api/ai
-const API_BASE_URL = '/api';
+// Create axios instance with proper baseURL configuration
+// In development: Vite proxy routes /api/ai/* to http://localhost:8001/*
+// In production: NGINX reverse proxy routes /api/ai/* to backend
+const API = axios.create({
+  baseURL: '/api/ai',
+  timeout: 10000,
+});
 
 export default function SurveyAI() {
-  const [datasets, setDatasets] = useState([]);
+  const [datasets, setDatasets] = useState({}); // Hierarchical: { HCES: [...], PLFS: [...], ... }
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [columns, setColumns] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([]);
@@ -53,13 +56,27 @@ export default function SurveyAI() {
   const fetchDatasets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/datasets`);
+      console.log('🔄 Fetching hierarchical datasets from /api/ai/datasets/hierarchical');
+      const response = await API.get('/datasets/hierarchical');
+      console.log('✅ Hierarchical datasets response:', response.data);
       if (response.data.success) {
-        setDatasets(response.data.datasets || []);
+        // Handle hierarchical structure: { HCES: [...], PLFS: [...], Survey: [...], Other: [...] }
+        setDatasets(response.data.data || {});
+        const totalCount = response.data.total_datasets || 0;
+        console.log('✅ Loaded', totalCount, 'total datasets in', Object.keys(response.data.data).length, 'categories');
+        Object.entries(response.data.data).forEach(([category, items]) => {
+          console.log(`   📁 ${category}: ${items.length} datasets`);
+        });
+      } else {
+        console.warn('⚠️ API returned success: false');
+        setError('API returned unexpected response format');
       }
     } catch (err) {
-      console.error('❌ Error fetching datasets:', err);
-      setError('Failed to fetch datasets: ' + err.message);
+      console.error('❌ Error fetching datasets:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
+      setError('Failed to fetch datasets. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -75,16 +92,22 @@ export default function SurveyAI() {
       setPagination({ page: 0, pageSize: 10 });
 
       // Fetch columns for selected dataset
-      const response = await axios.get(`${API_BASE_URL}/columns/${dataset}`);
+      console.log('🔄 Fetching columns for dataset:', dataset);
+      const response = await API.get(`/columns/${dataset}`);
+      console.log('✅ Columns response:', response.data);
       if (response.data.success) {
         const cols = response.data.columns.map((col) => ({
           name: col.name,
           type: col.type,
         }));
         setColumns(cols);
+        console.log('✅ Loaded', cols.length, 'columns');
       }
     } catch (err) {
-      console.error('❌ Error fetching columns:', err);
+      console.error('❌ Error fetching columns:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
       setError('Failed to fetch columns: ' + err.message);
       setColumns([]);
     }
@@ -130,14 +153,22 @@ export default function SurveyAI() {
         offset: pagination.page * pagination.pageSize,
       };
 
-      const response = await axios.post(`${API_BASE_URL}/data`, payload);
+      console.log('🔄 Posting data request:', payload);
+      const response = await API.post('/data', payload);
+      console.log('✅ Data response received:', response.data);
       if (response.data.success) {
         setData(response.data.data || []);
+        console.log('✅ Loaded', response.data.data.length, 'rows');
       } else {
+        console.error('⚠️ API returned success: false');
         setError('Failed to fetch data: ' + (response.data.message || 'Unknown error'));
       }
     } catch (err) {
-      setError('Failed to fetch data: ' + err.message);
+      console.error('❌ Error fetching data:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
+      setError('Failed to fetch data. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -147,12 +178,17 @@ export default function SurveyAI() {
     if (!selectedDataset) return;
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/statistics/${selectedDataset}`);
+      console.log('🔄 Fetching statistics for:', selectedDataset);
+      const response = await API.get(`/statistics/${selectedDataset}`);
+      console.log('✅ Statistics response:', response.data);
       if (response.data.success) {
         setStatistics(response.data.statistics || {});
+        console.log('✅ Statistics loaded');
       }
     } catch (err) {
-      console.error('Failed to fetch statistics:', err);
+      console.error('❌ Error fetching statistics:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
     }
   };
 
@@ -231,7 +267,7 @@ export default function SurveyAI() {
         )}
 
         {/* Loading State - Initial Load */}
-        {loading && datasets.length === 0 && (
+        {loading && Object.keys(datasets).length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="p-5 bg-blue-100 rounded-lg mb-5">
               <Loader2 className="animate-spin text-blue-900" size={40} />
@@ -264,6 +300,7 @@ export default function SurveyAI() {
               </div>
               <div className="bg-white rounded border border-gray-300 shadow-sm p-6">
                 <HierarchicalDatasetSelector
+                  datasets={datasets}
                   selectedDataset={selectedDataset}
                   onSelect={handleDatasetSelect}
                 />

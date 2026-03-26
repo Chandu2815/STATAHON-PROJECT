@@ -23,7 +23,7 @@ export default function App() {
       localStorage.setItem('authToken', urlToken);
       localStorage.setItem('userEmail', email);
       // Clean up URL
-      window.history.replaceState({}, document.title, '/survey-ai');
+      window.history.replaceState({}, document.title, '/survey-ai/');
       return true;
     }
     
@@ -41,7 +41,7 @@ export default function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/survey-ai">
       {isAuthenticated ? (
         <div className="flex h-screen bg-gray-50">
           {/* Sidebar */}
