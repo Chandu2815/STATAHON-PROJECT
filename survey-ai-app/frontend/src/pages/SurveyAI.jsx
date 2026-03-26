@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Loader2, AlertCircle, Database, Layers, Filter as FilterIcon, TrendingUp, BarChart3 } from 'lucide-react';
-import HierarchicalDatasetSelector from '../components/HierarchicalDatasetSelector';
-import ColumnSelector from '../components/ColumnSelector';
-import FiltersPanel from '../components/FiltersPanel';
-import DataTable from '../components/DataTable';
-import ChartView from '../components/ChartView';
-import DataExportActions from '../components/DataExportActions';
-import HelpAndShortcuts from '../components/HelpAndShortcuts';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import HierarchicalDatasetSelector from '../components/HierarchicalDatasetSelector.jsx';
+import ColumnSelector from '../components/ColumnSelector.jsx';
+import FiltersPanel from '../components/FiltersPanel.jsx';
+import DataTable from '../components/DataTable.jsx';
+import ChartView from '../components/ChartView.jsx';
+import DataExportActions from '../components/DataExportActions.jsx';
+import HelpAndShortcuts from '../components/HelpAndShortcuts.jsx';
+import AnalyticsDashboard from '../components/AnalyticsDashboard.jsx';
 
-const API_BASE_URL = 'http://localhost:8001';
+// API base URL - uses relative path for NGINX reverse proxy
+// In development: proxied via Vite dev server
+// In production: served via NGINX at /api/ai
+const API_BASE_URL = '/api';
 
 export default function SurveyAI() {
   const [datasets, setDatasets] = useState([]);

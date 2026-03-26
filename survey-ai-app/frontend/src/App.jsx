@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import SurveyAI from './pages/SurveyAI';
-import Settings from './pages/Settings';
+import Navbar from './components/Navbar.jsx';
+import Sidebar from './components/Sidebar.jsx';
+import Login from './pages/Login.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import SurveyAI from './pages/SurveyAI.jsx';
+import Settings from './pages/Settings.jsx';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {

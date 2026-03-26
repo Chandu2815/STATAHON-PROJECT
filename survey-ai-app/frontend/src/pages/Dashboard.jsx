@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { BarChart3, Database, Users, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8001';
+// API base URL - uses relative path for NGINX reverse proxy
+const API_BASE_URL = '/api';
 
 export default function Dashboard() {
   const [datasets, setDatasets] = useState(0);
