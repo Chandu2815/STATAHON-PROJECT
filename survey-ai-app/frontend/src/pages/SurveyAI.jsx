@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Loader2, AlertCircle, Database, Layers, Filter as FilterIcon, TrendingUp, BarChart3 } from 'lucide-react';
-import HierarchicalDatasetSelector from '../components/HierarchicalDatasetSelector';
-import ColumnSelector from '../components/ColumnSelector';
-import FiltersPanel from '../components/FiltersPanel';
-import DataTable from '../components/DataTable';
-import ChartView from '../components/ChartView';
-import DataExportActions from '../components/DataExportActions';
-import HelpAndShortcuts from '../components/HelpAndShortcuts';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import HierarchicalDatasetSelector from '../components/HierarchicalDatasetSelector.jsx';
+import ColumnSelector from '../components/ColumnSelector.jsx';
+import FiltersPanel from '../components/FiltersPanel.jsx';
+import DataTable from '../components/DataTable.jsx';
+import ChartView from '../components/ChartView.jsx';
+import DataExportActions from '../components/DataExportActions.jsx';
+import HelpAndShortcuts from '../components/HelpAndShortcuts.jsx';
+import AnalyticsDashboard from '../components/AnalyticsDashboard.jsx';
 
-const API_BASE_URL = 'http://localhost:8001';
+// Create axios instance with proper baseURL configuration
+// In development: Vite proxy routes /api/ai/* to http://localhost:8001/*
+// In production: NGINX reverse proxy routes /api/ai/* to backend
+const API = axios.create({
+  baseURL: '/api/ai',
+  timeout: 10000,
+});
 
 export default function SurveyAI() {
-  const [datasets, setDatasets] = useState([]);
+  const [datasets, setDatasets] = useState({}); // Hierarchical: { HCES: [...], PLFS: [...], ... }
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [columns, setColumns] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([]);
@@ -50,13 +56,27 @@ export default function SurveyAI() {
   const fetchDatasets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/datasets`);
+      console.log('🔄 Fetching hierarchical datasets from /api/ai/datasets/hierarchical');
+      const response = await API.get('/datasets/hierarchical');
+      console.log('✅ Hierarchical datasets response:', response.data);
       if (response.data.success) {
-        setDatasets(response.data.datasets || []);
+        // Handle hierarchical structure: { HCES: [...], PLFS: [...], Survey: [...], Other: [...] }
+        setDatasets(response.data.data || {});
+        const totalCount = response.data.total_datasets || 0;
+        console.log('✅ Loaded', totalCount, 'total datasets in', Object.keys(response.data.data).length, 'categories');
+        Object.entries(response.data.data).forEach(([category, items]) => {
+          console.log(`   📁 ${category}: ${items.length} datasets`);
+        });
+      } else {
+        console.warn('⚠️ API returned success: false');
+        setError('API returned unexpected response format');
       }
     } catch (err) {
-      console.error('❌ Error fetching datasets:', err);
-      setError('Failed to fetch datasets: ' + err.message);
+      console.error('❌ Error fetching datasets:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
+      setError('Failed to fetch datasets. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -72,16 +92,22 @@ export default function SurveyAI() {
       setPagination({ page: 0, pageSize: 10 });
 
       // Fetch columns for selected dataset
-      const response = await axios.get(`${API_BASE_URL}/columns/${dataset}`);
+      console.log('🔄 Fetching columns for dataset:', dataset);
+      const response = await API.get(`/columns/${dataset}`);
+      console.log('✅ Columns response:', response.data);
       if (response.data.success) {
         const cols = response.data.columns.map((col) => ({
           name: col.name,
           type: col.type,
         }));
         setColumns(cols);
+        console.log('✅ Loaded', cols.length, 'columns');
       }
     } catch (err) {
-      console.error('❌ Error fetching columns:', err);
+      console.error('❌ Error fetching columns:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
       setError('Failed to fetch columns: ' + err.message);
       setColumns([]);
     }
@@ -127,14 +153,22 @@ export default function SurveyAI() {
         offset: pagination.page * pagination.pageSize,
       };
 
-      const response = await axios.post(`${API_BASE_URL}/data`, payload);
+      console.log('🔄 Posting data request:', payload);
+      const response = await API.post('/data', payload);
+      console.log('✅ Data response received:', response.data);
       if (response.data.success) {
         setData(response.data.data || []);
+        console.log('✅ Loaded', response.data.data.length, 'rows');
       } else {
+        console.error('⚠️ API returned success: false');
         setError('Failed to fetch data: ' + (response.data.message || 'Unknown error'));
       }
     } catch (err) {
-      setError('Failed to fetch data: ' + err.message);
+      console.error('❌ Error fetching data:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
+      setError('Failed to fetch data. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -144,12 +178,17 @@ export default function SurveyAI() {
     if (!selectedDataset) return;
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/statistics/${selectedDataset}`);
+      console.log('🔄 Fetching statistics for:', selectedDataset);
+      const response = await API.get(`/statistics/${selectedDataset}`);
+      console.log('✅ Statistics response:', response.data);
       if (response.data.success) {
         setStatistics(response.data.statistics || {});
+        console.log('✅ Statistics loaded');
       }
     } catch (err) {
-      console.error('Failed to fetch statistics:', err);
+      console.error('❌ Error fetching statistics:');
+      console.error('   Error:', err.message);
+      console.error('   Status:', err.response?.status);
     }
   };
 
@@ -161,60 +200,49 @@ export default function SurveyAI() {
   }, [selectedDataset, selectedColumns, filters, pagination]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Professional Government Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-300 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-blue-900 rounded">
-                <Database size={28} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Survey Data Dashboard
-                </h1>
-                <p className="text-sm text-gray-600 mt-0.5">Government Survey Analysis & Reporting</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Minimal Header - Clean & Professional */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-blue-900">Data Explorer</h1>
             {selectedDataset && (
-              <div className="px-4 py-2.5 bg-gray-100 border border-gray-300 rounded">
-                <p className="text-sm font-medium text-gray-900">
-                  Active Dataset: <span className="font-bold text-blue-900">{selectedDataset}</span>
-                </p>
-              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Dataset: <span className="font-semibold text-orange-600">{selectedDataset}</span>
+              </p>
             )}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-10 space-y-8">
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-4 border-b border-gray-300 -mx-8 px-8 sticky top-20 bg-white z-40">
-          <button
-            onClick={() => setActiveTab('explore')}
-            className={`px-6 py-3 font-semibold text-sm transition border-b-2 ${
-              activeTab === 'explore'
-                ? 'text-blue-900 border-b-blue-900'
-                : 'text-gray-600 border-b-transparent hover:text-gray-900'
-            }`}
-          >
-            <Layers size={16} className="inline mr-2" />
-            Data Explorer
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-3 font-semibold text-sm transition border-b-2 ${
-              activeTab === 'analytics'
-                ? 'text-blue-900 border-b-blue-900'
-                : 'text-gray-600 border-b-transparent hover:text-gray-900'
-            }`}
-          >
-            <BarChart3 size={16} className="inline mr-2" />
-            Analytics
-          </button>
-        </div>
+      <div className="flex-1 overflow-visible">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-6 space-y-6">
+          {/* Tab Navigation - Subtle */}
+          <div className="flex gap-6 border-b border-gray-300 pb-4">
+            <button
+              onClick={() => setActiveTab('explore')}
+              className={`px-2 py-2 font-semibold text-sm transition flex items-center gap-2 ${
+                activeTab === 'explore'
+                  ? 'text-blue-900 border-b-2 border-orange-500'
+                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+              }`}
+            >
+              <Layers size={16} />
+              Explore
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-2 py-2 font-semibold text-sm transition flex items-center gap-2 ${
+                activeTab === 'analytics'
+                  ? 'text-blue-900 border-b-2 border-orange-500'
+                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 size={16} />
+              Analytics
+            </button>
+          </div>
 
         {/* Error Alert */}
         {error && (
@@ -228,7 +256,7 @@ export default function SurveyAI() {
         )}
 
         {/* Loading State - Initial Load */}
-        {loading && datasets.length === 0 && (
+        {loading && Object.keys(datasets).length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="p-5 bg-blue-100 rounded-lg mb-5">
               <Loader2 className="animate-spin text-blue-900" size={40} />
@@ -249,142 +277,124 @@ export default function SurveyAI() {
           </div>
         )}
 
-        {(!loading || datasets.length > 0) && activeTab === 'explore' && (
-          <div className="space-y-8">
-            {/* Step 1: Dataset Selection Card */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-900 text-white font-bold rounded-full text-lg">
-                  1
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">Select Dataset</h2>
-              </div>
-              <div className="bg-white rounded border border-gray-300 shadow-sm p-6">
+          {(!loading || datasets.length > 0) && activeTab === 'explore' && (
+            <div className="space-y-6">
+              {/* Step 1: Dataset Selection */}
+              <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
+                  <span className="inline-flex items-center justify-center w-7 h-7 bg-blue-900 text-white text-xs font-bold rounded-full">1</span>
+                  <span className="text-base">Select Dataset</span>
+                </h2>
                 <HierarchicalDatasetSelector
+                  datasets={datasets}
                   selectedDataset={selectedDataset}
                   onSelect={handleDatasetSelect}
                 />
               </div>
-            </div>
 
-            {/* Step 2: Column Selection Card */}
-            {selectedDataset && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-800 text-white font-bold rounded-full text-lg">
-                    2
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Select Columns</h2>
-                  <span className="ml-auto text-xs font-semibold px-3 py-1 bg-gray-200 text-gray-800 rounded">
-                    {selectedColumns.length} / {columns.length}
-                  </span>
+              {/* Step 2: Column Selection */}
+              {selectedDataset && (
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center w-7 h-7 bg-orange-500 text-white text-xs font-bold rounded-full">2</span>
+                    <span className="text-base">Select Columns</span>
+                    <span className="ml-auto text-xs font-semibold px-3 py-1 bg-orange-100 text-orange-900 rounded-full border border-orange-200">{selectedColumns.length} / {columns.length}</span>
+                  </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-gray-700 font-medium">
+                    {selectedColumns.length === 0 && 'Select columns to analyze'}
+                    {selectedColumns.length > 0 && selectedColumns.length < columns.length && selectedColumns.length + ' of ' + columns.length + ' selected'}
+                    {selectedColumns.length === columns.length && 'All ' + columns.length + ' columns selected'}
+                  </p>
+                  {columns.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (selectedColumns.length === columns.length) {
+                          columns.forEach(col => {
+                            if (selectedColumns.includes(col.name)) {
+                              handleColumnSelect(col.name);
+                            }
+                          });
+                        } else {
+                          columns.forEach(col => {
+                            if (!selectedColumns.includes(col.name)) {
+                              handleColumnSelect(col.name);
+                            }
+                          });
+                        }
+                      }}
+                      className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline"
+                    >
+                      {selectedColumns.length === columns.length ? 'DESELECT ALL' : 'SELECT ALL'}
+                    </button>
+                  )}
                 </div>
-                <div className="bg-white rounded border border-gray-300 shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-700 font-medium">
-                      {selectedColumns.length === 0 && 'Select columns to analyze'}
-                      {selectedColumns.length > 0 && selectedColumns.length < columns.length && selectedColumns.length + ' of ' + columns.length + ' selected'}
-                      {selectedColumns.length === columns.length && 'All ' + columns.length + ' columns selected'}
-                    </p>
-                    {columns.length > 0 && (
-                      <button
-                        onClick={() => {
-                          if (selectedColumns.length === columns.length) {
-                            columns.forEach(col => {
-                              if (selectedColumns.includes(col.name)) {
-                                handleColumnSelect(col.name);
-                              }
-                            });
-                          } else {
-                            columns.forEach(col => {
-                              if (!selectedColumns.includes(col.name)) {
-                                handleColumnSelect(col.name);
-                              }
-                            });
-                          }
-                        }}
-                        className="text-xs font-bold text-blue-900 hover:underline"
-                      >
-                        {selectedColumns.length === columns.length ? 'DESELECT ALL' : 'SELECT ALL'}
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-56 overflow-y-auto pr-2">
-                    {columns.map((col) => (
-                      <button
-                        key={col.name}
-                        onClick={() => handleColumnSelect(col.name)}
-                        className={`px-3 py-2.5 rounded text-xs font-semibold transition ${
-                          selectedColumns.includes(col.name)
-                            ? 'bg-blue-900 text-white border border-blue-900'
-                            : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
-                        }`}
-                        title={col.name}
-                      >
-                        {col.name.length > 9 ? col.name.substring(0, 9) : col.name}
-                      </button>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-56 overflow-y-auto pr-2">
+                  {columns.map((col) => (
+                    <button
+                      key={col.name}
+                      onClick={() => handleColumnSelect(col.name)}
+                      className={`px-3 py-2.5 rounded text-xs font-semibold transition ${
+                        selectedColumns.includes(col.name)
+                          ? 'bg-blue-900 text-white border border-blue-900'
+                          : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 hover:border-orange-400'
+                      }`}
+                      title={col.name}
+                    >
+                      {col.name.length > 9 ? col.name.substring(0, 9) : col.name}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Step 3: Filters Card */}
-            {selectedDataset && selectedColumns.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-700 text-white font-bold rounded-full text-lg">
-                    3
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Apply Filters</h2>
-                  <span className="ml-auto text-xs font-semibold px-3 py-1 bg-gray-200 text-gray-800 rounded">
-                    {Object.keys(filters).length} Active
-                  </span>
-                </div>
-                <div className="bg-white rounded border border-gray-300 shadow-sm p-6">
-                  <FiltersPanel
-                    columns={columns}
-                    selectedColumns={selectedColumns}
-                    data={data}
-                    filters={filters}
-                    onChange={handleFilterChange}
-                  />
-                </div>
+              {/* Step 3: Filters */}
+              {selectedDataset && selectedColumns.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center w-7 h-7 bg-green-600 text-white text-xs font-bold rounded-full">3</span>
+                    <span className="text-base">Apply Filters</span>
+                    <span className="ml-auto text-xs font-semibold px-3 py-1 bg-green-100 text-green-900 rounded-full border border-green-200">{Object.keys(filters).length} Active</span>
+                  </h2>
+                <FiltersPanel
+                  columns={columns}
+                  selectedColumns={selectedColumns}
+                  data={data}
+                  filters={filters}
+                  onChange={handleFilterChange}
+                />
+                <button
+                  onClick={fetchData}
+                  disabled={loading}
+                  className="w-full mt-3 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white font-bold rounded text-sm transition"
+                >
+                  {loading ? '⏳ Fetching...' : '▶ Fetch & Analyze'}
+                </button>
               </div>
             )}
 
-            {/* Step 4: Data Table Card */}
-            {selectedDataset && selectedColumns.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 text-white font-bold rounded-full text-lg">
-                    4
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Data Results</h2>
-                  <span className="ml-auto text-xs font-semibold px-3 py-1 bg-gray-200 text-gray-800 rounded">
-                    {data.length} Rows
-                  </span>
-                </div>
-                <div className="bg-white rounded border border-gray-300 shadow-sm overflow-hidden">
-                  <DataTable
-                    columns={selectedColumns}
-                    data={data}
-                    pagination={pagination}
-                    onPageChange={(page) =>
-                      setPagination({ ...pagination, page })
-                    }
-                    onPageSizeChange={(pageSize) =>
-                      setPagination({ page: 0, pageSize })
-                    }
-                  />
-                </div>
-
-                {/* Export Actions */}
+              {/* Step 4: Data Table */}
+              {selectedDataset && selectedColumns.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center w-7 h-7 bg-purple-600 text-white text-xs font-bold rounded-full">4</span>
+                    <span className="text-base">Data Results</span>
+                    <span className="ml-auto text-xs font-semibold px-3 py-1 bg-purple-100 text-purple-900 rounded-full border border-purple-200">{data.length} Rows</span>
+                  </h2>
+                <DataTable
+                  columns={selectedColumns}
+                  data={data}
+                  pagination={pagination}
+                  onPageChange={(page) =>
+                    setPagination({ ...pagination, page })
+                  }
+                  onPageSizeChange={(pageSize) =>
+                    setPagination({ page: 0, pageSize })
+                  }
+                />
                 {data.length > 0 && (
-                  <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded">
-                    <p className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">
-                      📥 Export Or Share Results
-                    </p>
+                  <div className="mt-3 p-3 bg-gray-50 border border-gray-300 rounded">
+                    <p className="text-xs font-bold text-gray-900 mb-2">📥 Export Results</p>
                     <DataExportActions
                       data={data}
                       selectedColumns={selectedColumns}
@@ -395,54 +405,49 @@ export default function SurveyAI() {
               </div>
             )}
 
-            {/* Step 5: Charts Card */}
-            {data.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white font-bold rounded-full text-lg">
-                    5
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Charts & Visualizations</h2>
-                  <span className="ml-auto text-xs font-semibold px-3 py-1 bg-gray-200 text-gray-800 rounded">
-                    Analytics
-                  </span>
-                </div>
-                <div className="bg-white rounded border border-gray-300 shadow-sm p-8">
-                  <ChartView
-                    data={data}
-                    columns={selectedColumns}
-                    statistics={statistics}
-                  />
-                </div>
+              {/* Step 5: Charts */}
+              {data.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center w-7 h-7 bg-pink-600 text-white text-xs font-bold rounded-full">5</span>
+                    <span className="text-base">Charts & Visualizations</span>
+                  </h2>
+                <ChartView
+                  data={data}
+                  columns={selectedColumns}
+                  statistics={statistics}
+                />
               </div>
             )}
 
             {/* Empty State */}
             {!selectedDataset && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="p-5 bg-gray-100 rounded-lg mb-6">
-                  <Database size={52} className="text-gray-600 mx-auto" />
+              <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-lg border border-gray-200 p-6">
+                <div className="p-3 bg-blue-100 rounded-lg mb-3">
+                  <Database size={32} className="text-blue-900 mx-auto" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Welcome to Survey Dashboard
-                </h3>
-                <p className="text-gray-700 text-center max-w-md mb-8">
-                  Select a dataset from Step 1 above to begin analyzing your survey data. Our dashboard provides powerful filtering, visualization, and reporting tools.
+                <h3 className="text-lg font-bold text-blue-900 mb-2">Welcome to Data Explorer</h3>
+                <p className="text-gray-700 text-center max-w-md text-sm mb-4">
+                  Select a dataset to begin analyzing. Filter, visualize, and export your data with ease.
                 </p>
-                <div className="flex gap-3 flex-wrap justify-center">
-                  <span className="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-800 rounded border border-gray-300">{datasets.length} Datasets Available</span>
-                  <span className="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-800 rounded border border-gray-300">Advanced Filtering</span>
-                  <span className="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-800 rounded border border-gray-300">Real-time Analysis</span>
-                </div>
               </div>
             )}
-          </div>
-        )}
+            </div>
+          )}
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
-          <AnalyticsDashboard />
+          <AnalyticsDashboard 
+            selectedDataset={selectedDataset}
+            columns={columns}
+            selectedColumns={selectedColumns}
+            data={data}
+            statistics={statistics}
+            loading={loading}
+            error={error}
+          />
         )}
+        </div>
       </div>
 
       {/* Help & Shortcuts Button */}

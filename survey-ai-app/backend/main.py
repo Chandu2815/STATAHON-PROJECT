@@ -1,6 +1,7 @@
 """
 Survey AI - FastAPI Backend
 Modern Survey Data Explorer with Dynamic Queries
+Connects exclusively to VPS PostgreSQL database
 """
 
 from fastapi import FastAPI, HTTPException
@@ -11,8 +12,20 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
+import logging
 
-load_dotenv()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file
+load_dotenv(verbose=True)
+
+# Import routers
+from routers.survey_data_insert import router as survey_data_router
 
 app = FastAPI(
     title="Survey AI API",
@@ -29,22 +42,75 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database Configuration
+# Include routers
+app.include_router(survey_data_router)
+
+# Database Configuration - NO FALLBACK DEFAULTS (read from .env only)
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT", "5432")  # Default port only
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+
+# Validate required configuration
+missing_vars = []
+if not DB_HOST:
+    missing_vars.append("DB_HOST")
+if not DB_NAME:
+    missing_vars.append("DB_NAME")
+if not DB_USER:
+    missing_vars.append("DB_USER")
+if not DB_PASSWORD:
+    missing_vars.append("DB_PASSWORD")
+
+if missing_vars:
+    error_msg = f"❌ FATAL: Missing required environment variables: {', '.join(missing_vars)}. Please check .env file."
+    logger.error(error_msg)
+    raise RuntimeError(error_msg)
+
+# Build psycopg2 config
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "127.0.0.1"),
-    "port": os.getenv("DB_PORT", 5432),
-    "database": os.getenv("DB_NAME", "survey_db"),
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "1234"),
+    "host": DB_HOST,
+    "port": int(DB_PORT),
+    "database": DB_NAME,
+    "user": DB_USER,
+    "password": DB_PASSWORD,
+    "connect_timeout": 10,
 }
 
 def get_db_connection():
-    """Get database connection"""
+    """Get database connection to VPS PostgreSQL"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         return conn
+    except psycopg2.OperationalError as e:
+        error_msg = f"❌ Database connection failed to {DB_HOST}:{DB_PORT}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+        error_msg = f"❌ Unexpected database error: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+# Test connection on startup
+@app.on_event("startup")
+async def startup_event():
+    """Test database connection on app startup"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT version();")
+        version = cur.fetchone()
+        cur.close()
+        conn.close()
+        logger.info(f"✅ Connected to PostgreSQL at {DB_HOST}:{DB_PORT}")
+        logger.info(f"✅ Database: {DB_NAME}")
+        logger.info(f"✅ PostgreSQL version: {version[0][:60]}...")
+        print(f"Connected DB: postgresql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+    except Exception as e:
+        error_msg = f"❌ FATAL: Failed to connect to VPS database on startup: {str(e)}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
 # Pydantic Models
 class DataRequest(BaseModel):

@@ -1,124 +1,92 @@
-import React from 'react';
-import { Download, FileJson, FileText, Copy } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Share2, FileJson, FileText, Copy, Check } from 'lucide-react';
 
-export default function DataExportActions({ data, selectedColumns, selectedDataset }) {
-  const exportToCSV = () => {
-    if (!data || data.length === 0) {
-      alert('No data to export');
-      return;
-    }
+/**
+ * DataExportActions
+ * Export/Share functionality for query results
+ */
+export default function DataExportActions({ 
+  data = [], 
+  selectedColumns = [], 
+  selectedDataset = '' 
+}) {
+  const [copied, setCopied] = useState(false);
 
-    // Prepare CSV content
-    const headers = selectedColumns;
-    const csvRows = [headers.join(',')];
-
-    data.forEach((row) => {
-      const values = selectedColumns.map((col) => {
-        const value = row[col];
-        // Handle null, undefined, and values with commas/quotes
-        if (value === null || value === undefined) return '';
-        const stringValue = String(value);
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        return stringValue;
-      });
-      csvRows.push(values.join(','));
-    });
-
-    const csvContent = csvRows.join('\n');
-    downloadFile(csvContent, `${selectedDataset}_export_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv');
+  const exportAsJSON = () => {
+    const jsonStr = JSON.stringify(data, null, 2);
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonStr));
+    element.setAttribute('download', `${selectedDataset}_export_${Date.now()}.json`);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
-  const exportToJSON = () => {
-    if (!data || data.length === 0) {
-      alert('No data to export');
-      return;
-    }
-
-    const filteredData = data.map((row) => {
-      const obj = {};
-      selectedColumns.forEach((col) => {
-        obj[col] = row[col];
-      });
-      return obj;
+  const exportAsCSV = () => {
+    let csv = selectedColumns.join(',') + '\n';
+    data.forEach(row => {
+      csv += selectedColumns.map(col => {
+        const value = row[col];
+        return typeof value === 'string' && value.includes(',') 
+          ? `"${value}"` 
+          : value;
+      }).join(',') + '\n';
     });
-
-    const jsonContent = JSON.stringify(
-      {
-        metadata: {
-          dataset: selectedDataset,
-          columns: selectedColumns.length,
-          rows: filteredData.length,
-          exportedAt: new Date().toISOString(),
-        },
-        data: filteredData,
-      },
-      null,
-      2
-    );
-
-    downloadFile(jsonContent, `${selectedDataset}_export_${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
+    
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+    element.setAttribute('download', `${selectedDataset}_export_${Date.now()}.csv`);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   const copyToClipboard = () => {
-    if (!data || data.length === 0) {
-      alert('No data to copy');
-      return;
-    }
-
-    const headers = selectedColumns;
-    const rows = data.map((row) =>
-      selectedColumns.map((col) => row[col] || '').join('\t')
-    );
-
-    const tsvContent = [headers.join('\t'), ...rows].join('\n');
-    navigator.clipboard.writeText(tsvContent).then(() => {
-      alert(`✅ Copied ${data.length} rows to clipboard!`);
+    const text = JSON.stringify(data, null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  const downloadFile = (content, filename, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  if (!data || data.length === 0) {
-    return null;
-  }
-
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex flex-wrap gap-3">
       <button
-        onClick={exportToCSV}
-        className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition"
-        title="Download data as CSV file"
+        onClick={exportAsJSON}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+        title="Download data as JSON"
       >
-        <Download size={14} />
-        CSV ({data.length} rows)
+        <FileJson size={16} />
+        Export as JSON
       </button>
+
       <button
-        onClick={exportToJSON}
-        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition"
-        title="Download data as JSON file"
+        onClick={exportAsCSV}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm font-medium"
+        title="Download data as CSV"
       >
-        <FileJson size={14} />
-        JSON
+        <FileText size={16} />
+        Export as CSV
       </button>
+
       <button
         onClick={copyToClipboard}
-        className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white text-xs font-bold rounded hover:bg-gray-700 transition"
-        title="Copy data to clipboard as tab-separated values"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition text-sm font-medium"
+        title="Copy to clipboard"
       >
-        <Copy size={14} />
-        Copy
+        {copied ? (
+          <>
+            <Check size={16} />
+            Copied!
+          </>
+        ) : (
+          <>
+            <Copy size={16} />
+            Copy JSON
+          </>
+        )}
       </button>
     </div>
   );

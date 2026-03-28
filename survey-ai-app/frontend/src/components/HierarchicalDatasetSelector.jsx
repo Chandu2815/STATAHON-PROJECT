@@ -1,174 +1,245 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronDown, Info, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import React, { useState, useMemo } from 'react';
+import { ChevronDown, Database, Search, X } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8001';
+/**
+ * HierarchicalDatasetSelector - Premium UI
+ * Beautiful, modern, and interactive dataset selector
+ */
+export default function HierarchicalDatasetSelector({ 
+  datasets = {}, 
+  selectedDataset, 
+  onSelect 
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState({});
 
-export default function HierarchicalDatasetSelector({ selectedDataset, onSelect }) {
-  const [categories, setCategories] = useState({});
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Premium Category Metadata
+  const categoryMetadata = {
+    HCES: { 
+      icon: '📊', 
+      emoji: '🏘️',
+      title: 'HCES',
+      description: 'Household Consumption & Expenditure Survey',
+      color: 'blue',
+      gradient: 'from-blue-500 via-blue-600 to-indigo-600'
+    },
+    PLFS: { 
+      icon: '👷', 
+      emoji: '💼',
+      title: 'PLFS',
+      description: 'Periodic Labour Force Survey',
+      color: 'green',
+      gradient: 'from-green-500 via-emerald-600 to-teal-600'
+    },
+    SURVEY: { 
+      icon: '📋', 
+      emoji: '📝',
+      title: 'SURVEY',
+      description: 'Survey Data & Analysis',
+      color: 'purple',
+      gradient: 'from-purple-500 via-violet-600 to-indigo-600'
+    },
+    OTHER: { 
+      icon: '📁', 
+      emoji: '🗂️',
+      title: 'OTHER',
+      description: 'Additional Datasets',
+      color: 'amber',
+      gradient: 'from-amber-500 via-orange-600 to-red-600'
+    },
+  };
 
-  useEffect(() => {
-    fetchHierarchicalDatasets();
-  }, []);
+  const flatDatasets = useMemo(() => {
+    if (typeof datasets === 'string') return [];
+    return Object.values(datasets).flat().filter(Boolean);
+  }, [datasets]);
 
-  const fetchHierarchicalDatasets = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/datasets/hierarchical`);
-      if (response.data.success) {
-        setCategories(response.data.data);
+  const filteredHierarchical = useMemo(() => {
+    const filtered = {};
+    Object.entries(datasets).forEach(([category, items]) => {
+      const categoryItems = items.filter((item) =>
+        item.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      if (categoryItems.length > 0) {
+        filtered[category] = categoryItems;
       }
-    } catch (err) {
-      console.error('Error fetching hierarchical datasets:', err);
-    } finally {
-      setLoading(false);
-    }
+    });
+    return filtered;
+  }, [datasets, searchTerm]);
+
+  const sortedCategories = Object.entries(filteredHierarchical).sort((a, b) => {
+    const order = { HCES: 1, PLFS: 2, SURVEY: 3, OTHER: 4 };
+    return (order[a[0]] || 5) - (order[b[0]] || 5);
+  });
+
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
   };
 
-  const categoryOrder = ['HCES', 'PLFS', 'Survey', 'Other'];
-  const categoryIcons = {
-    'HCES': '🏠',
-    'PLFS': '📊',
-    'Survey': '📋',
-    'Other': '📁'
+  const colorClasses = {
+    blue: 'border-blue-300 bg-blue-50 hover:bg-blue-100',
+    green: 'border-green-300 bg-green-50 hover:bg-green-100',
+    purple: 'border-purple-300 bg-purple-50 hover:bg-purple-100',
+    amber: 'border-amber-300 bg-amber-50 hover:bg-amber-100',
   };
-
-  const categoryDescriptions = {
-    'HCES': 'Household Consumption & Expenditure Survey',
-    'PLFS': 'Periodic Labour Force Survey',
-    'Survey': 'General Survey Data',
-    'Other': 'Additional Datasets'
-  };
-
-  const sortedCategories = useMemo(() => {
-    const sorted = Object.keys(categories)
-      .sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b))
-      .reduce((obj, key) => {
-        obj[key] = categories[key];
-        return obj;
-      }, {});
-    return sorted;
-  }, [categories]);
-
-  // Total statistics
-  const totalDatasets = Object.values(categories).reduce((sum, items) => sum + items.length, 0);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8 bg-gray-50 rounded border border-gray-300">
-        <Loader2 className="animate-spin text-blue-900 mr-2" size={20} />
-        <span className="text-sm text-gray-700">Loading datasets...</span>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-4">
+    <div className="bg-white rounded-lg border-2 border-gray-200 p-4 shadow-md relative z-10">
       {/* Header */}
-      <div className="flex items-start gap-2">
-        <Info size={16} className="text-blue-900 mt-0.5 flex-shrink-0" />
-        <div className="text-xs text-gray-700">
-          <span className="font-bold">Available datasets:</span> {totalDatasets} across {Object.keys(categories).length} categories
-        </div>
-      </div>
-
-      {/* Step 1: Select Category */}
-      <div>
-        <label className="text-xs font-bold text-gray-900 uppercase tracking-wide block mb-3">
-          1️⃣ SELECT CATEGORY
+      <div className="flex items-center justify-between mb-3">
+        <label className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <span className="text-2xl">📊</span>
+          <span>Select Dataset</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2">
-          {Object.entries(sortedCategories).map(([category, datasets]) => (
-            <button
-              key={category}
-              onClick={() => {
-                setSelectedCategory(category);
-              }}
-              title={categoryDescriptions[category]}
-              className={`p-3 rounded font-semibold text-sm transition border-2 group ${
-                selectedCategory === category
-                  ? 'bg-blue-900 text-white border-blue-900 shadow-md'
-                  : 'bg-white text-gray-800 border-gray-300 hover:border-blue-500 hover:bg-gray-50'
-              }`}
-            >
-              <span className="block text-lg mb-1">
-                {categoryIcons[category] || '📁'}
-              </span>
-              <span className="block font-bold text-xs">{category}</span>
-              <span className={`block text-xs mt-1 opacity-75 ${
-                selectedCategory === category ? 'text-blue-100' : 'text-gray-600'
-              }`}>
-                {datasets.length} items
-              </span>
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Step 2: Select Dataset from Category */}
-      {selectedCategory && (
-        <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-300">
-          <div>
-            <label className="text-xs font-bold text-gray-900 uppercase tracking-wide block mb-2">
-              2️⃣ SELECT DATASET FROM {selectedCategory.toUpperCase()}
-            </label>
-            <p className="text-xs text-gray-600 mb-3">
-              📋 {categoryDescriptions[selectedCategory]} • {(categories[selectedCategory] || []).length} available
-            </p>
-          </div>
-
-          {/* Dataset Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedDataset || ''}
-              onChange={(e) => onSelect(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-400 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-blue-900 appearance-none pr-8 bg-white hover:border-gray-500 transition cursor-pointer"
-            >
-              <option value="">-- Select a dataset --</option>
-              {(categories[selectedCategory] || []).map((dataset) => (
-                <option key={dataset} value={dataset}>
-                  {dataset.replace(/_/g, ' ').toUpperCase()}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Currently Selected Dataset Info */}
-      {selectedDataset && (
-        <div className="p-4 bg-blue-50 border-l-4 border-l-blue-900 rounded-r">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-gray-900 font-bold uppercase tracking-wide">
-                ✓ Selected Dataset
-              </p>
-              <p className="text-lg font-bold text-blue-900 mt-1">
-                {selectedDataset.replace(/_/g, ' ').toUpperCase()}
-              </p>
-              <p className="text-xs text-gray-600 mt-2">
-                Category: <span className="font-semibold">{selectedCategory}</span>
-              </p>
+      {/* Main Dropdown Button - Premium Style */}
+      <div className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg focus:outline-none focus:ring-3 focus:ring-blue-300 transition-all font-semibold group"
+        >
+          <div className="flex items-center gap-3 flex-1 text-left">
+            <div className="bg-white bg-opacity-20 p-1.5 rounded group-hover:bg-opacity-30 transition">
+              <Database size={20} />
             </div>
-            <button
-              onClick={() => {
-                onSelect(null);
-                setSelectedCategory(null);
-              }}
-              className="text-xs font-bold text-gray-600 hover:text-gray-900 px-2 py-1 hover:bg-gray-200 rounded transition"
-              title="Clear selection"
-            >
-              CLEAR
-            </button>
+            <div>
+              <div className="text-xs opacity-90 font-medium">Dataset</div>
+              <div className="text-sm font-semibold">
+                {selectedDataset ? `✓ ${selectedDataset}` : 'Choose dataset...'}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+          <ChevronDown
+            size={20}
+            className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {/* Premium Dropdown Menu */}
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-blue-200 rounded-lg shadow-2xl z-[9999] max-h-[500px] overflow-hidden flex flex-col">
+            {/* Search Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-4 py-3 border-b-2 border-blue-100">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-600 pointer-events-none" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search datasets..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 text-sm bg-white placeholder-gray-500"
+                  autoFocus
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Dataset List */}
+            <div className="overflow-y-auto flex-1">
+              {sortedCategories.length > 0 ? (
+                sortedCategories.map(([category, items]) => {
+                  const meta = categoryMetadata[category] || { 
+                    icon: '📂', 
+                    emoji: '📂',
+                    title: category, 
+                    description: category,
+                    gradient: 'from-gray-500 to-gray-600'
+                  };
+                  const isExpanded = expandedCategories[category] !== false;
+                  
+                  return (
+                    <div key={category} className="border-b border-gray-100 last:border-b-0">
+                      {/* Category Header - Interactive */}
+                      <button
+                        onClick={() => toggleCategory(category)}
+                        className={`w-full px-4 py-3 hover:bg-blue-50 transition-all flex items-center justify-between group border-l-4 ${colorClasses[meta.color]}`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 text-left">
+                          <span className="text-3xl transform group-hover:scale-110 transition-transform">{meta.emoji}</span>
+                          <div>
+                            <div className="font-bold text-sm text-gray-900 group-hover:text-gray-950">
+                              {meta.title}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {items.length} dataset{items.length !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <ChevronDown 
+                          size={18} 
+                          className={`text-gray-600 group-hover:text-gray-900 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+
+                      {/* Dataset Items - Beautiful List */}
+                      {isExpanded && (
+                        <div className="bg-gradient-to-b from-gray-50 to-white border-t border-gray-100">
+                          {items.map((dataset, index) => (
+                            <button
+                              key={dataset}
+                              onClick={() => {
+                                onSelect(dataset);
+                                setIsOpen(false);
+                                setSearchTerm('');
+                              }}
+                              className={`w-full text-left px-6 py-2 transition-all flex items-center justify-between group font-medium border-l-4 text-sm ${
+                                selectedDataset === dataset
+                                  ? 'bg-gradient-to-r from-blue-200 to-indigo-200 text-blue-900 shadow-sm border-l-blue-600'
+                                  : 'text-gray-700 border-l-transparent hover:bg-blue-50 hover:border-l-blue-400'
+                              } ${index === items.length - 1 ? '' : 'border-b border-gray-100'}`}
+                            >
+                              <div className="flex items-center gap-2 flex-1">
+                                <Database 
+                                  size={16} 
+                                  className={selectedDataset === dataset ? 'text-blue-700' : 'text-blue-600 group-hover:text-blue-700'} 
+                                />
+                                <span>{dataset}</span>
+                              </div>
+                              {selectedDataset === dataset && (
+                                <span className="text-lg">✓</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-8 text-center">
+                  <Database size={40} className="mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm font-semibold text-gray-500">No datasets found</p>
+                  <p className="text-xs text-gray-400 mt-1">Try: "{searchTerm}"</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Stats */}
+            <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-4 py-2 border-t border-gray-200 flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-700">
+                  📈 {filteredHierarchical ? Object.values(filteredHierarchical).flat().length : 0} matching
+                </span>
+              </div>
+              <span className="font-semibold text-blue-600">
+                Total: {flatDatasets.length}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

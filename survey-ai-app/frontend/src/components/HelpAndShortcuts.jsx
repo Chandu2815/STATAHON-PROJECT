@@ -1,137 +1,73 @@
 import React, { useState } from 'react';
-import { HelpCircle, X } from 'lucide-react';
+import { HelpCircle, Keyboard, X } from 'lucide-react';
 
+/**
+ * HelpAndShortcuts
+ * Floating help button with keyboard shortcuts
+ */
 export default function HelpAndShortcuts() {
-  const [showHelp, setShowHelp] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const shortcuts = [
-    { key: 'Ctrl + S', action: 'Save current analysis' },
-    { key: 'Ctrl + E', action: 'Export data' },
-    { key: 'Ctrl + F', action: 'Search datasets' },
-    { key: 'Ctrl + K', action: 'Clear filters' },
-    { key: 'Ctrl + C', action: 'Copy selected data' },
-    { key: 'Tab', action: 'Navigate between fields' },
-    { key: 'Esc', action: 'Close dialogs' },
-  ];
-
-  const tips = [
-    'Use search to quickly find datasets by name',
-    'Select multiple columns to analyze different fields together',
-    'Apply filters to narrow down your analysis scope',
-    'Export data in CSV, JSON, or copy to clipboard',
-    'Hover over fields for detailed descriptions',
-    'Use arrow keys to navigate dropdown options',
+    { key: 'Ctrl/Cmd + K', action: 'Clear all filters' },
+    { key: 'Ctrl/Cmd + S', action: 'Save analysis' },
   ];
 
   return (
     <>
-      {/* Help Button */}
+      {/* Floating Help Button */}
       <button
-        onClick={() => setShowHelp(!showHelp)}
-        className="fixed bottom-6 right-6 p-3 bg-blue-900 text-white rounded-full shadow-lg hover:bg-blue-800 transition z-40"
-        title="Help & Shortcuts (Ctrl + ?)"
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition z-40"
+        title="Help & Shortcuts"
+        aria-label="Help menu"
       >
         <HelpCircle size={24} />
       </button>
 
-      {/* Help Modal */}
-      {showHelp && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-blue-900 text-white p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Help & Shortcuts</h2>
-                <p className="text-blue-100 text-sm mt-1">Learn how to use the Survey Dashboard efficiently</p>
+      {/* Modal */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Keyboard size={20} className="text-blue-600" />
+                <h2 className="text-xl font-bold text-gray-900">Keyboard Shortcuts</h2>
               </div>
               <button
-                onClick={() => setShowHelp(false)}
-                className="p-2 hover:bg-blue-800 rounded transition"
+                onClick={() => setIsOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded transition"
               >
-                <X size={24} />
+                <X size={20} className="text-gray-600" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Quick Tips */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">💡 Quick Tips</h3>
-                <ul className="space-y-2">
-                  {tips.map((tip, idx) => (
-                    <li key={idx} className="flex gap-3 text-sm text-gray-700">
-                      <span className="text-blue-900 font-bold">•</span>
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Keyboard Shortcuts */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">⌨️ Keyboard Shortcuts</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {shortcuts.map((shortcut, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 bg-gray-50 border border-gray-300 rounded"
-                    >
-                      <span className="text-sm text-gray-700">{shortcut.action}</span>
-                      <code className="px-2.5 py-1 bg-gray-800 text-white text-xs font-bold rounded">
-                        {shortcut.key}
-                      </code>
-                    </div>
-                  ))}
+            <div className="space-y-4 mb-6">
+              {shortcuts.map((shortcut, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200">
+                  <span className="text-sm text-gray-700">{shortcut.action}</span>
+                  <code className="text-xs font-mono bg-gray-200 text-gray-800 px-2 py-1 rounded">
+                    {shortcut.key}
+                  </code>
                 </div>
-              </div>
-
-              {/* Workflow Guide */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">📊 Standard Workflow</h3>
-                <div className="space-y-3">
-                  <div className="flex gap-3">
-                    <div className="text-2xl">1️⃣</div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Select Category & Dataset</p>
-                      <p className="text-xs text-gray-600">Choose from hierarchical categories or search</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="text-2xl">2️⃣</div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Choose Columns</p>
-                      <p className="text-xs text-gray-600">Select which fields to analyze</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="text-2xl">3️⃣</div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Apply Filters</p>
-                      <p className="text-xs text-gray-600">Narrow down data by specific values</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="text-2xl">4️⃣</div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">View Results & Export</p>
-                      <p className="text-xs text-gray-600">Analyze data, charts, and download results</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Footer */}
-            <div className="bg-gray-50 p-4 border-t border-gray-300 flex justify-between items-center">
-              <p className="text-xs text-gray-600">
-                💬 Need more help? Contact support
-              </p>
-              <button
-                onClick={() => setShowHelp(false)}
-                className="px-4 py-2 bg-blue-900 text-white text-sm font-bold rounded hover:bg-blue-800 transition"
-              >
-                Got it!
-              </button>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-6">
+              <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Tips</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Use filters to refine your search results</li>
+                <li>• Select multiple columns for comprehensive analysis</li>
+                <li>• Export data for external analysis tools</li>
+              </ul>
             </div>
+
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

@@ -2,7 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { BarChart3, Database, Users, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8001';
+// Create axios instance with proper baseURL configuration
+// In development: Vite proxy routes /api/ai/* to http://localhost:8001/*
+// In production: NGINX reverse proxy routes /api/ai/* to backend
+const API = axios.create({
+  baseURL: '/api/ai',
+  timeout: 10000,
+});
 
 export default function Dashboard() {
   const [datasets, setDatasets] = useState(0);
@@ -12,14 +18,23 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch datasets
-        const datasetsResponse = await axios.get(`${API_BASE_URL}/datasets`);
+        // Fetch hierarchical datasets
+        console.log('🔄 Fetching hierarchical datasets...');
+        const datasetsResponse = await API.get('/datasets/hierarchical');
+        console.log('✅ Hierarchical datasets response:', datasetsResponse.data);
         if (datasetsResponse.data.success) {
-          setDatasets(datasetsResponse.data.datasets?.length || 0);
+          // Count total datasets from hierarchical structure
+          const hierarchicalData = datasetsResponse.data.data || {};
+          const totalDatasets = Object.values(hierarchicalData)
+            .reduce((sum, datasets) => sum + (Array.isArray(datasets) ? datasets.length : 0), 0);
+          setDatasets(totalDatasets);
+          console.log('✅ Total datasets:', totalDatasets);
         }
 
         // Fetch total records from analytics summary
-        const analyticsResponse = await axios.get(`${API_BASE_URL}/analytics/summary`);
+        console.log('🔄 Fetching analytics summary...');
+        const analyticsResponse = await API.get('/analytics/summary');
+        console.log('✅ Analytics response:', analyticsResponse.data);
         if (analyticsResponse.data.success && analyticsResponse.data.total_rows) {
           const rows = analyticsResponse.data.total_rows;
           // Format total rows (if > 1M show as M, else show as K)
@@ -32,7 +47,10 @@ export default function Dashboard() {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch stats:', err);
+        console.error('❌ Error fetching stats:');
+        console.error('   Error:', err.message);
+        console.error('   Status:', err.response?.status);
+        console.error('   Data:', err.response?.data);
       } finally {
         setLoading(false);
       }
@@ -49,34 +67,40 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-8">
-      {/* Header */}
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's an overview of your data</p>
+        <h1 className="text-2xl font-bold text-blue-900 mb-1">Dashboard</h1>
+        <p className="text-gray-600 text-sm">Overview of your survey data</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
-          const colorClasses = {
-            blue: 'from-blue-500 to-blue-600',
-            purple: 'from-purple-500 to-purple-600',
-            green: 'from-green-500 to-green-600',
-            pink: 'from-pink-500 to-pink-600',
+          const colorBorders = {
+            blue: 'border-l-blue-900',
+            purple: 'border-l-orange-500',
+            green: 'border-l-green-600',
+            pink: 'border-l-pink-600',
+          };
+          const colorIcons = {
+            blue: 'bg-blue-100 text-blue-900',
+            purple: 'bg-orange-100 text-orange-900',
+            green: 'bg-green-100 text-green-900',
+            pink: 'bg-pink-100 text-pink-900',
           };
 
           return (
             <div
               key={idx}
-              className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition"
+              className={`bg-white rounded-lg border-l-4 ${colorBorders[stat.color]} p-4 shadow-sm hover:shadow-md transition`}
             >
-              <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[stat.color]} rounded-lg flex items-center justify-center mb-4`}>
-                <Icon className="text-white" size={24} />
+              <div className={`w-10 h-10 ${colorIcons[stat.color]} rounded flex items-center justify-center mb-3`}>
+                <Icon size={20} />
               </div>
-              <p className="text-gray-600 text-sm mb-1">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+              <p className="text-gray-600 text-xs font-medium mb-1">{stat.label}</p>
+              <p className="text-2xl font-bold text-blue-900">{stat.value}</p>
             </div>
           );
         })}
@@ -84,24 +108,32 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          Get Started
-        </h2>
+        <h2 className="text-base font-bold text-blue-900 mb-4">Quick Links</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <a
             href="/survey-ai"
-            className="block p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg hover:shadow-md transition"
+            className="block p-4 bg-blue-50 border border-blue-200 rounded hover:shadow-md transition"
           >
-            <h3 className="font-semibold text-blue-900 mb-1">Explore Data</h3>
-            <p className="text-blue-700 text-sm">
-              Start exploring datasets with interactive filters and visualizations
-            </p>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-900 text-white rounded flex items-center justify-center flex-shrink-0">
+                <BarChart3 size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-blue-900 text-sm mb-1">Explore Data</h3>
+                <p className="text-blue-700 text-xs">Interactive filters and visualizations</p>
+              </div>
+            </div>
           </a>
-          <div className="block p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg">
-            <h3 className="font-semibold text-purple-900 mb-1">Documentation</h3>
-            <p className="text-purple-700 text-sm">
-              Learn how to use Survey AI effectively with our guides
-            </p>
+          <div className="block p-4 bg-orange-50 border border-orange-200 rounded">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-orange-500 text-white rounded flex items-center justify-center flex-shrink-0">
+                <Database size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-orange-900 text-sm mb-1">Documentation</h3>
+                <p className="text-orange-700 text-xs">Learn how to use Survey AI</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
