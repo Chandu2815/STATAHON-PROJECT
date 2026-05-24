@@ -54,15 +54,25 @@
         .emblem-fallback {
             height: 60px;
             width: 60px;
-            background: linear-gradient(135deg, #FF6B00 0%, #138808 100%);
             border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 1.5em;
+            overflow: hidden;
+            display: inline-block;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            background: linear-gradient(90deg, #FF6B00 0 33.33%, #FFFFFF 33.33% 66.66%, #138808 66.66% 100%);
+            position: relative;
+        }
+        .emblem-fallback::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: 0 0 0 3px rgba(13,71,161,0.9) inset;
+            border: 2px solid rgba(13,71,161,0.95);
         }
 
         .govt-text {
@@ -657,11 +667,10 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png" 
-                     alt="Government of India Emblem" 
-                     class="emblem"
-                     onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
-                <div class="emblem-fallback hidden">🇮🇳</div>
+                 <img src="/static/images/indian_flag_waving.jpg" 
+                     alt="Flag of India" 
+                     class="emblem">
+                <div class="emblem-fallback hidden"></div>
                 <div class="govt-text">
                     <span class="small-text">Government of India</span>
                     <span class="ministry-name">Ministry of Statistics & Programme Implementation</span>
