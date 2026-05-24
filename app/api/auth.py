@@ -35,6 +35,18 @@ settings = get_settings()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+def _ensure_aware(dt: datetime | None) -> datetime | None:
+    """Ensure a datetime is timezone-aware in UTC.
+
+    If dt is naive, assume UTC and attach tzinfo. If already aware, convert to UTC.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _send_otp_or_raise(email: str, otp: str, purpose: OtpPurpose) -> None:
     """Send OTP and convert SMTP errors into user-facing HTTP errors."""
     try:
@@ -164,7 +176,7 @@ def _verify_and_consume_challenge(
     if challenge.consumed:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP already used")
 
-    if challenge.expires_at < datetime.now(timezone.utc):
+    if _ensure_aware(challenge.expires_at) < datetime.now(timezone.utc):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP expired")
 
     if challenge.attempts >= settings.OTP_MAX_ATTEMPTS:
