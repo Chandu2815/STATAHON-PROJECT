@@ -1,0 +1,213 @@
+nohup: ignoring input
+INFO:     Started server process [68262]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[DB] Initializing database...
+[DB] Creating tables from models...
+[DB] ✅ Tables created successfully
+[USER] ✅ User admin exists - password reset to: admin123
+[USER] ✅ User testuser exists - password reset to: test123
+✅ Person Survey already has 50,000 records
+✅ HCES Household Identification already has 261,953 records
+✅ HCES Food Expenditure already has 85,235 records
+✅ HCES Non-Food Expenditure already has 261,953 records
+[DB] ✅ Database initialization complete
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 401 Unauthorized
+INFO:     103.42.201.221:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/register/start HTTP/1.0" 200 OK
+[AUTH] Register verification started for challenge: 03c350c82e0f49a0bf8b2a267eb90699
+[AUTH] Parsed user data: email=pchandu1505@gmail.com, username=chandu
+[AUTH] ✅ User created successfully: chandu (ID: 5)
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/register/verify HTTP/1.0" 201 Created
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/verify HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /dashboard HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me HTTP/1.0" 200 OK
+INFO:app.api.users:Usage stats retrieved for user 5
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me/usage HTTP/1.0" 200 OK
+DEBUG: Query parameters - dataset=2, state=DELHI, district=None, gender=MALE, age=15-29, year=2
+DEBUG: Available columns in hces_household_identification: ['survey_name', 'year', 'sector', 'state_code', 'nss_region', 'district_code', 'household_id', 'multiplier']
+DEBUG: Mapped state 'DELHI' to code 7 (column: State_Code)
+DEBUG: Gender filter skipped - no Sex/Gender column in hces_household_identification
+DEBUG: Age filter skipped - no Age column in hces_household_identification
+DEBUG: Skipped filters due to missing columns: [{'filter': 'gender', 'reason': 'No gender/sex column found in dataset (household-level data)'}, {'filter': 'age_group', 'reason': 'No age column found in dataset (household-level data)'}]
+DEBUG: Final filters dictionary: {'State_Code': 7, 'Sector': 2}
+DEBUG: Dataset table name: hces_household_identification
+DEBUG: Skipped filters: [{'filter': 'gender', 'reason': 'No gender/sex column found in dataset (household-level data)'}, {'filter': 'age_group', 'reason': 'No age column found in dataset (household-level data)'}]
+INFO:     103.42.201.221:0 - "GET /api/v1/query?dataset=2&limit=100&state=DELHI&year=2&gender=MALE&age_group=15-29 HTTP/1.0" 200 OK
+INFO:app.api.users:Credits deducted: User 5, Amount 2.0, Reason: Query execution
+INFO:     103.42.201.221:0 - "POST /api/v1/users/me/deduct-credits HTTP/1.0" 200 OK
+INFO:app.api.users:Query usage logged for user 5
+INFO:     103.42.201.221:0 - "POST /api/v1/users/me/log-query HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me HTTP/1.0" 200 OK
+INFO:app.api.users:Usage stats retrieved for user 5
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me/usage HTTP/1.0" 200 OK
+DEBUG: Query parameters - dataset=4, state=DELHI, district=None, gender=None, age=None, year=2
+DEBUG: Available columns in hces_non_food_expenditure: ['survey_name', 'year', 'sector', 'state_code', 'district_code', 'household_id', 'item_code', 'expenditure_type', 'value']
+DEBUG: Mapped state 'DELHI' to code 7 (column: State_Code)
+DEBUG: Final filters dictionary: {'State_Code': 7, 'Sector': 2}
+DEBUG: Dataset table name: hces_non_food_expenditure
+DEBUG: Skipped filters: []
+INFO:     103.42.201.221:0 - "GET /api/v1/query?dataset=4&limit=100&state=DELHI&year=2 HTTP/1.0" 200 OK
+INFO:app.api.users:Credits deducted: User 5, Amount 2.0, Reason: Query execution
+INFO:     103.42.201.221:0 - "POST /api/v1/users/me/deduct-credits HTTP/1.0" 200 OK
+INFO:app.api.users:Query usage logged for user 5
+INFO:     103.42.201.221:0 - "POST /api/v1/users/me/log-query HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me HTTP/1.0" 200 OK
+INFO:app.api.users:Usage stats retrieved for user 5
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me/usage HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     103.42.201.221:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     113.193.189.228:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     113.193.189.228:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 200 OK
+INFO:     113.193.189.228:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     183.82.15.100:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     183.82.15.100:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 200 OK
+INFO:     183.82.15.100:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/register/start HTTP/1.0" 200 OK
+[AUTH] Register verification started for challenge: 0197c101fba44c849ed60a270636aafb
+[AUTH] Parsed user data: email=bapathunandini02@gmail.com, username=nandu
+[AUTH] ✅ User created successfully: nandu (ID: 6)
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/register/verify HTTP/1.0" 201 Created
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/verify HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /dashboard HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me HTTP/1.0" 200 OK
+INFO:app.api.users:Usage stats retrieved for user 6
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me/usage HTTP/1.0" 200 OK
+INFO:     172.236.122.62:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     157.230.177.144:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 401 Unauthorized
+INFO:     44.192.66.83:0 - "GET / HTTP/1.0" 200 OK
+INFO:     44.192.66.83:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     44.192.66.83:0 - "GET /favicon.png HTTP/1.0" 404 Not Found
+INFO:     44.192.66.83:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     44.192.66.83:0 - "GET / HTTP/1.0" 200 OK
+INFO:     44.192.66.83:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     44.192.66.83:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     44.192.66.83:0 - "GET /static/videos/background.webm HTTP/1.0" 404 Not Found
+INFO:     44.192.66.83:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     172.236.122.62:0 - "GET / HTTP/1.0" 200 OK
+INFO:     172.236.122.62:0 - "GET /robots.txt HTTP/1.0" 404 Not Found
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/verify HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /admin/dashboard HTTP/1.0" 200 OK
+INFO:app.api.users:Admin admin retrieved 5 users
+INFO:     103.42.201.221:0 - "GET /api/v1/users/ HTTP/1.0" 200 OK
+INFO:     216.73.217.148:0 - "GET /robots.txt HTTP/1.0" 404 Not Found
+INFO:     216.73.217.148:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /admin/dashboard HTTP/1.0" 200 OK
+INFO:app.api.users:Admin admin retrieved 5 users
+INFO:     103.42.201.221:0 - "GET /api/v1/users/ HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.196.9.116:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET /dashboard HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET /admin/dashboard HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.196.9.27:0 - "GET /upgrade HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET /dashboard HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET /admin/dashboard HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.4.251.171:0 - "GET /upgrade HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET / HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET /dashboard HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET /admin/dashboard HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET / HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     107.172.195.183:0 - "GET /upgrade HTTP/1.0" 200 OK
+INFO:     23.178.112.212:0 - "GET /.well-known/acme-challenge/zOrmXcjjgcr4sscYhJv9gDazHtvOZ_411QZnrjpxyQU HTTP/1.0" 404 Not Found
+INFO:     23.178.112.211:0 - "GET /.well-known/acme-challenge/KFpXqcu9_PSlBNq5-CHDa2cNpwWzm_Ud0nmOr6YseMI HTTP/1.0" 404 Not Found
+INFO:     106.192.16.235:0 - "GET / HTTP/1.0" 200 OK
+INFO:     106.192.16.235:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 304 Not Modified
+INFO:     106.192.16.235:0 - "GET /static/videos/background.mp4 HTTP/1.0" 304 Not Modified
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     198.199.89.226:0 - "GET / HTTP/1.0" 200 OK
+INFO:     134.209.200.218:0 - "GET / HTTP/1.0" 200 OK
+INFO:     151.115.90.251:0 - "HEAD / HTTP/1.0" 405 Method Not Allowed
+INFO:     151.115.90.251:0 - "GET / HTTP/1.0" 200 OK
+INFO:     151.115.90.251:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     151.115.90.251:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     151.115.90.251:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     151.115.90.251:0 - "GET /ads.txt HTTP/1.0" 404 Not Found
+INFO:     151.115.90.251:0 - "GET /app-ads.txt HTTP/1.0" 404 Not Found
+INFO:     151.115.90.251:0 - "GET /sellers.json HTTP/1.0" 404 Not Found
+INFO:     165.232.34.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/videos/background.mp4 HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "GET /static/videos/background.mp4 HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 304 Not Modified
+INFO:     134.209.200.218:0 - "GET / HTTP/1.0" 200 OK
+INFO:     34.239.160.56:0 - "GET / HTTP/1.0" 200 OK
+INFO:     34.239.160.56:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     34.239.160.56:0 - "GET /favicon.png HTTP/1.0" 404 Not Found
+INFO:     52.90.146.224:0 - "GET / HTTP/1.0" 200 OK
+INFO:     34.239.160.56:0 - "GET / HTTP/1.0" 200 OK
+INFO:     34.239.160.56:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     34.239.160.56:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     34.239.160.56:0 - "GET /static/videos/background.webm HTTP/1.0" 404 Not Found
+INFO:     34.239.160.56:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     23.178.112.211:0 - "GET /.well-known/acme-challenge/-9VuNqCJ2B-6o1cTNJ8rBBFZkB2VnKsZT2XyvKZD7RM HTTP/1.0" 404 Not Found
+INFO:     23.178.112.212:0 - "GET /.well-known/acme-challenge/V2n7LY6cMzt6nqquJcvwvdz7f0wICoFxeCIcZG7uWME HTTP/1.0" 404 Not Found
+INFO:     216.73.217.148:0 - "GET /robots.txt HTTP/1.0" 404 Not Found
+INFO:     216.73.217.148:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     216.73.217.148:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     216.73.217.148:0 - "GET /admin/login HTTP/1.0" 200 OK
+INFO:     216.73.217.148:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "HEAD /favicon.ico HTTP/1.0" 405 Method Not Allowed
+INFO:     52.16.245.145:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
+INFO:     52.16.245.145:0 - "HEAD /favicon.ico HTTP/1.0" 405 Method Not Allowed
+INFO:     52.16.245.145:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
