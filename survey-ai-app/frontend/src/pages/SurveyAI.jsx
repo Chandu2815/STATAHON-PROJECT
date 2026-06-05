@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2, AlertCircle, Database, Layers, Filter as FilterIcon, TrendingUp, BarChart3 } from 'lucide-react';
+import { 
+  Loader2, 
+  AlertCircle, 
+  Database, 
+  Layers, 
+  Filter as FilterIcon, 
+  TrendingUp, 
+  BarChart3,
+  Search,
+  Settings,
+  HelpCircle,
+  Zap,
+  ArrowRight,
+  CheckSquare
+} from 'lucide-react';
 import HierarchicalDatasetSelector from '../components/HierarchicalDatasetSelector.jsx';
 import ColumnSelector from '../components/ColumnSelector.jsx';
 import FiltersPanel from '../components/FiltersPanel.jsx';
@@ -11,15 +25,13 @@ import HelpAndShortcuts from '../components/HelpAndShortcuts.jsx';
 import AnalyticsDashboard from '../components/AnalyticsDashboard.jsx';
 
 // Create axios instance with proper baseURL configuration
-// In development: Vite proxy routes /api/ai/* to http://localhost:8001/*
-// In production: NGINX reverse proxy routes /api/ai/* to backend
 const API = axios.create({
   baseURL: '/api/ai',
   timeout: 10000,
 });
 
 export default function SurveyAI() {
-  const [datasets, setDatasets] = useState({}); // Hierarchical: { HCES: [...], PLFS: [...], ... }
+  const [datasets, setDatasets] = useState({}); 
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [columns, setColumns] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([]);
@@ -28,9 +40,8 @@ export default function SurveyAI() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({});
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
-  const [chartData, setChartData] = useState(null);
-  const [activeTab, setActiveTab] = useState('explore'); // 'explore' or 'analytics'
+  const [pagination, setPagination] = useState({ page: 0, pageSize: 12 });
+  const [activeTab, setActiveTab] = useState('explore'); 
 
   // Fetch datasets on mount
   useEffect(() => {
@@ -41,10 +52,7 @@ export default function SurveyAI() {
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 'k' || e.key === 'K') {
           e.preventDefault();
-          setFilters({}); // Clear filters
-        } else if (e.key === 's' || e.key === 'S') {
-          e.preventDefault();
-          alert('Analysis saved locally!');
+          setFilters({}); 
         }
       }
     };
@@ -56,26 +64,13 @@ export default function SurveyAI() {
   const fetchDatasets = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching hierarchical datasets from /api/ai/datasets/hierarchical');
       const response = await API.get('/datasets/hierarchical');
-      console.log('✅ Hierarchical datasets response:', response.data);
       if (response.data.success) {
-        // Handle hierarchical structure: { HCES: [...], PLFS: [...], Survey: [...], Other: [...] }
         setDatasets(response.data.data || {});
-        const totalCount = response.data.total_datasets || 0;
-        console.log('✅ Loaded', totalCount, 'total datasets in', Object.keys(response.data.data).length, 'categories');
-        Object.entries(response.data.data).forEach(([category, items]) => {
-          console.log(`   📁 ${category}: ${items.length} datasets`);
-        });
       } else {
-        console.warn('⚠️ API returned success: false');
         setError('API returned unexpected response format');
       }
     } catch (err) {
-      console.error('❌ Error fetching datasets:');
-      console.error('   Error:', err.message);
-      console.error('   Status:', err.response?.status);
-      console.error('   Data:', err.response?.data);
       setError('Failed to fetch datasets. Check console for details.');
     } finally {
       setLoading(false);
@@ -89,25 +84,19 @@ export default function SurveyAI() {
       setData([]);
       setError('');
       setFilters({});
-      setPagination({ page: 0, pageSize: 10 });
+      setPagination({ page: 0, pageSize: 12 });
 
-      // Fetch columns for selected dataset
-      console.log('🔄 Fetching columns for dataset:', dataset);
       const response = await API.get(`/columns/${dataset}`);
-      console.log('✅ Columns response:', response.data);
-      if (response.data.success) {
+      if (response.data.success && Array.isArray(response.data.columns)) {
         const cols = response.data.columns.map((col) => ({
           name: col.name,
-          type: col.type,
+          type: col.type || 'unknown',
         }));
         setColumns(cols);
-        console.log('✅ Loaded', cols.length, 'columns');
+      } else {
+        setColumns([]);
       }
     } catch (err) {
-      console.error('❌ Error fetching columns:');
-      console.error('   Error:', err.message);
-      console.error('   Status:', err.response?.status);
-      console.error('   Data:', err.response?.data);
       setError('Failed to fetch columns: ' + err.message);
       setColumns([]);
     }
@@ -119,12 +108,12 @@ export default function SurveyAI() {
         ? prev.filter((col) => col !== column)
         : [...prev, column]
     );
-    setPagination({ page: 0, pageSize: 10 });
+    setPagination({ page: 0, pageSize: 12 });
   };
 
   const handleFilterChange = (filterObj) => {
     setFilters(filterObj);
-    setPagination({ page: 0, pageSize: 10 });
+    setPagination({ page: 0, pageSize: 12 });
   };
 
   const fetchData = async () => {
@@ -137,7 +126,6 @@ export default function SurveyAI() {
       setLoading(true);
       setError('');
 
-      // Build filter conditions
       const filterConditions = {};
       Object.entries(filters).forEach(([key, value]) => {
         if (value && value.toString().trim()) {
@@ -153,21 +141,13 @@ export default function SurveyAI() {
         offset: pagination.page * pagination.pageSize,
       };
 
-      console.log('🔄 Posting data request:', payload);
       const response = await API.post('/data', payload);
-      console.log('✅ Data response received:', response.data);
       if (response.data.success) {
         setData(response.data.data || []);
-        console.log('✅ Loaded', response.data.data.length, 'rows');
       } else {
-        console.error('⚠️ API returned success: false');
         setError('Failed to fetch data: ' + (response.data.message || 'Unknown error'));
       }
     } catch (err) {
-      console.error('❌ Error fetching data:');
-      console.error('   Error:', err.message);
-      console.error('   Status:', err.response?.status);
-      console.error('   Data:', err.response?.data);
       setError('Failed to fetch data. Check console for details.');
     } finally {
       setLoading(false);
@@ -176,20 +156,12 @@ export default function SurveyAI() {
 
   const fetchStatistics = async () => {
     if (!selectedDataset) return;
-
     try {
-      console.log('🔄 Fetching statistics for:', selectedDataset);
       const response = await API.get(`/statistics/${selectedDataset}`);
-      console.log('✅ Statistics response:', response.data);
       if (response.data.success) {
         setStatistics(response.data.statistics || {});
-        console.log('✅ Statistics loaded');
       }
-    } catch (err) {
-      console.error('❌ Error fetching statistics:');
-      console.error('   Error:', err.message);
-      console.error('   Status:', err.response?.status);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -200,258 +172,308 @@ export default function SurveyAI() {
   }, [selectedDataset, selectedColumns, filters, pagination]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Minimal Header - Clean & Professional */}
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-blue-900">Data Explorer</h1>
+    <div className="min-h-screen bg-[#fbfcff] flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
+      {/* Premium Navigation Header */}
+      <nav className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                <Zap className="text-white ring-2 ring-white/20" size={20} />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-black text-gray-900 leading-tight tracking-tight">Survey AI</h1>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">Intelligence & Analysis</p>
+              </div>
+            </div>
+            
+            <div className="h-8 w-[1px] bg-gray-100 mx-2 hidden md:block"></div>
+            
+            <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-2xl">
+              <button
+                onClick={() => setActiveTab('explore')}
+                className={`flex items-center gap-2 px-6 py-2 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+                  activeTab === 'explore'
+                    ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-100'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Layers size={14} />
+                Explore
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`flex items-center gap-2 px-6 py-2 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+                  activeTab === 'analytics'
+                    ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-100'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <BarChart3 size={14} />
+                Analytics
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
             {selectedDataset && (
-              <p className="text-xs text-gray-600 mt-1">
-                Dataset: <span className="font-semibold text-orange-600">{selectedDataset}</span>
-              </p>
+              <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-blue-50/50 rounded-xl border border-blue-100">
+                <Database className="text-blue-600" size={16} />
+                <span className="text-[11px] font-black text-blue-900 uppercase tracking-tighter truncate max-w-[200px]">{selectedDataset}</span>
+              </div>
             )}
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-400 hover:text-gray-900 transition-colors"><Search size={20} /></button>
+              <button className="p-2 text-gray-400 hover:text-gray-900 transition-colors"><Settings size={20} /></button>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-visible">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-6 space-y-6">
-          {/* Tab Navigation - Subtle */}
-          <div className="flex gap-6 border-b border-gray-300 pb-4">
-            <button
-              onClick={() => setActiveTab('explore')}
-              className={`px-2 py-2 font-semibold text-sm transition flex items-center gap-2 ${
-                activeTab === 'explore'
-                  ? 'text-blue-900 border-b-2 border-orange-500'
-                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-              }`}
-            >
-              <Layers size={16} />
-              Explore
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`px-2 py-2 font-semibold text-sm transition flex items-center gap-2 ${
-                activeTab === 'analytics'
-                  ? 'text-blue-900 border-b-2 border-orange-500'
-                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-              }`}
-            >
-              <BarChart3 size={16} />
-              Analytics
-            </button>
-          </div>
-
-        {/* Error Alert */}
+      {/* Main Intelligent Content Area */}
+      <main className="flex-1 w-full max-w-[1600px] mx-auto px-8 py-10">
+        {/* Error Notification */}
         {error && (
-          <div className="p-5 bg-red-50 border-l-4 border-red-600 rounded flex gap-4">
-            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={22} />
+          <div className="mb-8 p-6 bg-red-50 border-2 border-red-100 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top-4 duration-500">
+            <div className="p-2 bg-red-100 text-red-600 rounded-xl"><AlertCircle size={24} /></div>
             <div>
-              <h3 className="font-bold text-red-900">Error</h3>
-              <p className="text-red-700 text-sm mt-1">{error}</p>
+              <h3 className="text-sm font-black text-red-900 uppercase tracking-widest">Protocol Failure</h3>
+              <p className="text-xs font-medium text-red-700 mt-1 leading-relaxed">{error}</p>
             </div>
           </div>
         )}
 
-        {/* Loading State - Initial Load */}
-        {loading && Object.keys(datasets).length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="p-5 bg-blue-100 rounded-lg mb-5">
-              <Loader2 className="animate-spin text-blue-900" size={40} />
-            </div>
-            <p className="text-gray-900 font-medium text-lg">Loading Datasets</p>
-            <p className="text-gray-600 text-sm mt-2">Please wait while we retrieve available datasets</p>
-          </div>
-        )}
-
-        {/* Loading State - After Column Selection */}
-        {loading && selectedDataset && selectedColumns.length > 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="p-5 bg-green-100 rounded-lg mb-5">
-              <Loader2 className="animate-spin text-green-900" size={40} />
-            </div>
-            <p className="text-gray-900 font-medium text-lg">Fetching Data</p>
-            <p className="text-gray-600 text-sm mt-2">Retrieving records from {selectedDataset}</p>
-          </div>
-        )}
-
-          {(!loading || datasets.length > 0) && activeTab === 'explore' && (
-            <div className="space-y-6">
-              {/* Step 1: Dataset Selection */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
-                <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center w-7 h-7 bg-blue-900 text-white text-xs font-bold rounded-full">1</span>
-                  <span className="text-base">Select Dataset</span>
-                </h2>
+        {activeTab === 'explore' && (
+          <div className="max-w-5xl mx-auto space-y-12 pb-20">
+            
+            {/* Step 1: Dataset Selection */}
+            <section className="relative">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-blue-100 z-10">01</div>
+                <div className="h-[2px] flex-1 bg-gradient-to-r from-blue-600 to-transparent opacity-20"></div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Primary Source Repository</h3>
+              </div>
+              <div className="pl-14">
                 <HierarchicalDatasetSelector
                   datasets={datasets}
                   selectedDataset={selectedDataset}
                   onSelect={handleDatasetSelect}
                 />
               </div>
+            </section>
 
-              {/* Step 2: Column Selection */}
-              {selectedDataset && (
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
-                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-7 h-7 bg-orange-500 text-white text-xs font-bold rounded-full">2</span>
-                    <span className="text-base">Select Columns</span>
-                    <span className="ml-auto text-xs font-semibold px-3 py-1 bg-orange-100 text-orange-900 rounded-full border border-orange-200">{selectedColumns.length} / {columns.length}</span>
-                  </h2>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-gray-700 font-medium">
-                    {selectedColumns.length === 0 && 'Select columns to analyze'}
-                    {selectedColumns.length > 0 && selectedColumns.length < columns.length && selectedColumns.length + ' of ' + columns.length + ' selected'}
-                    {selectedColumns.length === columns.length && 'All ' + columns.length + ' columns selected'}
-                  </p>
-                  {columns.length > 0 && (
-                    <button
-                      onClick={() => {
-                        if (selectedColumns.length === columns.length) {
-                          columns.forEach(col => {
-                            if (selectedColumns.includes(col.name)) {
-                              handleColumnSelect(col.name);
-                            }
-                          });
-                        } else {
-                          columns.forEach(col => {
-                            if (!selectedColumns.includes(col.name)) {
-                              handleColumnSelect(col.name);
-                            }
-                          });
-                        }
-                      }}
-                      className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline"
-                    >
-                      {selectedColumns.length === columns.length ? 'DESELECT ALL' : 'SELECT ALL'}
-                    </button>
-                  )}
+            {/* Step 2: Vector Mapping (Checkboxes) */}
+            {selectedDataset && (
+              <section className="relative animate-in slide-in-from-bottom-8 duration-700">
+                <div className="absolute left-[19px] top-[-48px] bottom-[calc(100%-8px)] w-[2px] bg-gradient-to-b from-blue-600 to-emerald-100 opacity-20"></div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-emerald-100 z-10">02</div>
+                  <div className="h-[2px] flex-1 bg-gradient-to-r from-emerald-600 to-transparent opacity-20"></div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Vector Mapping & Selection</h3>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-56 overflow-y-auto pr-2">
-                  {columns.map((col) => (
-                    <button
-                      key={col.name}
-                      onClick={() => handleColumnSelect(col.name)}
-                      className={`px-3 py-2.5 rounded text-xs font-semibold transition ${
-                        selectedColumns.includes(col.name)
-                          ? 'bg-blue-900 text-white border border-blue-900'
-                          : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 hover:border-orange-400'
-                      }`}
-                      title={col.name}
-                    >
-                      {col.name.length > 9 ? col.name.substring(0, 9) : col.name}
-                    </button>
-                  ))}
+                <div className="pl-14">
+                  <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 group relative overflow-hidden">
+                    
+                    {/* Enhanced Header with Prominent Select All */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-10 border-b border-gray-50">
+                      <div>
+                        <h4 className="text-lg font-black text-gray-900 uppercase tracking-tight italic">Schema Identification</h4>
+                        <p className="text-xs font-medium text-gray-400 mt-1">Found {columns.length} potential vectors in {selectedDataset}</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => setSelectedColumns(columns.map(c => c.name))}
+                          className="px-6 py-3 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95"
+                        >
+                          Select All Fields
+                        </button>
+                        <button 
+                          onClick={() => setSelectedColumns([])}
+                          className="px-6 py-3 bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-50 hover:text-red-500 transition-all active:scale-95 border border-transparent hover:border-red-100"
+                        >
+                          Clear Selection
+                        </button>
+                        <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
+                        <div className="flex flex-col items-end">
+                           <span className="text-[10px] font-black text-emerald-600 uppercase tabular-nums">{selectedColumns.length} Active</span>
+                           <span className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">Mapped Vectors</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {columns.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-4 py-2">
+                        {columns.map((col) => {
+                          const isActive = selectedColumns.includes(col.name);
+                          return (
+                            <button
+                              key={col.name}
+                              onClick={() => handleColumnSelect(col.name)}
+                              className={`group relative text-left p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between min-h-[110px] ${
+                                isActive 
+                                  ? 'bg-emerald-50/50 border-emerald-500 shadow-lg shadow-emerald-50' 
+                                  : 'bg-white border-gray-100 hover:border-emerald-200 hover:bg-gray-50/20'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3 w-full">
+                                <div className={`text-[10px] sm:text-[11px] font-black uppercase tracking-tight break-words leading-[1.3] flex-1 ${isActive ? 'text-emerald-900' : 'text-gray-400'}`}>
+                                  {col.name.replace(/_/g, ' ')}
+                                </div>
+                                <div className={`shrink-0 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${
+                                  isActive 
+                                    ? 'bg-emerald-600 border-emerald-600 text-white' 
+                                    : 'bg-white border-gray-200 group-hover:border-emerald-300'
+                                }`}>
+                                  {isActive && <CheckSquare size={12} strokeWidth={3} />}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between mt-auto pt-4">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md self-start ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-50 text-gray-400'}`}>
+                                    {col.type}
+                                  </span>
+                                  <span className="text-[7px] font-bold text-gray-300 uppercase tracking-widest mt-1">Audit Verified</span>
+                                </div>
+                                {isActive && (
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <div className="text-[8px] font-black text-emerald-400 uppercase tracking-tighter">Active</div>
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-20 text-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-dashed border-gray-200">
+                          <Layers className="text-gray-200" size={32} />
+                        </div>
+                        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest italic">No schema fields detected</h4>
+                        <p className="text-[10px] font-bold text-gray-300 mt-1">Please try re-selecting the primary source</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </section>
             )}
 
-              {/* Step 3: Filters */}
-              {selectedDataset && selectedColumns.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
-                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-7 h-7 bg-green-600 text-white text-xs font-bold rounded-full">3</span>
-                    <span className="text-base">Apply Filters</span>
-                    <span className="ml-auto text-xs font-semibold px-3 py-1 bg-green-100 text-green-900 rounded-full border border-green-200">{Object.keys(filters).length} Active</span>
-                  </h2>
-                <FiltersPanel
-                  columns={columns}
-                  selectedColumns={selectedColumns}
-                  data={data}
-                  filters={filters}
-                  onChange={handleFilterChange}
-                />
-                <button
-                  onClick={fetchData}
-                  disabled={loading}
-                  className="w-full mt-3 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white font-bold rounded text-sm transition"
-                >
-                  {loading ? '⏳ Fetching...' : '▶ Fetch & Analyze'}
-                </button>
-              </div>
-            )}
-
-              {/* Step 4: Data Table */}
-              {selectedDataset && selectedColumns.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
-                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-7 h-7 bg-purple-600 text-white text-xs font-bold rounded-full">4</span>
-                    <span className="text-base">Data Results</span>
-                    <span className="ml-auto text-xs font-semibold px-3 py-1 bg-purple-100 text-purple-900 rounded-full border border-purple-200">{data.length} Rows</span>
-                  </h2>
-                <DataTable
-                  columns={selectedColumns}
-                  data={data}
-                  pagination={pagination}
-                  onPageChange={(page) =>
-                    setPagination({ ...pagination, page })
-                  }
-                  onPageSizeChange={(pageSize) =>
-                    setPagination({ page: 0, pageSize })
-                  }
-                />
-                {data.length > 0 && (
-                  <div className="mt-3 p-3 bg-gray-50 border border-gray-300 rounded">
-                    <p className="text-xs font-bold text-gray-900 mb-2">📥 Export Results</p>
-                    <DataExportActions
-                      data={data}
+            {/* Step 3: Conditional Logic (Filters) */}
+            {selectedDataset && selectedColumns.length > 0 && (
+              <section className="relative animate-in slide-in-from-bottom-8 duration-700">
+                <div className="absolute left-[19px] top-[-48px] bottom-[calc(100%-8px)] w-[2px] bg-gradient-to-b from-emerald-600 to-violet-100 opacity-20"></div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-600 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-violet-100 z-10">03</div>
+                  <div className="h-[2px] flex-1 bg-gradient-to-r from-violet-600 to-transparent opacity-20"></div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Conditional Logic Engine</h3>
+                </div>
+                <div className="pl-14">
+                  <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10">
+                    <FiltersPanel
+                      columns={columns}
                       selectedColumns={selectedColumns}
-                      selectedDataset={selectedDataset}
+                      data={data}
+                      filters={filters}
+                      onChange={handleFilterChange}
+                    />
+                    <button
+                      onClick={fetchData}
+                      disabled={loading}
+                      className="w-full mt-10 group relative overflow-hidden bg-gray-900 text-white rounded-2xl p-5 flex items-center justify-center gap-3 hover:bg-gray-800 transition-all shadow-2xl active:scale-95"
+                    >
+                       {loading ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
+                       <span className="text-xs font-black uppercase tracking-[.3em]">{loading ? 'Synthesizing...' : 'Saturate & Pulse System'}</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Step 4: Data Representation (Table) */}
+            {selectedDataset && selectedColumns.length > 0 && data.length > 0 && (
+              <section className="relative animate-in slide-in-from-bottom-8 duration-700">
+                <div className="absolute left-[19px] top-[-48px] bottom-[calc(100%-8px)] w-[2px] bg-gradient-to-b from-violet-600 to-indigo-100 opacity-20"></div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-indigo-100 z-10">04</div>
+                  <div className="h-[2px] flex-1 bg-gradient-to-r from-indigo-600 to-transparent opacity-20"></div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Active Topology Representation</h3>
+                </div>
+                <div className="pl-14">
+                  <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden">
+                    <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-white to-gray-50/50">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                          <Database size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest leading-none">High Fidelity Grid</h4>
+                          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">Verified Entry Retrieval</p>
+                        </div>
+                      </div>
+                      <DataExportActions
+                        data={data}
+                        selectedColumns={selectedColumns}
+                        selectedDataset={selectedDataset}
+                      />
+                    </div>
+                    <div className="p-2">
+                      <DataTable
+                        columns={selectedColumns}
+                        data={data}
+                        pagination={pagination}
+                        onPageChange={(page) => setPagination({ ...pagination, page })}
+                        onPageSizeChange={(pageSize) => setPagination({ page: 0, pageSize })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Step 5: Data Visualization (Charts) */}
+            {data.length > 0 && (
+              <section className="relative animate-in slide-in-from-bottom-8 duration-700">
+                <div className="absolute left-[19px] top-[-48px] bottom-[calc(100%-8px)] w-[2px] bg-gradient-to-b from-indigo-600 to-transparent opacity-20"></div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-rose-100 z-10">05</div>
+                  <div className="h-[2px] flex-1 bg-gradient-to-r from-rose-600 to-transparent opacity-20"></div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Synthesized Visualization</h3>
+                </div>
+                <div className="pl-14">
+                  <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xl p-8">
+                    <ChartView
+                      data={data}
+                      columns={selectedColumns}
+                      statistics={statistics}
                     />
                   </div>
-                )}
-              </div>
-            )}
-
-              {/* Step 5: Charts */}
-              {data.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
-                  <h2 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-7 h-7 bg-pink-600 text-white text-xs font-bold rounded-full">5</span>
-                    <span className="text-base">Charts & Visualizations</span>
-                  </h2>
-                <ChartView
-                  data={data}
-                  columns={selectedColumns}
-                  statistics={statistics}
-                />
-              </div>
-            )}
-
-            {/* Empty State */}
-            {!selectedDataset && (
-              <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-lg border border-gray-200 p-6">
-                <div className="p-3 bg-blue-100 rounded-lg mb-3">
-                  <Database size={32} className="text-blue-900 mx-auto" />
                 </div>
-                <h3 className="text-lg font-bold text-blue-900 mb-2">Welcome to Data Explorer</h3>
-                <p className="text-gray-700 text-center max-w-md text-sm mb-4">
-                  Select a dataset to begin analyzing. Filter, visualize, and export your data with ease.
-                </p>
-              </div>
+              </section>
             )}
-            </div>
-          )}
-
-        {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
-          <AnalyticsDashboard 
-            selectedDataset={selectedDataset}
-            columns={columns}
-            selectedColumns={selectedColumns}
-            data={data}
-            statistics={statistics}
-            loading={loading}
-            error={error}
-          />
+          </div>
         )}
-        </div>
-      </div>
 
-      {/* Help & Shortcuts Button */}
+        {/* Analytics Mode Output */}
+        {activeTab === 'analytics' && (
+          <div className="max-w-5xl mx-auto">
+            <AnalyticsDashboard 
+              selectedDataset={selectedDataset}
+              columns={columns}
+              selectedColumns={selectedColumns}
+              data={data}
+              statistics={statistics}
+              loading={loading}
+              error={error}
+            />
+          </div>
+        )}
+      </main>
+
       <HelpAndShortcuts />
     </div>
   );
 }
+

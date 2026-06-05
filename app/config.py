@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Application settings"""
     
     # Database
-    DATABASE_URL: str = "sqlite:///./mospi_dpi.db"
+    DATABASE_URL: str
     DATABASE_ECHO: bool = False
     
     # JWT

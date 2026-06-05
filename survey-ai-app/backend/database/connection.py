@@ -72,8 +72,9 @@ try:
     )
     
     # Test connection on startup
+    from sqlalchemy import text
     with engine.connect() as conn:
-        result = conn.execute("SELECT version()").fetchone()
+        result = conn.execute(text("SELECT version()")).fetchone()
         logger.info(f"✅ Successfully connected to PostgreSQL at {DB_HOST}:{DB_PORT}")
         logger.info(f"✅ PostgreSQL version: {result[0][:50]}...")
         

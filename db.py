@@ -9,10 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:1234@127.0.0.1:5432/survey_db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("No DATABASE_URL set for database connection")
 
 # Create SQLAlchemy engine with connection pooling
 # QueuePool helps manage multiple connections efficiently

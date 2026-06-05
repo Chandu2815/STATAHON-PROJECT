@@ -587,11 +587,56 @@ async def get_column_distribution(table: str, column: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting distribution: {str(e)}")
 
+@app.get("/analytics/integrity/{table}")
+async def get_integrity_audit(table: str):
+    """Detect duplicates and repeated entries in a dataset"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # 1. Detect Duplicate Rows (Total Count)
+        # This is a generic check. In a production set, we usually check by a Unique ID if available.
+        # Here we check the whole row.
+        cur.execute(f'SELECT COUNT(*) as total FROM "{table}"')
+        total_rows = cur.fetchone()['total']
+        
+        # Get count of unique rows
+        cur.execute(f'SELECT COUNT(*) FROM (SELECT DISTINCT * FROM "{table}") as unique_rows')
+        unique_count = cur.fetchone()['count']
+        
+        duplicate_count = total_rows - unique_count
+        
+        # 2. Get specific repeated entries (Proof)
+        # We'll pick the most frequent repeated rows
+        cur.execute(f"""
+            SELECT *, COUNT(*) as occurrence_count
+            FROM "{table}"
+            GROUP BY {table}.*
+            HAVING COUNT(*) > 1
+            ORDER BY occurrence_count DESC
+            LIMIT 5
+        """)
+        repeated_samples = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "table": table,
+            "integrity_score": round((unique_count / total_rows * 100), 2) if total_rows > 0 else 0,
+            "duplicates_found": duplicate_count,
+            "total_rows": total_rows,
+            "proof_of_repetition": repeated_samples
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error performing integrity audit: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app,
         host="0.0.0.0",
         port=8001,
-        reload=True
+        reload=False
     )

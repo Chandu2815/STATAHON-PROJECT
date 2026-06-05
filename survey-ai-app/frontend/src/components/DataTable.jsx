@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, CheckSquare, Square } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Search, 
+  CheckSquare, 
+  Square,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Info,
+  Filter
+} from 'lucide-react';
 
+/**
+ * DataTable - Professional SaaS UI
+ * high-performance data grid with advanced sorting and selection
+ */
 export default function DataTable({
   columns,
   data,
@@ -64,162 +79,162 @@ export default function DataTable({
     }
   };
 
-  const pageSizeOptions = [10, 25, 50, 100];
+  const pageSizeOptions = [12, 24, 48, 96];
 
   return (
-    <div className="rounded-lg overflow-hidden">
-      {/* Table Header with Search */}
-      <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-            📋 Data Preview
-          </h3>
-          <span className="text-xs font-semibold px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
-            {filteredData.length} row{filteredData.length !== 1 ? 's' : ''}
-          </span>
+    <div className="flex flex-col h-full">
+      {/* Table Management Bar */}
+      <div className="px-6 py-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+            />
+            <input
+              type="text"
+              placeholder="Search current slice..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 transition-all w-full md:w-64"
+            />
+          </div>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-transparent text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <Filter size={12} />
+            {filteredData.length} Results
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search
-            size={18}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="🔎 Search in table..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white"
-          />
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rows per page</span>
+          <select
+            value={pagination.pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            className="appearance-none bg-gray-50 px-4 py-2 border-none rounded-xl text-xs font-black text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer text-center"
+          >
+            {pageSizeOptions.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto bg-white">
-        {filteredData.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-gray-500 font-medium">No data to display</p>
-            <p className="text-gray-400 text-sm mt-1">Try adjusting your filters or selections</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gradient-to-r from-blue-50 to-blue-25 border-b-2 border-blue-200 sticky top-0">
-              <tr>
-                <th className="px-4 py-3 text-left">
-                  <button
-                    onClick={handleSelectAll}
-                    className="hover:opacity-70 transition p-1"
-                    title="Select all rows"
-                  >
-                    {selectedRows.size === sortedData.length ? (
-                      <CheckSquare size={18} className="text-blue-600" />
-                    ) : (
-                      <Square size={18} className="text-gray-400" />
-                    )}
-                  </button>
-                </th>
-                {columns.map((col) => (
-                  <th
-                    key={col}
-                    onClick={() => handleSort(col)}
-                    className="px-6 py-3 text-left font-bold text-gray-700 cursor-pointer hover:bg-blue-100 transition whitespace-nowrap"
-                    title={`Click to sort by ${col}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{col}</span>
-                      {sortConfig?.key === col && (
-                        <span className="text-xs font-bold text-blue-600">
-                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                        </span>
+      {/* Grid Canvas */}
+      <div className="flex-1 overflow-x-auto min-h-[400px]">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50/50">
+              <th className="sticky top-0 z-10 px-6 py-4 border-b border-gray-100 bg-gray-50/50 backdrop-blur w-12">
+                <button
+                  onClick={handleSelectAll}
+                  className="w-5 h-5 flex items-center justify-center rounded border-2 border-gray-200 hover:border-blue-400 transition-colors"
+                >
+                  {selectedRows.size === sortedData.length ? (
+                    <CheckSquare size={14} className="text-blue-600" />
+                  ) : (
+                    <div className={selectedRows.size > 0 ? 'w-2 h-0.5 bg-blue-600 rounded' : ''}></div>
+                  )}
+                </button>
+              </th>
+              {columns.map((col) => (
+                <th
+                  key={col}
+                  onClick={() => handleSort(col)}
+                  className="sticky top-0 z-10 px-6 py-4 border-b border-gray-100 bg-gray-50/50 backdrop-blur cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-gray-900 transition-colors">
+                      {col}
+                    </span>
+                    <div className={`transition-opacity duration-300 ${sortConfig?.key === col ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`}>
+                      {sortConfig?.key === col ? (
+                        sortConfig.direction === 'asc' ? <ArrowUp size={12} className="text-blue-600" /> : <ArrowDown size={12} className="text-blue-600" />
+                      ) : (
+                        <ArrowUpDown size={12} />
                       )}
                     </div>
-                  </th>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {sortedData.length > 0 ? sortedData.map((row, idx) => (
+              <tr
+                key={idx}
+                className={`group transition-all duration-200 ${
+                  selectedRows.has(idx) 
+                    ? 'bg-blue-50/30' 
+                    : 'hover:bg-gray-50/50'
+                }`}
+              >
+                <td className="px-6 py-4 border-b border-gray-50">
+                  <button
+                    onClick={() => handleRowSelect(idx)}
+                    className={`w-5 h-5 flex items-center justify-center rounded border-2 transition-all ${
+                      selectedRows.has(idx) 
+                        ? 'border-blue-500 bg-blue-500 text-white' 
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    {selectedRows.has(idx) && <CheckSquare size={12} />}
+                  </button>
+                </td>
+                {columns.map((col) => (
+                  <td key={col} className="px-6 py-4 border-b border-gray-50">
+                    <div className={`text-xs font-medium truncate max-w-[200px] ${selectedRows.has(idx) ? 'text-blue-900' : 'text-gray-600'}`}>
+                      {String(row[col] || '-')}
+                    </div>
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {sortedData.map((row, idx) => (
-                <tr
-                  key={idx}
-                  className={`transition-all ${
-                    selectedRows.has(idx) 
-                      ? 'bg-blue-50 border-l-4 border-blue-600' 
-                      : 'hover:bg-gray-50 border-l-4 border-transparent'
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleRowSelect(idx)}
-                      className="hover:opacity-70 transition p-1"
-                    >
-                      {selectedRows.has(idx) ? (
-                        <CheckSquare size={18} className="text-blue-600" />
-                      ) : (
-                        <Square size={18} className="text-gray-400" />
-                      )}
-                    </button>
-                  </td>
-                  {columns.map((col) => (
-                    <td key={col} className="px-6 py-3 text-gray-700">
-                      <div className="max-w-xs truncate font-medium">
-                        {String(row[col] || '-').substring(0, 100)}
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            )) : (
+              <tr>
+                <td colSpan={columns.length + 1} className="py-20 text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-50 text-gray-300 mb-4 border border-gray-100">
+                    <Info size={24} />
+                  </div>
+                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">No matching records</h4>
+                  <p className="text-[10px] font-bold text-gray-400 mt-1">Adjust filters or search parameters</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Pagination */}
-      <div className="px-6 py-5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Show</span>
-            <select
-              value={pagination.pageSize}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="px-3 py-1.5 border-2 border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition hover:border-gray-300 cursor-pointer"
-            >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span className="text-sm font-medium text-gray-700">rows per page</span>
-          </div>
+      {/* Pagination Command Bar */}
+      <div className="px-8 py-6 border-t border-gray-100 flex items-center justify-between bg-white">
+        <div className="flex items-center gap-4">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[.1em]">
+            Showing <span className="text-gray-900 font-black">{pagination.page * pagination.pageSize + 1}</span> to <span className="text-gray-900 font-black">{Math.min((pagination.page + 1) * pagination.pageSize, sortedData.length)}</span> of <span className="text-gray-900 font-black">{sortedData.length}</span> entries
+          </p>
           {selectedRows.size > 0 && (
-            <div className="text-sm font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg">
-              ✓ {selectedRows.size} row{selectedRows.size !== 1 ? 's' : ''} selected
+            <div className="animate-in zoom-in duration-300 h-6 px-2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-tighter flex items-center rounded-lg shadow-lg shadow-blue-200">
+              {selectedRows.size} Selected
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onPageChange(Math.max(0, pagination.page - 1))}
             disabled={pagination.page === 0}
-            className="p-2 border-2 border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-200 transition font-bold"
-            title="Previous page"
+            className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-white disabled:hover:border-gray-100 transition-all"
           >
-            <ChevronLeft size={18} className="text-gray-600" />
+            <ChevronLeft size={18} className="text-gray-400" />
           </button>
-
-          <span className="text-sm font-bold text-gray-700 min-w-[120px] text-center px-3 py-1.5 bg-blue-50 rounded-lg">
-            Page {pagination.page + 1}
-          </span>
+          
+          <div className="px-4 h-10 flex items-center justify-center bg-gray-50 rounded-xl border border-transparent text-xs font-black text-gray-900 min-w-[100px]">
+            PAGE {pagination.page + 1}
+          </div>
 
           <button
             onClick={() => onPageChange(pagination.page + 1)}
             disabled={data.length < pagination.pageSize}
-            className="p-2 border-2 border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-200 transition font-bold"
-            title="Next page"
+            className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-white disabled:hover:border-gray-100 transition-all"
           >
-            <ChevronRight size={18} className="text-gray-600" />
+            <ChevronRight size={18} className="text-gray-400" />
           </button>
         </div>
       </div>
