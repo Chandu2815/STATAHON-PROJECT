@@ -211,3 +211,125 @@ INFO:     52.16.245.145:0 - "GET /favicon.ico HTTP/1.0" 200 OK
 INFO:     52.16.245.145:0 - "GET / HTTP/1.0" 200 OK
 INFO:     52.16.245.145:0 - "HEAD /favicon.ico HTTP/1.0" 405 Method Not Allowed
 INFO:     52.16.245.145:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     103.42.201.221:0 - "GET /static/videos/background.mp4 HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     127.0.0.1:45628 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45628 - "GET /static/images/indian_flag_waving.jpg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45628 - "GET /static/videos/background.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:45638 - "GET /favicon.ico HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45628 - "GET /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45628 - "POST /api/v1/auth/login/start HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:45644 - "POST /api/v1/auth/login/start HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:52518 - "GET /register HTTP/1.1" 200 OK
+INFO:     103.42.201.221:0 - "GET /login HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/start HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/verify HTTP/1.0" 400 Bad Request
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/verify HTTP/1.0" 400 Bad Request
+INFO:     103.42.201.221:0 - "POST /api/v1/auth/login/verify HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /dashboard HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me HTTP/1.0" 200 OK
+INFO:app.api.users:Usage stats retrieved for user 5
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me/usage HTTP/1.0" 200 OK
+DEBUG: Query parameters - dataset=2, state=ANDHRA PRADESH, district=None, gender=MALE, age=15-29, year=2
+DEBUG: Available columns in hces_household_identification: ['survey_name', 'year', 'sector', 'state_code', 'nss_region', 'district_code', 'household_id', 'multiplier']
+DEBUG: Mapped state 'ANDHRA PRADESH' to code 28 (column: State_Code)
+DEBUG: Gender filter skipped - no Sex/Gender column in hces_household_identification
+DEBUG: Age filter skipped - no Age column in hces_household_identification
+DEBUG: Skipped filters due to missing columns: [{'filter': 'gender', 'reason': 'No gender/sex column found in dataset (household-level data)'}, {'filter': 'age_group', 'reason': 'No age column found in dataset (household-level data)'}]
+DEBUG: Final filters dictionary: {'State_Code': 28, 'Sector': 2}
+DEBUG: Dataset table name: hces_household_identification
+DEBUG: Skipped filters: [{'filter': 'gender', 'reason': 'No gender/sex column found in dataset (household-level data)'}, {'filter': 'age_group', 'reason': 'No age column found in dataset (household-level data)'}]
+INFO:     103.42.201.221:0 - "GET /api/v1/query?dataset=2&limit=100&state=ANDHRA%20PRADESH&year=2&gender=MALE&age_group=15-29 HTTP/1.0" 200 OK
+INFO:app.api.users:Credits deducted: User 5, Amount 2.0, Reason: Query execution
+INFO:     103.42.201.221:0 - "POST /api/v1/users/me/deduct-credits HTTP/1.0" 200 OK
+INFO:app.api.users:Query usage logged for user 5
+INFO:     103.42.201.221:0 - "POST /api/v1/users/me/log-query HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me HTTP/1.0" 200 OK
+INFO:app.api.users:Usage stats retrieved for user 5
+INFO:     103.42.201.221:0 - "GET /api/v1/users/me/usage HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/videos/background.mp4 HTTP/1.0" 304 Not Modified
+INFO:     103.42.201.221:0 - "GET / HTTP/1.0" 200 OK
+INFO:     103.42.201.221:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     23.178.112.107:0 - "GET /.well-known/acme-challenge/TudwGZL7ymTxP6htoOrpm44mGphefDi8Eef9an3yBWI HTTP/1.0" 404 Not Found
+INFO:     23.178.112.104:0 - "GET /.well-known/acme-challenge/mac7ko8Vwo0uqL-WS7hzDke-MgNIqeKWiNwiJ04qLLU HTTP/1.0" 404 Not Found
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     216.73.217.148:0 - "GET /robots.txt HTTP/1.0" 404 Not Found
+INFO:     216.73.217.148:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 200 OK
+INFO:     3.236.140.194:0 - "GET / HTTP/1.0" 200 OK
+INFO:     3.236.140.194:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     3.236.140.194:0 - "GET /favicon.png HTTP/1.0" 404 Not Found
+INFO:     3.236.140.194:0 - "GET / HTTP/1.0" 200 OK
+INFO:     3.236.140.194:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     3.236.140.194:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     3.236.140.194:0 - "GET /static/videos/background.webm HTTP/1.0" 404 Not Found
+INFO:     3.236.140.194:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     23.178.112.106:0 - "GET /.well-known/acme-challenge/0CwBXXgJSqXnGhDO25DX4Mi1_OE_K_uj0EyK_DKox28 HTTP/1.0" 404 Not Found
+INFO:     23.178.112.106:0 - "GET /.well-known/acme-challenge/pseeNga_YicFSl4Jzh9x0j9XLxLAfCi_jkQCt_1XnPo HTTP/1.0" 404 Not Found
+INFO:     81.231.38.188:0 - "GET / HTTP/1.0" 200 OK
+INFO:     81.231.38.188:0 - "GET /admin/dashboard HTTP/1.0" 200 OK
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     183.83.231.152:0 - "GET / HTTP/1.0" 200 OK
+INFO:     183.83.231.152:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     183.83.231.152:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     183.83.231.152:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     202.88.175.69:0 - "GET / HTTP/1.0" 200 OK
+INFO:     202.88.175.69:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     202.88.175.69:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     202.88.175.69:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     183.83.231.152:0 - "GET / HTTP/1.0" 200 OK
+INFO:     183.83.231.152:0 - "GET /register HTTP/1.0" 200 OK
+INFO:     183.83.231.152:0 - "GET /static/government-of-india-emblem.png HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     23.178.112.106:0 - "GET /.well-known/acme-challenge/ZSJj8CnADbw7npe8dhoDO_s8jE5s1KfRWwFRLt2if_E HTTP/1.0" 404 Not Found
+INFO:     23.178.112.104:0 - "GET /.well-known/acme-challenge/UMg_oaO_hdUVB7CWY5JkrUhLM1kqs5y2eEKZgzxhu7A HTTP/1.0" 404 Not Found
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     106.192.3.165:0 - "GET / HTTP/1.0" 200 OK
+INFO:     106.192.3.165:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     106.192.3.165:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     106.192.3.165:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     23.178.112.219:0 - "GET /.well-known/acme-challenge/doYzZIQoSJToIhcxAnOUNJkBWH5yWivsCIIHIixI9es HTTP/1.0" 404 Not Found
+INFO:     23.178.112.210:0 - "GET /.well-known/acme-challenge/zaBTZ5x5ZLE3lV8A9yDE9qO2iwzrAiOnulGfJ_ONtWg HTTP/1.0" 404 Not Found
+INFO:     45.194.67.2:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     44.222.209.12:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.194.67.2:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     54.80.231.231:0 - "GET / HTTP/1.0" 200 OK
+INFO:     54.80.231.231:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     54.80.231.231:0 - "GET /favicon.png HTTP/1.0" 404 Not Found
+INFO:     54.80.231.231:0 - "GET / HTTP/1.0" 200 OK
+INFO:     54.80.231.231:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     54.80.231.231:0 - "GET /static/videos/background.mp4 HTTP/1.0" 206 Partial Content
+INFO:     54.80.231.231:0 - "GET /static/videos/background.webm HTTP/1.0" 404 Not Found
+INFO:     54.80.231.231:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     45.194.67.2:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     23.178.112.212:0 - "GET /.well-known/acme-challenge/g18wR-7QJZEapUvwqc9otvAN8Ipj1AO6ch0921-1ZG0 HTTP/1.0" 404 Not Found
+INFO:     23.178.112.211:0 - "GET /.well-known/acme-challenge/fNIU5NlIF6wQdbhqeTYBhOT15eYdt8ea20uA5A4wP00 HTTP/1.0" 404 Not Found
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.205.1.196:0 - "GET / HTTP/1.0" 200 OK
+INFO:     142.147.212.54:0 - "GET / HTTP/1.0" 200 OK
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
+INFO:     190.99.80.199:0 - "GET / HTTP/1.0" 200 OK
+INFO:     142.147.208.237:0 - "GET / HTTP/1.0" 200 OK
+INFO:     142.147.208.237:0 - "GET /static/images/indian_flag_waving.jpg HTTP/1.0" 200 OK
+INFO:     142.147.208.237:0 - "GET /favicon.ico HTTP/1.0" 200 OK
+INFO:     23.178.112.211:0 - "GET /.well-known/acme-challenge/L2odvZ6V9ympX2ZlrpYnlAd8I-dszaUmj6uBnrYEM2w HTTP/1.0" 404 Not Found
+INFO:     23.178.112.210:0 - "GET /.well-known/acme-challenge/maCaCs2X1_UfIEUl1jT8htDXOPaM7PJcmCU9pcOOs78 HTTP/1.0" 404 Not Found
+INFO:     45.198.224.186:0 - "GET / HTTP/1.0" 200 OK
