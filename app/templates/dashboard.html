@@ -611,7 +611,7 @@
                     <div id="userName">Loading...</div>
                     <div class="user-role" id="userRole">Loading...</div>
                 </div>
-                <a href="http://localhost:5173" class="btn-upgrade" id="surveyAiBtn">📊 Survey AI</a>
+                <a href="/survey-ai/" class="btn-upgrade" id="surveyAiBtn">📊 Survey AI</a>
                 <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -816,6 +816,8 @@
     </div>
 
     <script>
+        const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
+        const APP_URL = "__VITE_APP_URL__";
         let currentResults = [];
 
         // IMMEDIATE authentication check - redirect if not logged in
@@ -875,12 +877,21 @@
             if (userNameEl) userNameEl.textContent = username || 'User';
             if (userRoleEl) userRoleEl.textContent = role || 'public';
             
-            // Survey AI button - always visible with token for auto-login
+            // Survey AI button click handler to redirect using the access token
             const surveyAiBtn = document.getElementById('surveyAiBtn');
             if (surveyAiBtn) {
                 surveyAiBtn.style.display = 'inline-flex';
-                // Set token and email as URL parameters for Survey AI auto-login
-                surveyAiBtn.href = `http://localhost:5173?token=${encodeURIComponent(token)}&email=${encodeURIComponent(username || 'User')}`;
+                
+                // Use the configured SURVEY_AI_URL or fallback to relative path
+                const surveyAiBase = SURVEY_AI_URL || '/survey-ai';
+                const urlSeparator = (surveyAiBase.endsWith('/') || surveyAiBase.includes('?')) ? '' : '/';
+                surveyAiBtn.href = `${surveyAiBase}${urlSeparator}`;
+                
+                surveyAiBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const token = localStorage.getItem('access_token');
+                    window.location.href = `${surveyAiBase}${urlSeparator}?token=${token}`;
+                });
             }
 
             // Fetch user data and usage statistics

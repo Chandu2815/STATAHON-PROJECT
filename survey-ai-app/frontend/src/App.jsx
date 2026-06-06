@@ -10,11 +10,9 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // First check if token exists in localStorage
     const savedToken = localStorage.getItem('authToken');
-    const savedEmail = localStorage.getItem('userEmail');
     
-    if (savedToken && savedEmail) {
+    if (savedToken) {
       console.log('✅ Using existing authentication from localStorage');
-      console.log('   Email:', savedEmail);
       return true;
     }
     
@@ -27,24 +25,24 @@ export default function App() {
     console.log('   Token:', urlToken ? '✓ Present' : '✗ Missing');
     console.log('   Email:', urlEmail ? urlEmail : '✗ Missing');
     
-    if (urlToken && urlEmail) {
-      // Store the token and email from MoSPI
+    if (urlToken) {
+      // Store the token and email from MoSPI (email is used for display/identity)
       localStorage.setItem('authToken', urlToken);
-      localStorage.setItem('userEmail', urlEmail);
+      localStorage.setItem('userEmail', urlEmail || 'User');
       
-      // Clean up URL - use the correct path based on environment
-      const newPath = import.meta.env.DEV ? '/' : '/survey-ai/';
-      window.history.replaceState({}, document.title, newPath);
+      // Clean up URL - stay on the same path but remove query params
+      if (import.meta.env.DEV) {
+        window.history.replaceState({}, document.title, '/');
+      } else {
+        window.history.replaceState({}, document.title, '/survey-ai/');
+      }
       
-      console.log('✅ Authenticated via MoSPI credentials');
-      console.log('   Email:', urlEmail);
-      console.log('   Token:', urlToken.substring(0, 20) + '...');
+      console.log('✅ Authenticated via MoSPI SSO');
       return true;
     }
     
     // No token found
     console.warn('⚠️ No authentication credentials found');
-    console.warn('   Please access Survey AI from MoSPI Dashboard');
     return false;
   });
 
@@ -54,8 +52,10 @@ export default function App() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userEmail');
     setIsAuthenticated(false);
-    // Redirect back to MoSPI
-    window.location.href = 'http://localhost:8000/';
+    
+    // Redirect back to MoSPI using environment variable VITE_APP_URL or fallback
+    const appUrl = import.meta.env.VITE_APP_URL || '/';
+    window.location.href = appUrl;
   };
 
   return (
@@ -110,7 +110,7 @@ export default function App() {
                   Please log in through the main MoSPI dashboard to access Survey AI.
                 </p>
                 <button
-                  onClick={() => window.location.href = 'http://localhost:8000/'}
+                  onClick={() => window.location.href = import.meta.env.VITE_APP_URL || '/'}
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
                 >
                   Go to MoSPI Dashboard

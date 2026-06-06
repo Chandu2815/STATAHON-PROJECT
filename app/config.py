@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
     
+    # Frontend URLs
+    VITE_APP_URL: str = "http://localhost:8000"
+    VITE_SURVEY_AI_URL: str = "http://localhost:5173"
+    
     # Payment
     PAYMENT_GATEWAY_URL: str = "https://mock-payment-gateway.example.com"
     PAYMENT_API_KEY: str = "mock-api-key"

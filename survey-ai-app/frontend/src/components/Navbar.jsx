@@ -15,7 +15,7 @@ export default function Navbar({ onLogout, onMenuClick }) {
   }, []);
   
   // MoSPI Dashboard URL from environment or default
-  const mosPIDashboardURL = import.meta.env.VITE_MOSPI_URL || 'http://localhost:8000/';
+  const mosPIDashboardURL = import.meta.env.VITE_APP_URL || import.meta.env.VITE_MOSPI_URL || '/';
   
   const handleBackToMospi = () => {
     console.log('🔄 Redirecting to MoSPI Dashboard:', mosPIDashboardURL);

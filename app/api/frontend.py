@@ -4,6 +4,7 @@ Frontend landing page for MoSPI Data Portal
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
+from app.config import get_settings
 
 router = APIRouter(tags=["Frontend"])
 
@@ -55,7 +56,11 @@ def dashboard_page():
     dashboard_file = TEMPLATES_DIR / "dashboard.html"
     if dashboard_file.exists():
         with open(dashboard_file, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+            settings = get_settings()
+            content = content.replace("__VITE_SURVEY_AI_URL__", settings.VITE_SURVEY_AI_URL)
+            content = content.replace("__VITE_APP_URL__", settings.VITE_APP_URL)
+            return content
     return "<h1>Dashboard not found</h1>"
 
 
