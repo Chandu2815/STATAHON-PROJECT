@@ -654,6 +654,7 @@
     </footer>
 
     <script>
+        const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
         // Check if user is already logged in
         const token = localStorage.getItem('access_token');
         if (token) {
@@ -661,7 +662,9 @@
             if (role && role.toLowerCase().includes('admin')) {
                 window.location.href = '/admin/dashboard';
             } else if (role) {
-                window.location.href = '/dashboard';
+                const targetUrl = SURVEY_AI_URL === '__VITE_SURVEY_AI_URL__' ? 'http://localhost:5173' : SURVEY_AI_URL;
+                const cleanBaseUrl = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                window.location.href = `${cleanBaseUrl}/?token=${token}`;
             }
         }
     </script>

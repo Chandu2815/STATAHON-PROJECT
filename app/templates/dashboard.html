@@ -820,11 +820,29 @@
         const APP_URL = "__VITE_APP_URL__";
         let currentResults = [];
 
-        // IMMEDIATE authentication check - redirect if not logged in
+        // IMMEDIATE authentication check - redirect if not logged in or not admin
         (function() {
             const token = localStorage.getItem('access_token');
             if (!token) {
                 window.location.href = '/login';
+                return;
+            }
+            // Non-admin users should use Survey AI, not this dashboard
+            const role = localStorage.getItem('user_role');
+            const isAdmin = role && (
+                role.toLowerCase().includes('admin') ||
+                role.toLowerCase() === 'super_admin' ||
+                role.toLowerCase() === 'data_admin' ||
+                role.toLowerCase() === 'user_admin' ||
+                role.toLowerCase() === 'support_admin'
+            );
+            if (!isAdmin) {
+                // Redirect to Survey AI with token
+                const targetUrl = SURVEY_AI_URL && SURVEY_AI_URL !== '__VITE_SURVEY_AI_URL__'
+                    ? SURVEY_AI_URL
+                    : 'http://localhost:5173';
+                const cleanBase = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                window.location.href = `${cleanBase}/?token=${token}`;
                 return;
             }
         })();

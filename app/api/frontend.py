@@ -20,7 +20,10 @@ def home_page():
     index_file = TEMPLATES_DIR / "index.html"
     if index_file.exists():
         with open(index_file, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+            settings = get_settings()
+            content = content.replace("__VITE_SURVEY_AI_URL__", settings.VITE_SURVEY_AI_URL)
+            return content
     return "<h1>Home page not found</h1>"
 
 
@@ -44,7 +47,10 @@ def login_page():
     login_file = TEMPLATES_DIR / "login.html"
     if login_file.exists():
         with open(login_file, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+            settings = get_settings()
+            content = content.replace("__VITE_SURVEY_AI_URL__", settings.VITE_SURVEY_AI_URL)
+            return content
     return "<h1>Login page not found</h1>"
 
 
@@ -72,7 +78,10 @@ def register_page():
     register_file = TEMPLATES_DIR / "register.html"
     if register_file.exists():
         with open(register_file, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+            settings = get_settings()
+            content = content.replace("__VITE_SURVEY_AI_URL__", settings.VITE_SURVEY_AI_URL)
+            return content
     return "<h1>Register page not found</h1>"
 
 

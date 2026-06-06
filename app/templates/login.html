@@ -517,9 +517,13 @@
                 localStorage.setItem('user_role', verifyData.user_role);
                 localStorage.setItem('username', verifyData.username);
 
-                showInfo('Login successful! Redirecting...');
+                showInfo('Login successful! Redirecting to Survey AI...');
                 setTimeout(() => {
-                    window.location.href = '/dashboard';
+                    const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
+                    const token = localStorage.getItem('access_token');
+                    const targetUrl = SURVEY_AI_URL === '__VITE_SURVEY_AI_URL__' ? 'http://localhost:5173' : SURVEY_AI_URL;
+                    const cleanBaseUrl = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                    window.location.href = `${cleanBaseUrl}/?token=${token}`;
                 }, 1000);
             } catch (error) {
                 showError('Connection error. Please try again.');

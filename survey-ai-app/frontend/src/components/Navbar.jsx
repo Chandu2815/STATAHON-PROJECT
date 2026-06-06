@@ -1,31 +1,14 @@
 import React from 'react';
-import { LogOut, User, ArrowLeft, Menu } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
 
 export default function Navbar({ onLogout, onMenuClick }) {
   const userEmail = localStorage.getItem('userEmail');
   const userDisplay = userEmail || 'User';
-  
-  // Log for debugging
-  React.useEffect(() => {
-    const email = localStorage.getItem('userEmail');
-    const token = localStorage.getItem('authToken');
-    console.log('📍 Navbar mounted');
-    console.log('   Email:', email || '✗ Not set');
-    console.log('   Token:', token ? '✓ Present' : '✗ Missing');
-  }, []);
-  
-  // MoSPI Dashboard URL from environment or default
-  const mosPIDashboardURL = import.meta.env.VITE_APP_URL || import.meta.env.VITE_MOSPI_URL || '/';
-  
-  const handleBackToMospi = () => {
-    console.log('🔄 Redirecting to MoSPI Dashboard:', mosPIDashboardURL);
-    window.location.href = mosPIDashboardURL;
-  };
 
   return (
     <nav className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-b-4 border-orange-500 shadow-lg">
       <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between">
-        {/* Left: Menu Button + Back Button */}
+        {/* Left: Menu Button */}
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onMenuClick}
@@ -33,16 +16,6 @@ export default function Navbar({ onLogout, onMenuClick }) {
             title="Toggle menu"
           >
             <Menu size={24} />
-          </button>
-          
-          <button 
-            onClick={handleBackToMospi}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 sm:px-5 py-2.5 rounded-lg transition-colors font-semibold cursor-pointer text-sm"
-            title="Go back to MoSPI dashboard"
-          >
-            <ArrowLeft size={18} />
-            <span className="hidden sm:inline">Back to MoSPI</span>
-            <span className="sm:hidden">Back</span>
           </button>
         </div>
 

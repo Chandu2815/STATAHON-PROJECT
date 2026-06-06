@@ -21,14 +21,19 @@ export default function App() {
     const urlToken = params.get('token');
     const urlEmail = params.get('email');
     
+    // Also grab username stored by MoSPI login
+    const mosPIUsername = localStorage.getItem('username');
+    const mosPIUserEmail = localStorage.getItem('userEmail');
+    
     console.log('🔍 Checking URL parameters...');
     console.log('   Token:', urlToken ? '✓ Present' : '✗ Missing');
-    console.log('   Email:', urlEmail ? urlEmail : '✗ Missing');
     
     if (urlToken) {
-      // Store the token and email from MoSPI (email is used for display/identity)
+      // Store the token and user info from MoSPI
       localStorage.setItem('authToken', urlToken);
-      localStorage.setItem('userEmail', urlEmail || 'User');
+      // Use MoSPI username for display (from their localStorage)
+      const displayName = mosPIUsername || urlEmail || mosPIUserEmail || 'User';
+      localStorage.setItem('userEmail', displayName);
       
       // Clean up URL - stay on the same path but remove query params
       if (import.meta.env.DEV) {
@@ -37,11 +42,11 @@ export default function App() {
         window.history.replaceState({}, document.title, '/survey-ai/');
       }
       
-      console.log('✅ Authenticated via MoSPI SSO');
+      console.log('✅ Authenticated via MoSPI SSO as:', displayName);
       return true;
     }
     
-    // No token found
+    // No token found - redirect to MoSPI login
     console.warn('⚠️ No authentication credentials found');
     return false;
   });
@@ -49,13 +54,19 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
+    // Clear Survey AI tokens
     localStorage.removeItem('authToken');
     localStorage.removeItem('userEmail');
+    // Also clear MoSPI tokens so user must log in again
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('username');
     setIsAuthenticated(false);
     
-    // Redirect back to MoSPI using environment variable VITE_APP_URL or fallback
-    const appUrl = import.meta.env.VITE_APP_URL || '/';
-    window.location.href = appUrl;
+    // Redirect back to MoSPI login page
+    const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:8000';
+    const cleanBase = appUrl.endsWith('/') ? appUrl.slice(0, -1) : appUrl;
+    window.location.href = `${cleanBase}/login`;
   };
 
   return (
