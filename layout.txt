@@ -1,0 +1,135 @@
+
+                     COMPUTER CENTER
+                (Ministry of Statistics & P.I.)
+
+             Third economic Census survey 1990
+
+           Layout of final data file (Autocorrected)
+           Record Length 100 Blocking size 50          page 1/2
+   -----------------------------------------------------------------
+   S.n.  Description                 size  position  Mode  Remarks
+   -----------------------------------------------------------------
+    1   Sector                         1     1-1       N  1-R, 2-U
+    2   State/U.T.                     2     2-3       N  02-33 **
+    3   District                       2     4-5       N
+    4   Tehsil/taluka/ps Dev.
+        Block/Circle etc.              4     6-9       N
+    5   Development Block              4    10-13      N
+    6   Village/Town                   4    14-17      N
+    7   Sub Town                       3    18-20      N
+    8   Ward/Mohalla/Hamlet-code       3    21-23      N
+    9   Enumeration Block No.          4    24-27      N
+   10   Additional Enumeration Blk no. 1    28-28     AN
+   11   Srl. No. of enterprise         4    29-32      N
+        (with premises)
+   12   Srl. No. of Enterprise         4    33-36      N
+        (Without Premises)
+   13   Activity Code                  4    37-40     AN
+
+   14   Major activity code            2    41-42      N 01- Agriculture,
+                                                             hunting,
+                                                             forestry and
+                                                             fishing
+                                                   02- Mining & Quarrying
+                                                   03- Manufacturing
+                                                   04-
+Electricity,Gas&Water
+                                                   05- Construction
+                                                   06- Wholesale trade
+                                                   07- Retail trade
+                                                   08- Restaurants & Hotels
+                                                   09- Transport
+                                                   10- Storage &
+Warehousing
+                                                   11- Communication
+                                                   12- Financial,
+insurance,
+                                                          real estate and
+                                                          business services
+                                                   13- Community, social
+and
+                                                          personal services
+
+                                                   14- Others(unspecified)
+                                                          activities
+                                                   15- All activities
+
+   15   Classification of enterprise   1    43-43      N  1-Agr.,
+                                                          2-Non-agr.
+
+   16   Nature of operation            1    44-44      N  1-Perennial,
+                                                          2-seasonal
+
+   17   Type of ownership              1    45-45      N  1-private,
+                                                          2-coop.,
+                                                          3-public
+
+
+
+
+             Layout of final data file (Autocorrected)
+     Record Length  100  Blocking size 50             page 2/2
+   -----------------------------------------------------------------
+   S.n.  Description                 size  position  Mode  Remarks
+   -----------------------------------------------------------------
+   18   Social group of owner          1    46-46      N  1-SC,2-ST,
+                                                          3-Gen.
+
+   19   Power/Fuel used for activity   1    47-47     AN    1- Without
+Power
+                                                         2- Electricity
+                                                         3- Coal/Soft Coke
+                                                         4- Petrol/diesel
+                                                         5- Gas
+                                                         6- Firewood
+                                                         7- Bio-gas
+                                                         8- Kerosene
+                                                         9- Animal Power
+                                                         0-Others
+
+   20  males(including unpaid & hired)  5  48-52     N    All zeros
+                                                          for no entry
+   21   Female(including unpaid& hired) 5  53-57     N     -do-
+
+   22   Total (males and females)       6  58-63     N     -do-
+
+   23   Males (hired)                   5  64-68     N     -do-
+
+   24   Females (hired)                 5  69-73     N     -do-
+
+   25   Total(males & females hired)    5  74-79     N     -do-
+
+   26   Directory/non-directory         1  80-80     N  1-Dir. Est.
+                                                        2-Non Dir.Est.
+                                                        3-OAE.
+
+   27   OAE/ESt. Code                   1  81-81     N  1-OAE,2-EST.
+
+   28   Big city code                   2  82-83     N
+
+   29   Total employment size           1  84-84     N  1-7
+        class code (Type- I)
+   30   Total employment size           2  85-86     N  1-14
+        class code (Type-II)
+   31   Update code                     1  87-87    AN
+
+    32. Nature of Economic
+        Activity code                   3  88-90     N   This was for
+        internal
+                                                             use by
+        Ministry.
+
+   33   Tehsil/Town  Code               4  91-94     N  Tehsil for
+                                                        rural,
+                                                        Town for
+                                                        urban.
+   34   Village/Ward Code               4  95-98     N  Village for
+                                                        rural,
+                                                        Ward for
+                                                        Urban
+   35   File code                       2  99-100   AN  "EC "
+
+----------------------------------------------------------------
+ Note :- Codes used under column mode are as follows
+         AN -:  Alphanumeric data field and
+         N  -:  Numeric data field.
