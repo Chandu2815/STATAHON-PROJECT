@@ -654,19 +654,37 @@
     </footer>
 
     <script>
-        const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
-        // Check if user is already logged in
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            const role = localStorage.getItem('user_role');
-            if (role && role.toLowerCase().includes('admin')) {
-                window.location.href = '/admin/dashboard';
-            } else if (role) {
-                const targetUrl = SURVEY_AI_URL === '__VITE_SURVEY_AI_URL__' ? 'http://localhost:5173' : SURVEY_AI_URL;
-                const cleanBaseUrl = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
-                window.location.href = `${cleanBaseUrl}/?token=${token}`;
+        // Dynamically show Login/Register OR Survey AI/Logout buttons
+        // Homepage should ALWAYS show — never auto-redirect
+        (function() {
+            const token = localStorage.getItem('access_token');
+            const username = localStorage.getItem('username');
+            const email = localStorage.getItem('user_email') || '';
+            const fullName = localStorage.getItem('full_name') || username || '';
+            const headerActions = document.querySelector('.header-actions');
+            
+            if (token && headerActions) {
+                // User is logged in — show Survey AI + Logout
+                const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
+                const targetUrl = SURVEY_AI_URL && SURVEY_AI_URL !== '__VITE_SURVEY_AI_URL__'
+                    ? SURVEY_AI_URL
+                    : 'http://localhost:5173';
+                const cleanBase = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                const params = new URLSearchParams({
+                    token,
+                    username: username || '',
+                    email,
+                    name: fullName
+                });
+                
+                headerActions.innerHTML = `
+                    <span style="color:#1a237e;font-weight:600;font-size:0.95em;">Welcome, ${username || 'User'}</span>
+                    <a href="${cleanBase}/?${params.toString()}" class="btn btn-primary">Open Survey AI</a>
+                    <a href="/logout" class="btn btn-secondary">Logout</a>
+                `;
             }
-        }
+            // If not logged in, the default Login/Register buttons stay as-is
+        })();
     </script>
 </body>
 </html>

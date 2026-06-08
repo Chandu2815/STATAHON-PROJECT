@@ -838,11 +838,20 @@
             );
             if (!isAdmin) {
                 // Redirect to Survey AI with token
+                const username = localStorage.getItem('username') || '';
+                const email = localStorage.getItem('user_email') || '';
+                const fullName = localStorage.getItem('full_name') || username;
                 const targetUrl = SURVEY_AI_URL && SURVEY_AI_URL !== '__VITE_SURVEY_AI_URL__'
                     ? SURVEY_AI_URL
                     : 'http://localhost:5173';
                 const cleanBase = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
-                window.location.href = `${cleanBase}/?token=${token}`;
+                const params = new URLSearchParams({
+                    token,
+                    username,
+                    email,
+                    name: fullName
+                });
+                window.location.href = `${cleanBase}/?${params.toString()}`;
                 return;
             }
         })();
@@ -908,7 +917,16 @@
                 surveyAiBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     const token = localStorage.getItem('access_token');
-                    window.location.href = `${surveyAiBase}${urlSeparator}?token=${token}`;
+                    const username = localStorage.getItem('username') || '';
+                    const email = localStorage.getItem('user_email') || '';
+                    const fullName = localStorage.getItem('full_name') || username;
+                    const params = new URLSearchParams({
+                        token,
+                        username,
+                        email,
+                        name: fullName
+                    });
+                    window.location.href = `${surveyAiBase}${urlSeparator}?${params.toString()}`;
                 });
             }
 

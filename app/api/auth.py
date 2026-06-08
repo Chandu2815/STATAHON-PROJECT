@@ -616,6 +616,7 @@ def register_verify_simple(user_data: SimpleRegisterRequest, db: Session = Depen
     return register_simple(user_data, db)
 
 
+@router.post("/login/simple", response_model=SimpleLoginResponse)
 @router.post("/login", response_model=SimpleLoginResponse)
 def login_simple(credentials: SimpleLoginRequest, db: Session = Depends(get_db)):
     """

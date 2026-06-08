@@ -8,22 +8,12 @@ import Settings from './pages/Settings.jsx';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    // First check if token exists in localStorage
-    const savedToken = localStorage.getItem('authToken');
-    
-    if (savedToken) {
-      console.log('✅ Using existing authentication from localStorage');
-      return true;
-    }
-    
     // Check if token passed from MoSPI in URL parameters
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     const urlEmail = params.get('email');
-    
-    // Also grab username stored by MoSPI login
-    const mosPIUsername = localStorage.getItem('username');
-    const mosPIUserEmail = localStorage.getItem('userEmail');
+    const urlUsername = params.get('username');
+    const urlName = params.get('name');
     
     console.log('🔍 Checking URL parameters...');
     console.log('   Token:', urlToken ? '✓ Present' : '✗ Missing');
@@ -31,9 +21,10 @@ export default function App() {
     if (urlToken) {
       // Store the token and user info from MoSPI
       localStorage.setItem('authToken', urlToken);
-      // Use MoSPI username for display (from their localStorage)
-      const displayName = mosPIUsername || urlEmail || mosPIUserEmail || 'User';
-      localStorage.setItem('userEmail', displayName);
+      const displayName = urlName || urlUsername || urlEmail || 'User';
+      localStorage.setItem('userDisplayName', displayName);
+      localStorage.setItem('userEmail', urlEmail || displayName);
+      localStorage.setItem('username', urlUsername || displayName);
       
       // Clean up URL - stay on the same path but remove query params
       if (import.meta.env.DEV) {
@@ -43,6 +34,14 @@ export default function App() {
       }
       
       console.log('✅ Authenticated via MoSPI SSO as:', displayName);
+      return true;
+    }
+
+    // Use existing authentication only after a new MoSPI handoff has been handled.
+    const savedToken = localStorage.getItem('authToken');
+    
+    if (savedToken) {
+      console.log('✅ Using existing authentication from localStorage');
       return true;
     }
     
@@ -57,16 +56,17 @@ export default function App() {
     // Clear Survey AI tokens
     localStorage.removeItem('authToken');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userDisplayName');
     // Also clear MoSPI tokens so user must log in again
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_role');
     localStorage.removeItem('username');
     setIsAuthenticated(false);
     
-    // Redirect back to MoSPI login page
+    // Redirect to MoSPI's /logout endpoint so it can clear its own cross-domain localStorage
     const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:8000';
     const cleanBase = appUrl.endsWith('/') ? appUrl.slice(0, -1) : appUrl;
-    window.location.href = `${cleanBase}/login`;
+    window.location.href = `${cleanBase}/logout`;
   };
 
   return (

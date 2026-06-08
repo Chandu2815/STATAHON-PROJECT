@@ -2,8 +2,10 @@ import React from 'react';
 import { LogOut, User, Menu } from 'lucide-react';
 
 export default function Navbar({ onLogout, onMenuClick }) {
+  const userDisplayName = localStorage.getItem('userDisplayName');
+  const username = localStorage.getItem('username');
   const userEmail = localStorage.getItem('userEmail');
-  const userDisplay = userEmail || 'User';
+  const userDisplay = userDisplayName || username || userEmail || 'User';
 
   return (
     <nav className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-b-4 border-orange-500 shadow-lg">

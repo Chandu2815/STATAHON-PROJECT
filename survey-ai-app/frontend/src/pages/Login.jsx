@@ -15,11 +15,16 @@ export default function Login({ onLogin }) {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     const urlEmail = params.get('email');
+    const urlUsername = params.get('username');
+    const urlName = params.get('name');
     
-    if (urlToken && urlEmail) {
+    if (urlToken) {
       // Auto-login with token from MoSPI
+      const displayName = urlName || urlUsername || urlEmail || 'User';
       localStorage.setItem('authToken', urlToken);
-      localStorage.setItem('userEmail', urlEmail);
+      localStorage.setItem('userDisplayName', displayName);
+      localStorage.setItem('userEmail', urlEmail || displayName);
+      localStorage.setItem('username', urlUsername || displayName);
       onLogin(true);
       navigate('/survey-ai');
     }
