@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MoSPI Data Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Government Tricolor */
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: 24px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(to right, #FF6B00, #fff, #138808);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+        .emblem {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            padding: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .emblem img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .logo h1 {
+            color: #1a237e;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .logo p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .required-star {
+            color: #c62828;
+            margin-left: 4px;
+            font-weight: 700;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #1a237e;
+        }
+        .form-group input:disabled {
+            background-color: #f5f5f5;
+            border-color: #ccc;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background: #0d47a1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(26, 35, 126, 0.4);
+        }
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .info-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .register-link a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        .admin-link {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .admin-link a {
+            color: #FF6B00;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+        .back-home {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .back-home a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-home a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a237e;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .demo-accounts {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+        .demo-accounts h3 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .demo-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+        .demo-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        .demo-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .demo-user {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+        .demo-features {
+            font-size: 0.75em;
+            color: #666;
+            line-height: 1.6;
+            text-align: left;
+        }
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-container input {
+            width: 100%;
+            padding-right: 45px;
+        }
+        .toggle-password-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.2em;
+            transition: color 0.2s ease;
+            z-index: 10;
+        }
+        .toggle-password-btn:hover {
+            color: #1a237e;
+        }
+        .toggle-password-btn:disabled,
+        input:disabled ~ .toggle-password-btn {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="gov-bar"></div>
+    
+    <div class="login-container">
+        <div class="back-home">
+            <a href="/">← Back to Home</a>
+        </div>
+        
+        <div class="logo">
+            <div class="emblem">
+                <img src="/static/government-of-india-emblem.png" 
+                     onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png';"
+                     alt="Government of India Emblem">
+            </div>
+            <h1>User Login</h1>
+            <p>Ministry of Statistics & Programme Implementation</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="infoMessage" class="info-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+                    <button type="button" class="toggle-password-btn" id="togglePassword" title="Show/hide password">
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group" id="otpGroup" style="display: none;">
+                <label for="otp">Authenticator Code</label>
+                <div class="password-container">
+                    <input type="text" id="otp" name="otp" minlength="6" maxlength="6" placeholder="Enter 6-digit authenticator code" style="font-family: monospace; letter-spacing: 2px;">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">Login</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Authenticating...</p>
+            </div>
+        </form>
+
+        <div class="register-link">
+            <p>Don't have an account? <a href="/register">Register here</a></p>
+        </div>
+
+        <div class="admin-link">
+            <a href="/admin/login">🔑 Admin Portal →</a>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const infoMessage = document.getElementById('infoMessage');
+        const otpGroup = document.getElementById('otpGroup');
+
+        let loginChallengeId = null;
+        let cooldownTimer = null;
+        let lockoutTimer = null;
+
+        // ===== TIMER FUNCTIONS FOR SECURITY LOCKOUT/COOLDOWN =====
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startCooldownTimer(seconds) {
+            // Clear any existing timers
+            if (cooldownTimer) clearInterval(cooldownTimer);
+            if (lockoutTimer) clearInterval(lockoutTimer);
+            
+            // Disable form inputs and button
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const otpInput = document.getElementById('otp');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            
+            loginBtn.disabled = true;
+            usernameInput.disabled = true;
+            passwordInput.disabled = true;
+            if (otpInput) otpInput.disabled = true;
+            if (togglePasswordBtn) togglePasswordBtn.disabled = true;
+            
+            // Remove old timer display if exists
+            const oldTimer = document.getElementById('cooldown-timer-display');
+            if (oldTimer) oldTimer.remove();
+            
+            // Create timer display
+            const timerDisplay = document.createElement('div');
+            timerDisplay.id = 'cooldown-timer-display';
+            timerDisplay.style.cssText = 'color: #FF6B00; font-weight: bold; margin-top: 15px; padding: 12px; background-color: #fff3e0; border-radius: 8px; text-align: center; border-left: 4px solid #FF6B00;';
+            
+            const parent = loginBtn.parentElement;
+            parent.insertBefore(timerDisplay, document.getElementById('loading'));
+            
+            let timeLeft = seconds;
+            
+            cooldownTimer = setInterval(() => {
+                timerDisplay.textContent = `⏱️ Please wait: ${timeLeft} second(s) before trying again...`;
+                timeLeft--;
+                
+                if (timeLeft < 0) {
+                    clearInterval(cooldownTimer);
+                    // Re-enable form inputs and button
+                    loginBtn.disabled = false;
+                    usernameInput.disabled = false;
+                    passwordInput.disabled = false;
+                    if (otpInput) otpInput.disabled = false;
+                    if (togglePasswordBtn) togglePasswordBtn.disabled = false;
+                    timerDisplay.remove();
+                }
+            }, 1000);
+        }
+
+        function startLockoutTimer(seconds) {
+            // Clear any existing timers
+            if (cooldownTimer) clearInterval(cooldownTimer);
+            if (lockoutTimer) clearInterval(lockoutTimer);
+            
+            // Disable form inputs and button
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const otpInput = document.getElementById('otp');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            
+            loginBtn.disabled = true;
+            usernameInput.disabled = true;
+            passwordInput.disabled = true;
+            if (otpInput) otpInput.disabled = true;
+            if (togglePasswordBtn) togglePasswordBtn.disabled = true;
+            
+            // Remove old timer display if exists
+            const oldTimer = document.getElementById('lockout-timer-display');
+            if (oldTimer) oldTimer.remove();
+            
+            // Create timer display
+            const timerDisplay = document.createElement('div');
+            timerDisplay.id = 'lockout-timer-display';
+            timerDisplay.style.cssText = 'color: white; font-weight: bold; font-size: 16px; margin-top: 15px; padding: 15px; background-color: #c62828; border-radius: 8px; text-align: center;';
+            
+            const parent = loginBtn.parentElement;
+            parent.insertBefore(timerDisplay, document.getElementById('loading'));
+            
+            let timeLeft = seconds;
+            
+            lockoutTimer = setInterval(() => {
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                timerDisplay.innerHTML = `🔒 <strong>Account Locked</strong><br>Try again in: <strong>${mins}:${secs.toString().padStart(2, '0')}</strong>`;
+                timeLeft--;
+                
+                if (timeLeft < 0) {
+                    clearInterval(lockoutTimer);
+                    // Re-enable form inputs and button
+                    loginBtn.disabled = false;
+                    usernameInput.disabled = false;
+                    passwordInput.disabled = false;
+                    if (otpInput) otpInput.disabled = false;
+                    if (togglePasswordBtn) togglePasswordBtn.disabled = false;
+                    timerDisplay.innerHTML = '✓ Account unlocked. You can try again now.';
+                    timerDisplay.style.backgroundColor = '#4caf50';
+                }
+            }, 1000);
+        }
+
+        function handleLoginError(response) {
+            const errorDetail = response.detail;
+            
+            // Handle different error types
+            if (typeof errorDetail === 'object') {
+                // Check for PERMANENT account lockout (after 5 attempts)
+                if (errorDetail.error === 'account_permanently_locked') {
+                    const usernameInput = document.getElementById('username');
+                    const passwordInput = document.getElementById('password');
+                    const otpInput = document.getElementById('otp');
+                    const togglePasswordBtn = document.getElementById('togglePassword');
+                    
+                    // Permanently disable form
+                    loginBtn.disabled = true;
+                    usernameInput.disabled = true;
+                    passwordInput.disabled = true;
+                    if (otpInput) otpInput.disabled = true;
+                    if (togglePasswordBtn) togglePasswordBtn.disabled = true;
+                    
+                    showError(`🔒 Account PERMANENTLY LOCKED\n\nYour account has been locked due to too many failed login attempts.\n\nPlease contact your administrator to unlock your account.`);
+                    
+                    // Show permanent lock message
+                    const msgDiv = document.createElement('div');
+                    msgDiv.style.cssText = 'color: white; font-weight: bold; font-size: 14px; margin-top: 15px; padding: 15px; background-color: #c62828; border-radius: 8px; text-align: center; border: 2px solid #8b0000;';
+                    msgDiv.innerHTML = '🔒 <strong>Account Permanently Locked</strong><br><br>Contact your administrator to unlock this account.';
+                    const parent = loginBtn.parentElement;
+                    parent.insertBefore(msgDiv, document.getElementById('loading'));
+                    return;
+                }
+                
+                // Check for temporary account lockout (after 4 attempts)
+                if (errorDetail.error === 'account_locked') {
+                    const remaining = errorDetail.remaining_seconds || 1800;
+                    showError(`Account locked due to too many failed attempts. ${formatTime(remaining)} remaining.`);
+                    startLockoutTimer(remaining);
+                    return;
+                }
+                
+                // Check for rate limit (cooldown between attempts)
+                if (errorDetail.error === 'rate_limited') {
+                    const remaining = errorDetail.remaining_seconds || 30;
+                    const attempts = errorDetail.attempt_count || 0;
+                    showError(`Too many attempts (${attempts}/5). Please wait before trying again.`);
+                    startCooldownTimer(remaining);
+                    return;
+                }
+                
+                // Check for invalid credentials with attempt info
+                if (errorDetail.error === 'invalid_credentials') {
+                    const remaining = errorDetail.attempts_remaining !== undefined ? errorDetail.attempts_remaining : 0;
+                    const attempts = errorDetail.attempt_count || 0;
+                    showError(`Incorrect username or password. Attempt ${attempts}/5. ${remaining} remaining.`);
+                    return;
+                }
+                
+                // Generic error message
+                showError(errorDetail.message || errorDetail.error || 'Login failed. Please check your credentials.');
+            } else {
+                // Fallback for string error messages
+                showError(errorDetail || 'Login failed.');
+            }
+        }
+
+        // Password visibility toggle - Safe initialization
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const input = document.getElementById('password');
+                const btn = e.currentTarget;
+                if (input && btn) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        btn.textContent = '🙈';
+                    } else {
+                        input.type = 'password';
+                        btn.textContent = '👁️';
+                    }
+                }
+            });
+        }
+
+        function setupRequiredFieldUX(formEl) {
+            const requiredControls = Array.from(
+                formEl.querySelectorAll('input[required], select[required], textarea[required]')
+            );
+
+            requiredControls.forEach((control, index) => {
+                const label = formEl.querySelector(`label[for="${control.id}"]`);
+                if (label && !label.querySelector('.required-star')) {
+                    const star = document.createElement('span');
+                    star.className = 'required-star';
+                    star.textContent = '*';
+                    label.appendChild(star);
+                }
+
+                control.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter') {
+                        return;
+                    }
+
+                    const currentRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                    const currentIndex = currentRequired.indexOf(control);
+                    const nextControl = currentRequired[currentIndex + 1];
+
+                    if (nextControl) {
+                        event.preventDefault();
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            control.reportValidity();
+                            return;
+                        }
+                        nextControl.focus();
+                    }
+                });
+
+                if (control.tagName === 'SELECT') {
+                    control.addEventListener('change', () => {
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            return;
+                        }
+                        const visibleRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                        const visibleIndex = visibleRequired.indexOf(control);
+                        const nextControl = visibleRequired[visibleIndex + 1];
+                        if (nextControl) {
+                            nextControl.focus();
+                        }
+                    });
+                }
+            });
+        }
+
+        setupRequiredFieldUX(loginForm);
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            infoMessage.style.display = 'none';
+        }
+
+        function showInfo(message) {
+            infoMessage.textContent = message;
+            infoMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            infoMessage.style.display = 'none';
+        }
+
+        function fillLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            hideMessages();
+            showInfo('Click Login to continue as ' + username);
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const otp = document.getElementById('otp').value;
+
+            // Show loading
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                if (!loginChallengeId) {
+                    const startResponse = await fetch('/api/v1/auth/login/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const startData = await startResponse.json();
+                    if (!startResponse.ok) {
+                        // Use new error handler for rate limiting and lockout
+                        handleLoginError(startData);
+                        loginBtn.disabled = false;
+                        loading.style.display = 'none';
+                        return;
+                    }
+
+                    loginChallengeId = startData.challenge_id;
+                    otpGroup.style.display = 'block';
+                    const otpMessage = 'Open your Authenticator app and enter the current 6-digit code.';
+                    showInfo(otpMessage);
+                    loginBtn.textContent = 'Verify Authenticator Code';
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                if (!otp || otp.length !== 6) {
+                    showError('Please enter the 6-digit OTP.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const verifyResponse = await fetch('/api/v1/auth/login/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ challenge_id: loginChallengeId, otp })
+                });
+
+                const verifyData = await verifyResponse.json();
+                if (!verifyResponse.ok) {
+                    showError(verifyData.detail || 'OTP verification failed.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                localStorage.setItem('access_token', verifyData.access_token);
+                localStorage.setItem('user_role', verifyData.user_role);
+                localStorage.setItem('username', verifyData.username);
+
+                showInfo('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

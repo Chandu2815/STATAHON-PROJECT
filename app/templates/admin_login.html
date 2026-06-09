@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - MoSPI Data Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .gov-bar {
+            background: linear-gradient(to right, #FF6B00 0%, #FF6B00 33.33%, #fff 33.33%, #fff 66.66%, #138808 66.66%, #138808 100%);
+            height: 4px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #c62828 0%, #ad1457 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: 24px;
+        }
+        .admin-login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .admin-login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(to right, #FF6B00, #fff, #138808);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+        .emblem {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            padding: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .emblem img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .logo h1 {
+            color: #c62828;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .logo p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        .back-home {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .back-home a {
+            color: #c62828;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-home a:hover {
+            text-decoration: underline;
+        }
+        .security-badge {
+            background: #fff3cd;
+            border-left: 4px solid #FF6B00;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        .security-badge strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .required-star {
+            color: #c62828;
+            margin-left: 4px;
+            font-weight: 700;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #c62828;
+        }
+        .btn-admin-login {
+            width: 100%;
+            padding: 14px;
+            background: #c62828;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-admin-login:hover {
+            background: #ad1457;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(198, 40, 40, 0.4);
+        }
+        .btn-admin-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .info-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .public-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .public-link a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .public-link a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e94560;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .public-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+        }
+        .public-link a {
+            color: #c62828;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .public-link a:hover {
+            text-decoration: underline;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #c62828;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="gov-bar"></div>
+    
+    <div class="admin-login-container">
+        <div class="back-home">
+            <a href="/">← Back to Home</a>
+        </div>
+        
+        <div class="logo">
+            <div class="emblem">
+                <img src="/static/government-of-india-emblem.png"
+                     onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png';"
+                     alt="Government of India Emblem">
+            </div>
+            <h1>Admin Portal</h1>
+            <p>Ministry of Statistics & Programme Implementation</p>
+        </div>
+
+        <div class="security-badge">
+            <strong>🔒 Secure Administrative Area</strong>
+            <small>Authorized personnel only • Access logged and monitored</small>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="infoMessage" class="info-message"></div>
+
+        <form id="adminLoginForm">
+            <div class="form-group">
+                <label for="username">Administrator Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter admin username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter password">
+            </div>
+
+            <div class="form-group" id="otpGroup" style="display: none;">
+                <label for="otp">Authenticator Code</label>
+                <input type="text" id="otp" name="otp" minlength="6" maxlength="6" placeholder="Enter 6-digit authenticator code">
+            </div>
+
+            <button type="submit" class="btn-admin-login" id="loginBtn">🔐 Admin Login</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Authenticating...</p>
+            </div>
+        </form>
+
+        <div class="public-link">
+            <p>Not an administrator? <a href="/login">← Go to public portal</a></p>
+        </div>
+    </div>
+
+    <script>
+        const adminLoginForm = document.getElementById('adminLoginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const infoMessage = document.getElementById('infoMessage');
+        const otpGroup = document.getElementById('otpGroup');
+
+        let adminLoginChallengeId = null;
+
+        function setupRequiredFieldUX(formEl) {
+            const requiredControls = Array.from(
+                formEl.querySelectorAll('input[required], select[required], textarea[required]')
+            );
+
+            requiredControls.forEach((control) => {
+                const label = formEl.querySelector(`label[for="${control.id}"]`);
+                if (label && !label.querySelector('.required-star')) {
+                    const star = document.createElement('span');
+                    star.className = 'required-star';
+                    star.textContent = '*';
+                    label.appendChild(star);
+                }
+
+                control.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter') {
+                        return;
+                    }
+
+                    const currentRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                    const currentIndex = currentRequired.indexOf(control);
+                    const nextControl = currentRequired[currentIndex + 1];
+
+                    if (nextControl) {
+                        event.preventDefault();
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            control.reportValidity();
+                            return;
+                        }
+                        nextControl.focus();
+                    }
+                });
+
+                if (control.tagName === 'SELECT') {
+                    control.addEventListener('change', () => {
+                        if (!control.value.trim() || !control.checkValidity()) {
+                            return;
+                        }
+                        const visibleRequired = requiredControls.filter((el) => el.offsetParent !== null);
+                        const visibleIndex = visibleRequired.indexOf(control);
+                        const nextControl = visibleRequired[visibleIndex + 1];
+                        if (nextControl) {
+                            nextControl.focus();
+                        }
+                    });
+                }
+            });
+        }
+
+        setupRequiredFieldUX(adminLoginForm);
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            infoMessage.style.display = 'none';
+        }
+
+        function showInfo(message) {
+            infoMessage.textContent = message;
+            infoMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            infoMessage.style.display = 'none';
+        }
+
+        adminLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const otp = document.getElementById('otp').value;
+
+            // Show loading
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                if (!adminLoginChallengeId) {
+                    const startResponse = await fetch('/api/v1/auth/login/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const startData = await startResponse.json();
+                    if (!startResponse.ok) {
+                        showError(startData.detail || 'Login failed. Please check your credentials.');
+                        loginBtn.disabled = false;
+                        loading.style.display = 'none';
+                        return;
+                    }
+
+                    adminLoginChallengeId = startData.challenge_id;
+                    otpGroup.style.display = 'block';
+                    loginBtn.textContent = 'Verify Authenticator Code';
+                    const otpMessage = 'Open your Authenticator app and enter the current 6-digit code.';
+                    showInfo(otpMessage);
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                if (!otp || otp.length !== 6) {
+                    showError('Please enter the 6-digit OTP.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const verifyResponse = await fetch('/api/v1/auth/login/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ challenge_id: adminLoginChallengeId, otp })
+                });
+
+                const verifyData = await verifyResponse.json();
+                if (!verifyResponse.ok) {
+                    showError(verifyData.detail || 'OTP verification failed.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const adminRoles = ['admin', 'super_admin', 'data_admin', 'user_admin', 'support_admin'];
+                const userRole = verifyData.user_role.toLowerCase();
+
+                if (!adminRoles.includes(userRole)) {
+                    showError('Access denied. Admin privileges required.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                localStorage.setItem('access_token', verifyData.access_token);
+                localStorage.setItem('user_role', verifyData.user_role);
+                localStorage.setItem('username', verifyData.username);
+
+                showInfo('Admin authentication successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/admin/dashboard';
+                }, 1000);
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

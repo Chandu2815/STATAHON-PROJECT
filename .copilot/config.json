@@ -1,0 +1,294 @@
+{
+  "project": {
+    "name": "Survey-AI Dataset Explorer System",
+    "description": "Scalable backend system with hierarchical dataset explorer and analytics integration",
+    "repository": "STATAHON PROJECT",
+    "version": "1.0.0",
+    "status": "active-development"
+  },
+
+  "copilot": {
+    "version": "1.0",
+    "enabled": true,
+    "agents": [
+      {
+        "name": "backend-developer",
+        "enabled": true,
+        "description": "Specializes in Node.js/Express and Python/FastAPI backend development",
+        "skills": ["backend-development", "api-design", "database-optimization"],
+        "triggers": ["routes/", "controllers/", "services/", "routers/"]
+      },
+      {
+        "name": "database-expert",
+        "enabled": true,
+        "description": "Optimizes database queries and manages PostgreSQL operations",
+        "skills": ["database-optimization"],
+        "triggers": ["models/", "queries.py", "database.js", "database.py"]
+      },
+      {
+        "name": "api-designer",
+        "enabled": true,
+        "description": "Designs REST API endpoints and response formats",
+        "skills": ["api-design", "backend-development"],
+        "triggers": ["routes/", "routers/", "endpoint", "API"]
+      },
+      {
+        "name": "python-fastapi-expert",
+        "enabled": true,
+        "description": "Specializes in Python FastAPI development patterns",
+        "skills": ["fastapi-development", "database-optimization"],
+        "triggers": ["routers/", ".py", "FastAPI", "async def"]
+      },
+      {
+        "name": "debugging-assistant",
+        "enabled": true,
+        "description": "Helps troubleshoot and debug issues",
+        "skills": ["backend-development", "testing"],
+        "triggers": ["error", "bug", "debug", "fix"]
+      },
+      {
+        "name": "testing-specialist",
+        "enabled": true,
+        "description": "Creates and optimizes unit and integration tests",
+        "skills": ["testing"],
+        "triggers": ["test/", ".test.js", "test_", "pytest"]
+      }
+    ],
+    "skills": [
+      {
+        "name": "backend-development",
+        "path": ".copilot/skills/backend-development.md",
+        "enabled": true,
+        "applies_to": ["**/*.js", "routes/**", "controllers/**", "services/**"]
+      },
+      {
+        "name": "fastapi-development",
+        "path": ".copilot/skills/fastapi-development.md",
+        "enabled": true,
+        "applies_to": ["**/*.py", "routers/**", "services/**"]
+      },
+      {
+        "name": "database-optimization",
+        "path": ".copilot/skills/database-optimization.md",
+        "enabled": true,
+        "applies_to": ["**/*.js", "**/*.py", "models/**", "queries/**"]
+      },
+      {
+        "name": "api-design",
+        "path": ".copilot/skills/api-design.md",
+        "enabled": true,
+        "applies_to": ["routes/**", "routers/**", "controllers/**"]
+      },
+      {
+        "name": "testing",
+        "path": ".copilot/skills/testing.md",
+        "enabled": true,
+        "applies_to": ["tests/**", "**/*.test.js", "test_*.py"]
+      }
+    ]
+  },
+
+  "technology": {
+    "backends": [
+      {
+        "name": "Node.js Express API",
+        "port": 8000,
+        "language": "javascript",
+        "framework": "express",
+        "architecture": "MVC",
+        "responsibilities": [
+          "User registration",
+          "User login",
+          "JWT authentication",
+          "Session validation",
+          "Secure API access"
+        ]
+      },
+      {
+        "name": "FastAPI Service",
+        "port": 8001,
+        "language": "python",
+        "framework": "fastapi",
+        "architecture": "Router-Service-Schema",
+        "responsibilities": [
+          "Hierarchical dataset listing",
+          "Dataset metadata APIs",
+          "Analytics dataset endpoints",
+          "Survey dataset query interfaces"
+        ]
+      }
+    ],
+    "database": {
+      "type": "PostgreSQL",
+      "host": "localhost",
+      "port": 5432,
+      "name": "survey_db",
+      "user": "postgres",
+      "connection_string": "postgresql://postgres:1234@127.0.0.1:5432/survey_db",
+      "pool_size": 10,
+      "max_overflow": 20,
+      "timeout": 10,
+      "tables": ["users", "datasets", "survey_data"],
+      "records": "261K+ household records"
+    },
+    "frontend": {
+      "type": "React",
+      "builder": "Vite",
+      "port": 5173,
+      "features": [
+        "Dashboard UI",
+        "Dataset hierarchy explorer",
+        "Charts and analytics"
+      ]
+    }
+  },
+
+  "coding_standards": {
+    "nodejs": {
+      "style_guide": "Use Express Router, MVC architecture",
+      "async_required": true,
+      "error_handling": "Centralized middleware",
+      "validation": "Service layer input validation",
+      "database_queries": "Parameterized only",
+      "response_format": "{ success, data, meta }",
+      "files_per_concern": ["routes", "controllers", "services", "models"]
+    },
+    "python": {
+      "style_guide": "Use APIRouter, async endpoints",
+      "async_required": true,
+      "error_handling": "HTTPException with handlers",
+      "validation": "Pydantic schemas",
+      "database_queries": "SQLAlchemy ORM + parameterized",
+      "response_format": "{ success, data, meta }",
+      "files_per_concern": ["routers", "services", "schemas", "models"]
+    },
+    "database": {
+      "connection_management": "Connection pooling required",
+      "query_style": "Parameterized only",
+      "sql_injection_prevention": "No string concatenation",
+      "indexes": "Create on query columns",
+      "transactions": "For multi-step operations"
+    }
+  },
+
+  "file_structure": {
+    "backend_nodejs": {
+      "routes/": "Express Router definitions",
+      "controllers/": "Request/response handlers",
+      "services/": "Business logic",
+      "models/": "Data structures and queries",
+      "middleware/": "Express middleware",
+      "config/": "Database and app config"
+    },
+    "backend_fastapi": {
+      "routers/": "APIRouter definitions",
+      "services/": "Business logic",
+      "schemas/": "Pydantic models",
+      "models/": "SQLAlchemy models",
+      "database/": "Connection and queries",
+      "dependencies/": "Dependency injection"
+    },
+    "tests": {
+      "unit/": "Unit tests",
+      "integration/": "Integration tests",
+      "fixtures/": "Test data and mocks",
+      "e2e/": "End-to-end tests"
+    }
+  },
+
+  "api_endpoints": {
+    "authentication": [
+      "POST /api/auth/register",
+      "POST /api/auth/login",
+      "POST /api/auth/logout",
+      "GET /api/auth/me"
+    ],
+    "datasets": [
+      "GET /datasets/hierarchical",
+      "GET /datasets/{id}/metadata",
+      "GET /datasets/{id}/columns",
+      "GET /datasets/{id}/preview",
+      "GET /datasets/search"
+    ],
+    "analytics": [
+      "GET /analytics/summary/{dataset_id}",
+      "GET /analytics/distribution/{dataset_id}/{column}",
+      "POST /analytics/query"
+    ]
+  },
+
+  "response_formats": {
+    "success": {
+      "template": "{ success: true, data: {...}, meta: {...} }",
+      "status_codes": [200, 201]
+    },
+    "error": {
+      "template": "{ success: false, error: '...', code: '...', meta: {...} }",
+      "status_codes": [400, 401, 403, 404, 409, 500]
+    }
+  },
+
+  "environment": {
+    "development": {
+      "nodejs_port": 8000,
+      "fastapi_port": 8001,
+      "react_port": 5173,
+      "database": "postgresql://postgres:1234@127.0.0.1:5432/survey_db",
+      "debug": true
+    },
+    "production": {
+      "database": "Read from environment variables",
+      "ssl_required": true,
+      "rate_limiting": true,
+      "cors_enabled": true
+    }
+  },
+
+  "validation_rules": {
+    "email": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+    "password_min_length": 8,
+    "password_require_uppercase": true,
+    "password_require_numbers": true,
+    "max_request_size": "10MB",
+    "connection_timeout": "10 seconds",
+    "request_timeout": "30 seconds"
+  },
+
+  "security": {
+    "enabled": true,
+    "password_hashing": "bcrypt (rounds: 10)",
+    "jwt_algorithm": "HS256",
+    "jwt_expiry": "3600 seconds",
+    "https_required": "production",
+    "cors_origins": ["http://localhost:3000", "http://localhost:5173"],
+    "rate_limiting": "100 requests/minute",
+    "sanitization": "All user inputs"
+  },
+
+  "performance": {
+    "connection_pooling": true,
+    "query_caching": "1 hour for dataset hierarchy",
+    "response_compression": "gzip",
+    "pagination_default": 50,
+    "pagination_max": 1000,
+    "database_indexes": "Create on filter columns",
+    "optimize_queries": "Specify columns, use LIMIT"
+  },
+
+  "testing": {
+    "framework_nodejs": "Jest",
+    "framework_python": "pytest",
+    "unit_test_coverage": "80%",
+    "integration_test_coverage": "60%",
+    "critical_paths_coverage": "100%",
+    "run_before_commit": true
+  },
+
+  "documentation": {
+    "api_documentation": "OpenAPI/Swagger",
+    "code_comments": "JSDoc/Docstring for complex logic",
+    "readme_files": "Each directory has README",
+    "changelog": "CHANGELOG.md maintained",
+    "examples": "API usage examples provided"
+  }
+}

@@ -1,0 +1,64 @@
+dataset:
+  name: "HCES Household Identification"
+  description: "Household Consumption Expenditure Survey (HCES) - Household identification and demographic data"
+  table_name: "hces_household_identification"
+  source: "Ministry of Statistics and Programme Implementation (MoSPI)"
+  
+  schema:
+    - name: "Survey_Name"
+      type: "string"
+      filterable: true
+      description: "Survey name (HCES)"
+    
+    - name: "Year"
+      type: "integer"
+      filterable: true
+      description: "Survey year"
+    
+    - name: "Sector"
+      type: "integer"
+      filterable: true
+      description: "Sector code (1: Rural, 2: Urban)"
+      allowed_values: [1, 2]
+    
+    - name: "State_Code"
+      type: "integer"
+      filterable: true
+      description: "State code as per NSS classification"
+    
+    - name: "NSS_Region"
+      type: "integer"
+      filterable: true
+      description: "NSS region code"
+    
+    - name: "District_Code"
+      type: "integer"
+      filterable: true
+      description: "District code"
+    
+    - name: "Household_ID"
+      type: "string"
+      filterable: true
+      description: "Household identifier"
+    
+    - name: "Multiplier"
+      type: "float"
+      filterable: false
+      description: "Statistical weight/multiplier for household"
+    
+  filters:
+    state:
+      field: "State_Code"
+      type: "integer"
+    
+    sector:
+      field: "Sector"
+      type: "integer"
+    
+    district:
+      field: "District_Code"
+      type: "integer"
+    
+    year:
+      field: "Year"
+      type: "integer"

@@ -1,0 +1,211 @@
+dataset:
+  name: "PLFS Person Survey Data (CPERV1)"
+  description: "Periodic Labour Force Survey (PLFS) Person level data - Contains individual level information including employment, education, and demographic details"
+  table_name: "person_survey"
+  source: "Ministry of Statistics and Programme Implementation (MoSPI)"
+  
+  schema:
+    # Core identification fields
+    - name: "Panel"
+      type: "string"
+      filterable: true
+      description: "Panel identifier"
+    
+    - name: "File_Identification"
+      type: "string"
+      filterable: true
+      description: "File identification code"
+    
+    - name: "Schedule"
+      type: "integer"
+      filterable: true
+      description: "Schedule number"
+    
+    - name: "Quarter"
+      type: "string"
+      filterable: true
+      description: "Quarter of survey"
+    
+    - name: "Visit"
+      type: "string"
+      filterable: true
+      description: "Visit number"
+    
+    # Geographic fields
+    - name: "Sector"
+      type: "integer"
+      filterable: true
+      description: "Sector code (1: Rural, 2: Urban)"
+      allowed_values: [1, 2]
+    
+    - name: "State_UT_Code"
+      type: "integer"
+      filterable: true
+      description: "State/UT code as per NSS classification"
+    
+    - name: "District_Code"
+      type: "integer"
+      filterable: true
+      description: "District code"
+    
+    - name: "NSS_Region"
+      type: "integer"
+      filterable: true
+      description: "NSS Region code"
+    
+    # Demographic fields
+    - name: "Person_Serial_No"
+      type: "integer"
+      filterable: true
+      description: "Serial number of person within household"
+    
+    - name: "Relationship_To_Head"
+      type: "integer"
+      filterable: true
+      description: "Relationship to household head"
+    
+    - name: "Sex"
+      type: "integer"
+      filterable: true
+      description: "Sex (1: Male, 2: Female)"
+      allowed_values: [1, 2]
+    
+    - name: "Age"
+      type: "integer"
+      filterable: true
+      description: "Age of the person in years"
+    
+    - name: "Marital_Status"
+      type: "integer"
+      filterable: true
+      description: "Marital status code"
+    
+    # Education fields
+    - name: "General_Education_Level"
+      type: "integer"
+      filterable: true
+      description: "General education level code"
+    
+    - name: "Technical_Education_Level"
+      type: "integer"
+      filterable: true
+      description: "Technical education level"
+    
+    - name: "Years_Formal_Education"
+      type: "integer"
+      description: "Years of formal education"
+    
+    - name: "Current_Attendance_Status"
+      type: "integer"
+      filterable: true
+      description: "Current attendance in educational institution"
+    
+    # Employment - Principal Status
+    - name: "Principal_Status_Code"
+      type: "integer"
+      filterable: true
+      description: "Principal usual activity status code"
+    
+    - name: "Principal_Industry_Code"
+      type: "float"
+      filterable: true
+      description: "Principal industry NIC code"
+    
+    - name: "Principal_Occupation_Code"
+      type: "float"
+      filterable: true
+      description: "Principal occupation NCO code"
+    
+    - name: "Principal_Workplace_Location"
+      type: "float"
+      filterable: true
+      description: "Location of principal workplace"
+    
+    - name: "Principal_Enterprise_Type"
+      type: "float"
+      filterable: true
+      description: "Type of enterprise for principal work"
+    
+    - name: "Principal_Workers_Count"
+      type: "float"
+      filterable: true
+      description: "Number of workers in principal enterprise"
+    
+    - name: "Principal_Job_Contract_Type"
+      type: "float"
+      filterable: true
+      description: "Type of job contract for principal work"
+    
+    # Employment - Subsidiary Status
+    - name: "Subsidiary_Status_Code"
+      type: "float"
+      filterable: true
+      description: "Subsidiary activity status code"
+    
+    - name: "Subsidiary_Industry_Code"
+      type: "float"
+      filterable: true
+      description: "Subsidiary industry NIC code"
+    
+    - name: "Subsidiary_Occupation_Code"
+      type: "float"
+      filterable: true
+      description: "Subsidiary occupation NCO code"
+    
+    # Current Weekly Status (CWS)
+    - name: "CWS_Status_Code"
+      type: "integer"
+      filterable: true
+      description: "Current weekly status code"
+    
+    - name: "CWS_Industry_Code"
+      type: "float"
+      filterable: true
+      description: "CWS industry code"
+    
+    - name: "CWS_Occupation_Code"
+      type: "float"
+      filterable: true
+      description: "CWS occupation code"
+    
+    - name: "CWS_Earnings_Salaried"
+      type: "float"
+      description: "Earnings for salaried workers (CWS)"
+    
+    - name: "CWS_Earnings_SelfEmployed"
+      type: "float"
+      description: "Earnings for self-employed (CWS)"
+    
+    # Daily activity data (7 days)
+    # Note: Full schema includes Day1-Day7 activity codes, hours, and wages
+    # These will be auto-detected during ingestion
+    
+    # Sampling and weighting
+    - name: "Subsample_Multiplier"
+      type: "float"
+      description: "Multiplier for sub-sample weighting"
+  
+  relationships:
+    - type: "hierarchical"
+      description: "State -> District"
+    - type: "linkage"
+      description: "Links to household_survey via Panel and household identifiers"
+  
+  indexes:
+    - columns: ["State_Ut_Code", "District_Code"]
+      name: "idx_location"
+    - columns: ["Sector"]
+      name: "idx_sector"
+    - columns: ["Age", "Sex"]
+      name: "idx_demographics"
+    - columns: ["Current_Activity_Status"]
+      name: "idx_activity"
+  
+  access:
+    public_preview_rows: 100
+    requires_authentication: true
+    pricing_tier: "premium"
+  
+  notes: |
+    This is a large dataset (123MB). Schema will be auto-detected during ingestion.
+    Contains person-level employment and demographic information from PLFS.

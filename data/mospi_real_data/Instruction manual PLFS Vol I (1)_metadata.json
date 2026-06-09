@@ -1,0 +1,205 @@
+{
+  "filename": "Instruction manual PLFS Vol I (1).pdf",
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "\u0938\u0930\u0915\u093e\u0930(cid:547) (cid:292)\u092f\u094b\u0917 \u0915\u0947 (cid:871)\u0932\u090f /\nFor Official Use\n(cid:162)\u0947(cid:287) \u0915\u092e\u091a(cid:91) \u093e(cid:464)\u0930\u092f(cid:585) \u0915\u0947 (cid:871)\u0932\u090f \u0905\u0928\u0941\u0926\u0947\u0936\nInstructions to Field Staff\nVolume \u2013 I\n\u0916(cid:214)\u0921 /\n\u0905(cid:871)\u092d\u0915(cid:227)\u092a, \u0938\u0902\u0915(cid:227)\u092a\u0928\u093e\u090f\u0901, \u092a(cid:464)\u0930\u092d\u093e\u0937\u093e\u090f \u0901 \u090f\u0935\u0902 (cid:292)(cid:873)(cid:272)\u092f\u093e\u090f \u0901\nDesign, Concepts, Definitions and Procedures\n\u0906\u0935(cid:876)\u0927\u0915 (cid:302)\u092e \u092c\u0932 \u0938\u0935(cid:566)(cid:162)\u0923\nPERIODIC LABOUR FORCE SURVEY\n\u092d\u093e\u0930\u0924 \u0938\u0930\u0915\u093e\u0930\nGovernment of India\n\u0938\u093e\u0902\u093f(cid:201)\u092f\u0915(cid:551) \u0914\u0930 \u0915\u093e\u092f(cid:272)(cid:91) \u092e \u0915\u093e\u092f\u093e(cid:91)(cid:219)\u0935\u092f\u0928 \u092e(cid:287)\u0902 \u093e\u0932\u092f\nMinistry of Statistics and Programme Implementation\n\u0930\u093e(cid:231) (cid:282)(cid:547)\u092f (cid:292)(cid:467)\u0924\u0926\u0936 (cid:91) \u0938\u0935(cid:566)(cid:162)\u0923 \u0915\u093e\u092f\u093e(cid:91)\u0932\u092f\nNational Sample Survey Office\n\u091c\u0942\u0928 2023\nJune 2023",
+      "tables": [
+        [
+          [
+            "\u091c\u0942\u0928 2023"
+          ],
+          [
+            "June 2023"
+          ]
+        ]
+      ]
+    },
+    {
+      "page_number": 2,
+      "text": "",
+      "tables": []
+    },
+    {
+      "page_number": 3,
+      "text": "FOR OFFICIAL USE\nCONTENTS\nTitle Page No.\nChapter One: Introduction: Coverage, Concepts, Design A-1 \u2013 A-28\nand Definitions\nChapter Two: Schedule 0.0PL: List of Households B-1 \u2013 B-22\nChapter Three: Schedule 10.4: Employment and C-1 \u2013 C-81\nUnemployment (Periodic Labour Force\nSurvey)",
+      "tables": []
+    },
+    {
+      "page_number": 4,
+      "text": "",
+      "tables": []
+    },
+    {
+      "page_number": 5,
+      "text": "Chapter One Introduction: Coverage, Concepts, Design and Definitions\nChapter One\nIntroduction: Coverage, Concepts, Design and\nDefinitions\n1.0 Introduction\n1.0.1 Considering the importance of availability of labour force data at more frequent time\nintervals (say, for every quarter), the National Sample Survey Office (NSSO) launched Periodic\nLabour Force Survey (PLFS) in April 2017.\n1.0.2 Objective of the survey: The objective of PLFS is primarily twofold:\n\uf0b7 to estimate the key employment and unemployment indicators (viz. Worker Population\nRatio, Labour Force Participation Rate, Unemployment Rate) in the short time interval of\nthree months for the urban areas only in the Current Weekly Status (CWS)\n\uf0b7 to estimate employment and unemployment indicators in both usual status (ps+ss) and\nCWS in both rural and urban areas annually.\n1.0.3 The information collected in PLFS has been the primary source of statistics on labour\nforce, activity participation of the population and structure of employment and unemployment in\nthe country. These statistical indicators on labour market are required for planning, policy and\ndecision making at various levels, both within government and outside as well as used by various\nresearchers.\n1.0.4 In line with the objectives of the survey, PLFS provides quarterly estimates of the\nfollowing labour force indicators for the urban areas only through the Quarterly Bulletins of\nPLFS\n\uf0b7 Labour Force Participation Rate (LFPR), Worker Population ratio (WPR) and\nUnemployment Rate in the Current Weekly Status (CWS)\n\uf0b7 Distribution of Workers in CWS by broad status in employment / broad industry of work\nBesides the estimates given in the Quarterly Bulletins of PLFS, detailed estimates of various\nlabour market indicators in cross classification such as age, gender, education, etc., covering both\nrural and urban areas are available annually from the Annual Reports of PLFS. In the Annual\nReport besides giving the estimates of employment and unemployment indicators in usual status\n(ps+ss), some indicators are also available in current weekly status (CWS). The indicators\nreleased in Annual Reports of PLFS include the following\nInstructions to Field Staff, Vol. I: PLFS\nA-1",
+      "tables": []
+    },
+    {
+      "page_number": 6,
+      "text": "Chapter One Introduction: Coverage, Concepts, Design and Definitions\n\uf0b7 Labour Force Participation Rate (LFPR), Worker Population ratio (WPR) and\nUnemployment Rate\n\uf0b7 Distribution of workers by status in Employment\n\uf0b7 Distribution of workers by industry of work as National Industrial Classification (NIC)\n\uf0b7 Distribution of workers by occupation as National Classification of Occupation (NCO)\n\uf0b7 Employment in Informal Sector and conditions of employment\n\uf0b7 Earnings from employment\n\uf0b7 Hours worked\n1.1 Outline of the Survey Programme\n1.1.1 Geographical coverage of the survey: The survey covers the whole of the Indian Union\nexcept the villages in Andaman and Nicobar Islands which remain extremely difficult to access\nthroughout the year.\n1.2 Schedules of enquiry: Computer-assisted personal interviewing (CAPI) software has been\ndeveloped for collection of information in PLFS. The CAPI software is based on the following\nschedules of enquiry\nSchedule 0.0PL : List of households\nSchedule 10.4 : Employment and Unemployment (First Visit)\nSchedule 10.4 : Employment and Unemployment (Revisit)\nA mapping between CAPI items and the above mentioned Schedules of PLFS has been prepared\nby Data Processing Division (DPD) of NSSO. This may be used for referencing the items /\ncolumns of the above mentioned Schedules with CAPI developed for collection of information\nfor PLFS.\n1.3 Contents of Volume I: This volume of instruction contains three chapters. Chapter One\ngives an overview of the survey operation and discusses the concepts and definitions of\nimportant technical terms to be used in the survey. It also describes the sample design, rotational\nscheme, and procedure of selection of households. Chapters Two and Three contain instructions\nfor collection of information relating to Schedules 0.0PL and Schedule 10.4, based on which the\nCAPI software is developed. A list of frequently asked questions (FAQs) have been provided at\nthe end of both Chapter Two and Three.\nInstructions to Field Staff, Vol. I: PLFS\nA-2",
+      "tables": []
+    },
+    {
+      "page_number": 7,
+      "text": "Chapter One Introduction: Coverage, Concepts, Design and Definitions\n1.4 Sample Design\n1.4.1 Rotational scheme for PLFS:\nA rotational panel sampling design will be used in urban area. The rotational scheme will be of\ntwo years duration to accommodate the changes in the urban frame in the intracensal period; in\nthe sense that the sampling frames for both rural and urban areas will remain unchanged for\nevery two-year duration. In this rotational panel scheme each selected household in urban areas\nwill be visited four times \u2013 one with first visit schedule and other three with revisit schedule. The\nestimates can be given for successive quarters without any break in the series (starting from the\nfifth quarter), ensuring a 75% matching between consecutive quarters. Regression based\nestimates will not be generated. Instead, usual traditional design based estimates will be\ngenerated. The proposed design aims at generating quarterly estimates of level and change\nparameters of some important labour force indicators (LFPR, WPR & UR) based on CWS data\nin urban areas and annual estimates of level parameters based on usual status for both rural and\nurban areas in the line of employment & unemployment survey of NSS quinquennial round.\n.\n1.4.2 Rotational panel design for urban areas\ni. The rotational panel will be for two years, where only 25% FSUs of urban annual\nallocation will be covered in the first quarter (Panel P ) of the fourth two year panel with\n41\ndetail listing and canvassing of visit 1 schedule in the selected households; where Pij\nindicates the panel belonging to jth quarter of the ith two-year period of rotation.\nii. Another 25% FSUs will be covered in the second quarter (Panel P ) for taking up visit 1\n42\nschedule and revisit schedule will be canvassed in the selected households of Panel P .\n41\niii. A new panel P of 25% FSUs will be surveyed in third quarter with visit 1 schedule and\n43\nrevisit schedules will be canvassed in the households of panels P & P .\n41 42\niv. In the fourth quarter, households of panels P , P & P will be surveyed with revisit\n41 42 43\nschedule and a new panel P with 25% FSUs for visit 1 schedule.\n44\nv. In the subsequent quarters of second year of the third two year panel, 75% FSUs (3 panels\n\u2013 P , P & P ) will be common and an earlier panel (P ) will be replaced by a new panel\n42 43 44 41\n(P ) for canvassing visit 1 schedule. This will continue till 8th quarter of the fourth two\n45\nyear panel.\nvi. All the FSUs of the panels P , P , ...., P (each of which is with 25% of FSUs) will be\n41 42 48\nselected before commencement of survey in the first quarter.\nvii. At the end of the second year of each two-year duration, updated frame will be used for\nboth rural and urban areas.\nInstructions to Field Staff, Vol. I: PLFS\nA-3",
+      "tables": []
+    },
+    {
+      "page_number": 8,
+      "text": "Chapter One Introduction: Coverage, Concepts, Design and Definitions\nviii. FSUs of another set of panels P , P , ..., P selected from the updated frame will be made\n51 52 58\nready before commencement of first quarter of fifth two year panel. These panels P to P\n51 58\nwill take care of the changes in the urban frame during the intracensal period.\nix. In the ninth quarter (first quarter of fifth two year panel), panel P selected from the\n51\nupdated frame will be introduced and the panels P , P and P of the old frame will be\n46 47 48\nsurveyed.\nx. This scheme will continue for another 2 years with the introduction of panels P to P\n52 58\neach in one quarter for the subsequent 7 quarters till the end of the fifth two year panel.\nxi. Since major changes in the rural-urban frame occurs in the Census years, provision is to be\nmade to generate estimates without break in the series of estimates considering panels from\npre and post-census frames.\n1.4.3 Rural samples\nFor rural areas, samples for all the 8 quarters will be selected before commencement of survey\nfor each two-year period, while the frame remains same for this duration. Samples are drawn\nindependently for each quarter in the form of independent sub-samples. In each quarter, only\n25% FSUs of annual allocation (as is done in each sub-round of NSS rounds) will be covered in\nrural areas so that independent estimates can be generated for each quarter. For this purpose,\nquarterly allocation will be multiple of 2 for drawing interpenetrating sub-samples.\nThere will not be any revisit in the rural samples.\n1.4.4 The following table gives the rotational panel schemes in tabular format:\npanels from updated frame\npanels for the fourth 2 year period\nfor the next 2 year period\nDuring the four quarters During the four quarters of During the four quarters of\nof the seventh year the eighth year the ninth year\nQtr1 Qtr2 Qtr3 Qtr4 Qtr1 Qtr2 Qtr3 Qtr4 Qtr1 Qtr2 Qtr3 Qtr4\nP * P P P P * P P P P * P P P\n41 41 41 41 45 45 45 45 51 51 51 51\nUrban P P * P P P P * P P P P * P P\n38 42 42 42 42 46 46 46 46 52 52 52\nPanel P P P * P P P P * P P P P * P\n37 38 43 43 43 43 47 47 47 47 53 53\nP P P P * P P P P * P P P P *\n36 37 38 44 44 44 44 48 48 48 48 54\nFresh rural samples in\nRural R * R * R * R * R * R * R * R * ninth year from the updated\n41 42 43 44 45 46 47 48\nframe\n*Visit 1 schedule will be canvassed\nR * indicates samples to be covered in rural areas in jth quarter of ith two-year period\nij\n1.4.5 It is seen from the above table that one panel of urban sample FSUs will be in the sample\nfor 4 quarters and the selected households in an FSU will be surveyed for the successive periods\nduring which the FSU remains in the sample. Selected households will be visited 4 times for\nInstructions to Field Staff, Vol. I: PLFS\nA-4",
+      "tables": [
+        [
+          [
+            "",
+            "panels for the fourth 2 year period",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "panels from updated frame\nfor the next 2 year period",
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            "During the four quarters\nof the seventh year",
+            null,
+            null,
+            null,
+            "During the four quarters of\nthe eighth year",
+            null,
+            null,
+            null,
+            "During the four quarters of\nthe ninth year",
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            "Qtr1",
+            "Qtr2",
+            "Qtr3",
+            "Qtr4",
+            "Qtr1",
+            "Qtr2",
+            "Qtr3",
+            "Qtr4",
+            "Qtr1",
+            "Qtr2",
+            "Qtr3",
+            "Qtr4"
+          ],
+          [
+            "Urban\nPanel",
+            "P *\n41",
+            "P\n41",
+            "P\n41",
+            "P\n41",
+            "P *\n45",
+            "P\n45",
+            "P\n45",
+            "P\n45",
+            "P *\n51",
+            "P\n51",
+            "P\n51",
+            "P\n51"
+          ],
+          [
+            null,
+            "P\n38",
+            "P *\n42",
+            "P\n42",
+            "P\n42",
+            "P\n42",
+            "P *\n46",
+            "P\n46",
+            "P\n46",
+            "P\n46",
+            "P *\n52",
+            "P\n52",
+            "P\n52"
+          ],
+          [
+            null,
+            "P\n37",
+            "P\n38",
+            "P *\n43",
+            "P\n43",
+            "P\n43",
+            "P\n43",
+            "P *\n47",
+            "P\n47",
+            "P\n47",
+            "P\n47",
+            "P *\n53",
+            "P\n53"
+          ],
+          [
+            null,
+            "P\n36",
+            "P\n37",
+            "P\n38",
+            "P *\n44",
+            "P\n44",
+            "P\n44",
+            "P\n44",
+            "P *\n48",
+            "P\n48",
+            "P\n48",
+            "P\n48",
+            "P *\n54"
+          ],
+          [
+            "Rural",
+            "R *\n41",
+            "R *\n42",
+            "R *\n43",
+            "R *\n44",
+            "R *\n45",
+            "R *\n46",
+            "R *\n47",
+            "R *\n48",
+            "Fresh rural samples in\nninth year from the updated\nframe",
+            null,
+            null,
+            null
+          ],
+          [
+            "*Visit 1 schedule will be canvassed\nR * indicates samples to be covered in rural areas in jth quarter of ith two-year period\nij",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      ]
+    },
+    {
+      "page_number": 9,
+      "text": "Chapter One Introduction: Coverage, Concepts, Design and Definitions\ncanvassing the detailed schedule of enquiry of the PLFS (Schedule 10.4: Employment and\nUnemployment). These visits are termed as first visit and revisit. For this, two formats of the\ndetailed schedule of enquiry have been devised viz., Schedule 10.4: Employment and\nUnemployment (First Visit) and Schedule 10.4: Employment and Unemployment (Revisit).\nTo implement the rotational scheme in urban areas, when a panel appears for the first time in any\nquarter with 25% of annual allocation, listing and selection of households will be done in all the\nselected FSUs in that panel. The first visit schedule will be canvassed in the selected households.\nThe selected FSUs/households will be revisited in the subsequent three quarters as the panel will\nremain in the sample for four quarters. During the revisit, listing and selection of households\nwill not be done afresh. Only the households selected during first visit will be revisited for\ncanvassing revisit schedule. At the time of revisit if any sample household is not found, same\nmay be treated as casualty and a substitute household need not to be surveyed. If any sample\nhousehold is found to have split, then, among the split households available in the FSU/Sub-\nblock, the household where the head/senior most member of the erstwhile household is available\nwill be covered. In the PLFS scheme, each selected household of urban FSUs only will be visited\nfour times, one in each quarter.\n1.4.6 Outline of the design: A stratified multi-stage design would be adopted. The first stage\nunits (FSU) are the Urban Frame Survey (UFS) blocks in urban areas and 2011 Population\nCensus villages (Panchayat wards for Kerala) in rural areas. The ultimate stage units (USU) are\nhouseholds. As in usual NSS rounds, in the case of large FSUs one intermediate stage unit,\ncalled hamlet group/sub-block, will be formed.\n1.4.7 Sampling Frame for First Stage Units: The list of latest available Urban Frame Survey\n(UFS) blocks will be considered as the urban sampling frame. List of 2011 Population Census\nvillages (Panchayat wards for Kerala) will constitute the rural sampling frame. Since the duration\nof rotational panel is of two-year, the urban sampling frame once updated incorporating the\nchanges made in the current phase of UFS will remain unchanged for two years. Similarly the\nrural sampling frame with changes, if any, for urbanisation of village(s) will remain unchanged\nfor two years. After completion of every two-year period, the frames will be updated for\nincorporating the changes likely to occur during this period. When next Population Census\ndetails will be available, the new frame will be used only when UFS blocks for all newly\ndeclared Census Towns and Statutory Towns are available for preparation of sampling frame, as\nthe new list of census villages will not include those villages which will be considered as urban\nareas.\n1.4.8 Stratification: In urban areas strata will be formed within each NSS region on the basis of\nsize class of towns as per Population Census 2011. The tentative stratum numbers and their\ncomposition (within each region) will be as follows:\nstratum 1 : all towns with population less than 50,000\nInstructions to Field Staff, Vol. I: PLFS\nA-5",
+      "tables": []
+    },
+    {
+      "page_number": 10,
+      "text": "Chapter One Introduction: Coverage, Concepts, Design and Definitions\nstratum 2 : all towns with population 50,000 or more but less than 3 lakhs\nstratum 3 : all towns with population 3 lakhs or more but less than 15\nlakhs\nstratum 4, 5, 6,... : each city with population 15 lakhs or more\nThe rural areas of each NSS region will constitute rural stratum.\n1.4.9.1 Sub-Stratification: Urban: In urban areas there will be no sub-stratification.\n1.4.9.2 Rural: \u2018r/8\u2019 sub-strata will be formed in each rural stratum, if \u2018r\u2019 is the sample size\nallocated for a rural stratum. The villages within a stratum as per frame will be first arranged in\nascending order of population. Then sub-strata 1 to \u2018r/8\u2019 will be demarcated in such a way that\neach sub-stratum comprised a group of villages of the arranged frame and have more or less\nequal population.\n1.4.10 Total sample size (FSUs): 12800 FSUs (7024 villages and 5776 UFS blocks) will be\ncovered annually at all-India level.\n1.4.10.1 State/UT level sample size will be allocated between two sectors in proportion to\npopulation as per Census 2011 with double weightage to urban sector in general. Within each\nsector of a State/UT, the respective sample size will be allocated to the different strata (in the\ncase of urban areas) and strata/ sub-strata (in the case of rural areas) in proportion to the\npopulation as per Census 2011. Urban allocations at stratum level will be adjusted to multiples of\n8 with a minimum sample size of 8 (for 4 panels, each of size at least 2). Rural allocation for\neach stratum will also be multiple of 8 with minimum sample size of 8 (for 4 quarters, each of\nsize 2).\n1.4.10.2 It may be noted that quarterly allocation of FSUs will be same for an NSS state-region\nalthough 25% of the urban FSUs will rotate over the quarters according to the rotational scheme.\nHowever, quarterly allocation of urban FSUs for FOD regions and FOD sub-regions may vary\nover the quarters since new FSUs entering the sample according to the rotational scheme may or\nmay not belong to the same FOD region or FOD sub-region.\n1.4.11 Selection of first stage units: Urban FSUs will be selected by probability proportional to\nsize with replacement (PPSWR) scheme, size being the number of households in the UFS block.\nSamples for a panel within each stratum will be drawn in the form of two independent sub-\nsamples. To implement the rotational scheme, 4 groups of sample FSUs of equal size (each\nmultiple of size 2, half for each of sub-sample 1 and sub-sample 2) will be drawn randomly. In\nthe rural areas samples for a stratum/sub-stratum will be drawn randomly in the form of two\nindependent sub-samples with probability proportional to size with replacement (PPSWR)\nscheme, size being the population of the village and equal number of samples will be allocated\nInstructions to Field Staff, Vol. I: PLFS\nA-6",
+      "tables": []
+    }
+  ],
+  "metadata": {
+    "page_count": 135
+  }
+}

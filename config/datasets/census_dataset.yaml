@@ -1,0 +1,58 @@
+dataset:
+  name: "Indian Census Data 2021"
+  description: "Sample census data with demographic information"
+  table_name: "census_data"
+  
+  schema:
+    - name: "state"
+      type: "string"
+      filterable: true
+      description: "State name"
+    
+    - name: "district"
+      type: "string"
+      filterable: true
+      description: "District name"
+    
+    - name: "gender"
+      type: "string"
+      filterable: true
+      description: "Gender (Male/Female/Other)"
+      allowed_values: ["Male", "Female", "Other"]
+    
+    - name: "age_group"
+      type: "string"
+      filterable: true
+      description: "Age group category"
+      allowed_values: ["0-14", "15-29", "30-44", "45-59", "60+"]
+    
+    - name: "population"
+      type: "integer"
+      description: "Population count"
+    
+    - name: "literacy_rate"
+      type: "float"
+      description: "Literacy rate percentage"
+    
+    - name: "employment_rate"
+      type: "float"
+      description: "Employment rate percentage"
+    
+    - name: "year"
+      type: "integer"
+      filterable: true
+      description: "Census year"
+  
+  relationships:
+    - type: "hierarchical"
+      description: "State -> District"
+  
+  indexes:
+    - fields: ["state", "gender", "age_group"]
+      description: "Common filter combination"
+    
+    - fields: ["state", "year"]
+      description: "State-wise temporal queries"
+  
+  access_level: "public"
+  refresh_frequency: "annual"
