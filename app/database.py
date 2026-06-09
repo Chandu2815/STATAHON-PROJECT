@@ -6,39 +6,107 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import get_settings
 import sys
+import os
 
 settings = get_settings()
 
-# Create database engine
-# Support both PostgreSQL and SQLite
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-    engine = create_engine(
-        settings.DATABASE_URL,
-        echo=settings.DATABASE_ECHO,
-        connect_args=connect_args
-    )
-else:
-    # PostgreSQL with proper connection pooling
-    engine = create_engine(
-        settings.DATABASE_URL,
-        echo=settings.DATABASE_ECHO,
-        pool_pre_ping=True,  # Test connections before using
-        pool_size=10,
-        max_overflow=20,
-        connect_args={"connect_timeout": 10}
-    )
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
+# Global variables for database management
+engine = None
+SessionLocal = None
 Base = declarative_base()
+current_db_url = None
+
+def _create_engine(database_url):
+    """Create and return a database engine based on the URL"""
+    connect_args = {}
+    if database_url.startswith("sqlite"):
+        connect_args = {"check_same_thread": False}
+        return create_engine(
+            database_url,
+            echo=settings.DATABASE_ECHO,
+            connect_args=connect_args
+        )
+    else:
+        # PostgreSQL with proper connection pooling
+        return create_engine(
+            database_url,
+            echo=settings.DATABASE_ECHO,
+            pool_pre_ping=True,  # Test connections before using
+            pool_size=10,
+            max_overflow=20,
+            connect_args={"connect_timeout": 10}
+        )
+
+def _initialize_db_engine():
+    """Initialize the database engine with fallback support"""
+    global engine, SessionLocal, current_db_url
+    
+    primary_url = settings.DATABASE_URL
+    fallback_url = "sqlite:///./mospi_dpi.db"
+    
+    # Try primary database first
+    try:
+        print(f"[DB] Attempting to connect to primary database...")
+        engine = _create_engine(primary_url)
+        
+        # Test the connection
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            print(f"[DB] ✅ Successfully connected to primary database")
+        
+        current_db_url = primary_url
+        
+    except Exception as e:
+        error_msg = str(e).lower()
+        print(f"[DB] ⚠️  Failed to connect to primary database")
+        print(f"[DB] Error: {str(e)}")
+        
+        if "password" in error_msg or "authentication" in error_msg:
+            print("[DB] 🔐 Password/Authentication Error:")
+            print("[DB]    - Check .env DATABASE_URL password")
+            print("[DB]    - Verify PostgreSQL server is running")
+            print("[DB]    - Verify user has correct permissions")
+        elif "connection" in error_msg:
+            print("[DB] 🌐 Connection Error:")
+            print("[DB]    - Check if PostgreSQL server is reachable at 187.127.138.4:5432")
+            print("[DB]    - Check network connectivity")
+        
+        print(f"[DB] 🔄 Falling back to SQLite: {fallback_url}")
+        
+        try:
+            engine = _create_engine(fallback_url)
+            
+            # Test the connection
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+                print(f"[DB] ✅ Successfully connected to fallback SQLite database")
+            
+            current_db_url = fallback_url
+            
+        except Exception as fallback_error:
+            print(f"[DB] ❌ FATAL: Both primary and fallback databases failed")
+            print(f"[DB] Fallback error: {str(fallback_error)}")
+            raise
+    
+    # Create session factory after engine is initialized
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return SessionLocal
+
+# Initialize on module load
+try:
+    SessionLocal = _initialize_db_engine()
+except Exception as e:
+    print(f"[DB] ❌ Failed to initialize database engine")
+    print(f"[DB] Error: {str(e)}")
+    # Create a dummy SessionLocal that will raise helpful error on use
+    SessionLocal = None
 
 
 def get_db():
     """Database session dependency"""
+    if SessionLocal is None:
+        raise RuntimeError("Database engine not initialized. Check database configuration.")
+    
     db = SessionLocal()
     try:
         yield db
@@ -48,8 +116,13 @@ def get_db():
 
 def init_db():
     """Initialize database tables with error handling"""
+    db = None  # Track if db session was created
     try:
         print("[DB] Initializing database...")
+        
+        # Check if engine was initialized
+        if engine is None:
+            raise RuntimeError("Database engine not initialized. Check database configuration in .env file.")
         
         # Import all models to ensure they're registered
         from app.models import dataset, user
@@ -144,22 +217,28 @@ def init_db():
         print(f"[DB] Type: {type(e).__name__}")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
         
-        # Create test user for demo
-        ensure_user(
-            username="testuser",
-            email="testuser@mospi.gov.in",
-            full_name="Test User",
-            password="test123",
-            role=UserRole.RESEARCHER,
-            credits=100.0
-        )
+        # Check if it's a password auth error
+        error_str = str(e).lower()
+        if "password authentication failed" in error_str:
+            print("[DB] ⚠️  PASSWORD AUTHENTICATION FAILED")
+            print("[DB] Troubleshooting steps:")
+            print("[DB]   1. Check .env DATABASE_URL password is correct")
+            print("[DB]   2. Verify PostgreSQL server is running at 187.127.138.4:5432")
+            print("[DB]   3. Run: psql -U postgres -h 187.127.138.4 -d statahon_db")
+            print("[DB]   4. To use local SQLite instead, set:")
+            print("[DB]      DATABASE_URL=sqlite:///./mospi_dpi.db")
         
-        # Auto-load CSV data if tables are empty
-        load_csv_data_if_needed(db)
+        # Don't exit here - let the application handle gracefully
+        raise
+        
     finally:
-        db.close()
+        # Only close db if it was actually created
+        if db is not None:
+            try:
+                db.close()
+            except Exception as e:
+                print(f"[DB] Warning: Error closing database session: {e}")
 
 
 def load_hces_datasets(db):

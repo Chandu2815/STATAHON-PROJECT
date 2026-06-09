@@ -24,15 +24,51 @@ import DataExportActions from '../components/DataExportActions.jsx';
 import HelpAndShortcuts from '../components/HelpAndShortcuts.jsx';
 import AnalyticsDashboard from '../components/AnalyticsDashboard.jsx';
 
-// Create axios instance with proper baseURL configuration
-const API = axios.create({
+// Create fetch instance with proper error handling
+const API = {
   baseURL: '/api/ai',
-  timeout: 10000,
-});
+  timeout: 30000,
+  
+  async get(endpoint) {
+    try {
+      const url = `${this.baseURL}${endpoint}`;
+      console.log(`[API] GET ${url}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      console.log(`[API] Response:`, data);
+      return { data };
+    } catch (error) {
+      console.error(`[API Error] GET ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
+  async post(endpoint, payload) {
+    try {
+      const url = `${this.baseURL}${endpoint}`;
+      console.log(`[API] POST ${url} with payload:`, payload);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      console.log(`[API] Response:`, data);
+      return { data };
+    } catch (error) {
+      console.error(`[API Error] POST ${endpoint}:`, error);
+      throw error;
+    }
+  }
+};
 
 export default function SurveyAI() {
   const [datasets, setDatasets] = useState({}); 
   const [selectedDataset, setSelectedDataset] = useState(null);
+  const [chartData, setChartData] = useState([]);
   const [columns, setColumns] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [data, setData] = useState([]);
@@ -66,14 +102,19 @@ export default function SurveyAI() {
   const fetchDatasets = async () => {
     try {
       setLoading(true);
+      setError('');
+      console.log('[Survey AI] Fetching hierarchical datasets...');
+      
       const response = await API.get('/datasets/hierarchical');
       if (response.data.success) {
+        console.log('[Survey AI] Successfully loaded datasets:', Object.keys(response.data.data || {}));
         setDatasets(response.data.data || {});
       } else {
-        setError('API returned unexpected response format');
+        throw new Error(response.data.error || 'API returned error');
       }
     } catch (err) {
-      setError('Failed to fetch datasets. Check console for details.');
+      console.error('[Survey AI] Error fetching datasets:', err);
+      setError('Failed to fetch datasets: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -81,54 +122,77 @@ export default function SurveyAI() {
 
   const handleDatasetSelect = async (dataset) => {
     try {
+      console.log(`[Survey AI] Selected dataset: ${dataset}`);
       setSelectedDataset(dataset);
       setSelectedColumns([]);
       setData([]);
+      setChartData([]);
       setTotalCount(0);
       setError('');
       setFilters({});
       setPendingFilters({});
       setPagination({ page: 0, pageSize: 12 });
 
+      console.log(`[Survey AI] Fetching columns for ${dataset}...`);
       const response = await API.get(`/columns/${dataset}`);
+      
       if (response.data.success && Array.isArray(response.data.columns)) {
         const cols = response.data.columns.map((col) => ({
           name: col.name,
           type: col.type || 'unknown',
         }));
+        console.log(`[Survey AI] Loaded ${cols.length} columns:`, cols.map(c => c.name));
         setColumns(cols);
       } else {
-        setColumns([]);
+        throw new Error('No columns returned from API');
       }
     } catch (err) {
+      console.error(`[Survey AI] Error fetching columns for ${dataset}:`, err);
       setError('Failed to fetch columns: ' + err.message);
       setColumns([]);
     }
   };
 
   const handleColumnSelect = (column) => {
-    setSelectedColumns((prev) =>
-      prev.includes(column)
+    setSelectedColumns((prev) => {
+      const nextColumns = prev.includes(column)
         ? prev.filter((col) => col !== column)
-        : [...prev, column]
-    );
-    // Clear data and any pending filters when column selection changes
+        : [...prev, column];
+
+      setPendingFilters((prevFilters) =>
+        Object.fromEntries(
+          Object.entries(prevFilters).filter(([key]) => nextColumns.includes(key))
+        )
+      );
+      setFilters((prevFilters) =>
+        Object.fromEntries(
+          Object.entries(prevFilters).filter(([key]) => nextColumns.includes(key))
+        )
+      );
+
+      return nextColumns;
+    });
+    // Clear fetched data when column selection changes; keep still-valid filters.
     setData([]);
+    setChartData([]);
     setTotalCount(0);
-    setPendingFilters({});
     setPagination({ page: 0, pageSize: 12 });
+    console.log(`[Survey AI] Column selection toggled for: ${column}`);
   };
 
   const handleFilterChange = (filterObj) => {
     // Only update pending filters - do NOT fetch data yet
     // Data will only be fetched when user clicks "Saturate & Pulse System"
+    console.log('[Survey AI] Filters changed (not applied yet):', filterObj);
     setPendingFilters(filterObj);
     setPagination({ page: 0, pageSize: 12 });
   };
 
   const fetchData = async () => {
     if (!selectedDataset || selectedColumns.length === 0) {
-      setError('Please select a dataset and at least one column');
+      const msg = 'Please select a dataset and at least one column';
+      console.warn(`[Survey AI] ${msg}`);
+      setError(msg);
       return;
     }
 
@@ -136,7 +200,9 @@ export default function SurveyAI() {
     const activeFilters = { ...pendingFilters };
     const hasFilters = Object.values(activeFilters).some(v => v && v.toString().trim());
     if (!hasFilters) {
-      setError('Please select at least one filter (e.g. State Code) before extracting data.');
+      const msg = 'Please select at least one filter (e.g. State Code) before extracting data.';
+      console.warn(`[Survey AI] ${msg}`);
+      setError(msg);
       return;
     }
 
@@ -159,18 +225,41 @@ export default function SurveyAI() {
         columns: selectedColumns,
         filters: filterConditions,
         limit: pagination.pageSize,
-        offset: pagination.page * pagination.pageSize,
+        offset: 0, // always start from first page after new filters
       };
 
+      console.log('[Survey AI] Fetching paginated data with payload:', payload);
       const response = await API.post('/data', payload);
+      
       if (response.data.success) {
+        console.log(`[Survey AI] Successfully fetched ${response.data.data?.length || 0} records (total: ${response.data.total})`);
         setData(response.data.data || []);
         setTotalCount(response.data.total || 0);
+        // Reset pagination to first page
+        setPagination(prev => ({ ...prev, page: 0 }));
+
+        // Fetch full dataset for charts
+        const fullPayload = {
+          ...payload,
+          limit: response.data.total || 1000,
+          offset: 0,
+        };
+        console.log('[Survey AI] Fetching full data for charts with payload:', fullPayload);
+        const fullResponse = await API.post('/data', fullPayload);
+        if (fullResponse.data.success) {
+          setChartData(fullResponse.data.data || []);
+        } else {
+          console.warn('[Survey AI] Failed to fetch full chart data');
+          setChartData([]);
+        }
       } else {
-        setError('Failed to fetch data: ' + (response.data.message || 'Unknown error'));
+        throw new Error(response.data.error || 'Failed to fetch data');
       }
     } catch (err) {
-      setError('Failed to fetch data. Check console for details.');
+      console.error('[Survey AI] Error fetching data:', err);
+      setError('Failed to fetch data: ' + err.message);
+      setData([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -179,19 +268,51 @@ export default function SurveyAI() {
   const fetchStatistics = async () => {
     if (!selectedDataset) return;
     try {
+      console.log(`[Survey AI] Fetching statistics for ${selectedDataset}...`);
       const response = await API.get(`/statistics/${selectedDataset}`);
       if (response.data.success) {
+        console.log('[Survey AI] Statistics:', response.data.statistics);
         setStatistics(response.data.statistics || {});
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error('[Survey AI] Error fetching statistics:', err);
+    }
   };
 
   // Pagination-only re-fetch (only when data is already loaded and pagination changes)
   useEffect(() => {
     if (selectedDataset && selectedColumns.length > 0 && data.length > 0) {
-      fetchData();
+      console.log('[Survey AI] Pagination changed, re-fetching data...');
+      // Note: In this specific implementation, we don't re-fetch chart data on page change
+      // since that's already captured when hitting 'Saturate & Pulse'.
+      const fetchPaginatedOnly = async () => {
+        setLoading(true);
+        try {
+          const filterConditions = {};
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value && value.toString().trim()) {
+              filterConditions[key] = value;
+            }
+          });
+          const response = await API.post('/data', {
+            table: selectedDataset,
+            columns: selectedColumns,
+            filters: filterConditions,
+            limit: pagination.pageSize,
+            offset: pagination.page * pagination.pageSize,
+          });
+          if (response.data.success) {
+            setData(response.data.data || []);
+          }
+        } catch (err) {
+          console.error('[Survey AI] Error in paginated re-fetch:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchPaginatedOnly();
     }
-  }, [pagination]);
+  }, [pagination.page]);
 
   return (
     <div className="min-h-screen bg-[#fbfcff] flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
@@ -305,13 +426,13 @@ export default function SurveyAI() {
                       
                       <div className="flex items-center gap-3">
                         <button 
-                          onClick={() => { setSelectedColumns(columns.map(c => c.name)); setData([]); setTotalCount(0); }}
+                          onClick={() => { setSelectedColumns(columns.map(c => c.name)); setData([]); setChartData([]); setTotalCount(0); }}
                           className="px-6 py-3 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95"
                         >
                           Select All Fields
                         </button>
                         <button 
-                          onClick={() => { setSelectedColumns([]); setData([]); setTotalCount(0); }}
+                          onClick={() => { setSelectedColumns([]); setData([]); setChartData([]); setTotalCount(0); setFilters({}); setPendingFilters({}); }}
                           className="px-6 py-3 bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-50 hover:text-red-500 transition-all active:scale-95 border border-transparent hover:border-red-100"
                         >
                           Clear Selection
@@ -474,7 +595,7 @@ export default function SurveyAI() {
                 <div className="pl-14">
                   <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xl p-8">
                     <ChartView
-                      data={data}
+                      data={chartData.length > 0 ? chartData : data}
                       columns={selectedColumns}
                       statistics={statistics}
                     />
@@ -505,4 +626,3 @@ export default function SurveyAI() {
     </div>
   );
 }
-

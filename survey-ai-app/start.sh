@@ -1,7 +1,73 @@
 #!/bin/bash
 
 # Survey AI Startup Script
-# This script starts both the frontend and backend servers
+git # This script starts both the frontend and backend servers.
+# It uses port 8002 for the backend to avoid conflicts.
+
+# --- CONFIGURATION ---
+BACKEND_PORT=8002
+FRONTEND_PORT=5173
+HOST=0.0.0.0
+
+# --- COLORS ---
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Function to kill process by port
+kill_process_on_port() {
+    PORT=$1
+    echo -e "${YELLOW}Checking for process on port $PORT...${NC}"
+    PID=$(lsof -t -i:$PORT)
+    if [ -n "$PID" ]; then
+        echo -e "${RED}Killing process $PID on port $PORT...${NC}"
+        kill -9 $PID
+    else
+        echo -e "${GREEN}No process found on port $PORT.${NC}"
+    fi
+}
+
+# Kill existing processes on the ports we need
+kill_process_on_port $BACKEND_PORT
+kill_process_on_port $FRONTEND_PORT
+
+# --- Start Backend ---
+echo -e "\n${GREEN}--- Starting Survey AI Backend ---${NC}"
+cd backend
+
+# Activate virtual environment if it exists
+if [ -d "venv" ]; then
+    echo "Activating Python virtual environment..."
+    source venv/bin/activate
+fi
+
+echo "Installing backend dependencies from requirements.txt..."
+pip install --upgrade pip
+pip install -r requirements.txt
+
+echo -e "${YELLOW}Starting Uvicorn server on http://$HOST:$BACKEND_PORT...${NC}"
+python -m uvicorn main:app --host $HOST --port $BACKEND_PORT --reload &
+BACKEND_PID=$!
+cd ..
+
+# --- Start Frontend ---
+echo -e "\n${GREEN}--- Starting Survey AI Frontend ---${NC}"
+cd frontend
+
+echo "Installing frontend dependencies..."
+npm install
+
+echo -e "${YELLOW}Starting Vite dev server on http://localhost:$FRONTEND_PORT...${NC}"
+npm run dev &
+FRONTEND_PID=$!
+cd ..
+
+# --- Wait for processes to exit ---
+wait $BACKEND_PID
+wait $FRONTEND_PID
+
+echo -e "\n${RED}Both servers have been stopped.${NC}"
 
 set -e
 

@@ -49,6 +49,11 @@ export default function DataTable({
     });
   }
 
+  const displayedData = sortedData.slice(
+    pagination.page * pagination.pageSize,
+    (pagination.page + 1) * pagination.pageSize
+  );
+
   const handleSort = (key) => {
     setSortConfig((prev) => {
       if (prev?.key === key) {
@@ -72,10 +77,10 @@ export default function DataTable({
   };
 
   const handleSelectAll = () => {
-    if (selectedRows.size === sortedData.length) {
+    if (selectedRows.size === displayedData.length) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(sortedData.map((_, idx) => idx)));
+      setSelectedRows(new Set(displayedData.map((_, idx) => idx)));
     }
   };
 
@@ -159,7 +164,7 @@ export default function DataTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {sortedData.length > 0 ? sortedData.map((row, idx) => (
+            {displayedData.length > 0 ? displayedData.map((row, idx) => (
               <tr
                 key={idx}
                 className={`group transition-all duration-200 ${

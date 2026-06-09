@@ -4,7 +4,7 @@ Modern Survey Data Explorer with Dynamic Queries
 Connects exclusively to VPS PostgreSQL database
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -13,6 +13,7 @@ from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
 import logging
+import json
 
 # Configure logging
 logging.basicConfig(
@@ -63,15 +64,15 @@ if not DB_USER:
 if not DB_PASSWORD:
     missing_vars.append("DB_PASSWORD")
 
+startup_config_error = None
 if missing_vars:
-    error_msg = f"❌ FATAL: Missing required environment variables: {', '.join(missing_vars)}. Please check .env file."
-    logger.error(error_msg)
-    raise RuntimeError(error_msg)
+    startup_config_error = f"❌ Missing required database environment variables: {', '.join(missing_vars)}. Please check .env file."
+    logger.error(startup_config_error)
 
 # Build psycopg2 config
 DB_CONFIG = {
     "host": DB_HOST,
-    "port": int(DB_PORT),
+    "port": int(DB_PORT) if DB_PORT and DB_PORT.isdigit() else 5432,
     "database": DB_NAME,
     "user": DB_USER,
     "password": DB_PASSWORD,
@@ -80,6 +81,8 @@ DB_CONFIG = {
 
 def get_db_connection():
     """Get database connection to VPS PostgreSQL"""
+    if startup_config_error:
+        raise HTTPException(status_code=500, detail=startup_config_error)
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         return conn
@@ -96,6 +99,9 @@ def get_db_connection():
 @app.on_event("startup")
 async def startup_event():
     """Test database connection on app startup"""
+    if startup_config_error:
+        logger.error(f"⚠️ Startup connection check skipped: {startup_config_error}")
+        return
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -108,9 +114,7 @@ async def startup_event():
         logger.info(f"✅ PostgreSQL version: {version[0][:60]}...")
         print(f"Connected DB: postgresql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
     except Exception as e:
-        error_msg = f"❌ FATAL: Failed to connect to VPS database on startup: {str(e)}"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
+        logger.error(f"⚠️ Database is not reachable on startup: {str(e)}")
 
 # Pydantic Models
 class DataRequest(BaseModel):
@@ -126,6 +130,35 @@ class DataRequest(BaseModel):
 async def health():
     """Health check endpoint"""
     return {"status": "healthy", "message": "Survey AI API is running"}
+
+@app.get("/health/db")
+async def health_db():
+    """Database connection status endpoint"""
+    from database.connection import get_db_status
+    status_info = get_db_status()
+    
+    # Also perform a raw psycopg2 test connection check
+    raw_status = "ok"
+    raw_error = None
+    try:
+        conn = get_db_connection()
+        conn.close()
+    except Exception as e:
+        raw_status = "error"
+        raw_error = str(e)
+
+    overall_status = "ok" if (status_info.get("status") == "ok" and raw_status == "ok") else "error"
+    
+    return {
+        "status": overall_status,
+        "database_host": DB_HOST,
+        "database_name": DB_NAME,
+        "sqlalchemy_connection": status_info,
+        "psycopg2_connection": {
+            "status": raw_status,
+            "error": raw_error
+        }
+    }
 
 @app.get("/datasets")
 async def get_datasets():
@@ -280,12 +313,18 @@ async def get_states():
         raise HTTPException(status_code=500, detail=f"Error fetching states: {str(e)}")
 
 @app.get("/reference/ec/districts")
-async def get_districts():
+async def get_districts(state_code: int = None):
     """Return all rows from economic_census.district_codes"""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM economic_census.district_codes")
+        if state_code:
+            cur.execute(
+                "SELECT * FROM economic_census.district_codes WHERE state_code = %s ORDER BY district_code",
+                (state_code,),
+            )
+        else:
+            cur.execute("SELECT * FROM economic_census.district_codes ORDER BY state_code, district_code")
         rows = [dict(zip([desc[0] for desc in cur.description], row)) for row in cur.fetchall()]
         cur.close()
         conn.close()
@@ -308,7 +347,12 @@ async def get_nic_codes():
         raise HTTPException(status_code=500, detail=f"Error fetching nic codes: {str(e)}")
 
 @app.get("/distinct/{table:path}/{column}")
-async def get_distinct_values(table: str, column: str):
+async def get_distinct_values(
+    table: str,
+    column: str,
+    limit: int = Query(default=10000, ge=1, le=50000),
+    filters: str = Query(default=None),
+):
     """Get distinct values for a specific column in a table (for filter dropdowns)"""
     # Validate inputs
     if not table.replace("_", "").replace(".", "").isalnum():
@@ -326,20 +370,41 @@ async def get_distinct_values(table: str, column: str):
         else:
             table_ref = f'"{table}"'
         
-        # Get distinct non-null values, ordered, with limit for performance
+        where_clauses = [f'"{column}" IS NOT NULL', f"NULLIF(TRIM(\"{column}\"::text), '') IS NOT NULL"]
+        where_values = []
+
+        if filters:
+            try:
+                parsed_filters = json.loads(filters)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+            for filter_col, filter_val in parsed_filters.items():
+                if not str(filter_col).replace("_", "").isalnum():
+                    continue
+                if filter_col == column or filter_val is None or str(filter_val).strip() == "":
+                    continue
+                where_clauses.append(f'TRIM("{filter_col}"::text) = %s')
+                where_values.append(str(filter_val).strip())
+
+        where_str = " AND ".join(where_clauses)
+
+        # Get distinct non-null values, ordered, with bounded limit for performance
         cur.execute(f"""
-            SELECT DISTINCT TRIM("{column}") as val
+            SELECT DISTINCT TRIM("{column}"::text) as val
             FROM {table_ref}
-            WHERE "{column}" IS NOT NULL AND TRIM("{column}") != ''
+            WHERE {where_str}
             ORDER BY val
-            LIMIT 500
-        """)
+            LIMIT %s
+        """, tuple(where_values + [limit]))
         
         values = [row[0] for row in cur.fetchall()]
         cur.close()
         conn.close()
         
         return {"success": True, "data": values, "count": len(values)}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching distinct values: {str(e)}")
 
@@ -378,7 +443,7 @@ async def fetch_data(request: DataRequest):
             if not col.replace("_", "").isalnum():
                 continue
             # Use TRIM to handle padded strings in the database
-            where_clauses.append(f'TRIM("{col}") = %s')
+            where_clauses.append(f'TRIM("{col}"::text) = %s')
             where_values.append(str(val).strip())
             
         where_str = ""
@@ -398,12 +463,11 @@ async def fetch_data(request: DataRequest):
         for row in cur.fetchall():
             rows.append(dict(row))
         
-        # Get total count
-        count_query = f"SELECT COUNT(*) as total FROM {table_ref}{where_str}"
-        cur.execute(count_query, tuple(where_values))
-        total_count = cur.fetchone()["total"]
-        
         cur.close()
+        offset = int(request.offset)
+        limit = int(request.limit)
+        has_more = len(rows) == limit
+        display_total = offset + len(rows) + (1 if has_more else 0)
         
         return {
             "success": True,
@@ -411,9 +475,10 @@ async def fetch_data(request: DataRequest):
             "columns": request.columns,
             "data": rows,
             "count": len(rows),
-            "total": total_count,
-            "limit": request.limit,
-            "offset": request.offset
+            "total": display_total,
+            "has_more": has_more,
+            "limit": limit,
+            "offset": offset
         }
     except HTTPException as he:
         raise he
