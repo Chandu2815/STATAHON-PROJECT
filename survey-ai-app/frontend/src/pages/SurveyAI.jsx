@@ -36,10 +36,12 @@ export default function SurveyAI() {
   const [columns, setColumns] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [data, setData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({});
+  const [pendingFilters, setPendingFilters] = useState({});
   const [pagination, setPagination] = useState({ page: 0, pageSize: 12 });
   const [activeTab, setActiveTab] = useState('explore'); 
 
@@ -82,8 +84,10 @@ export default function SurveyAI() {
       setSelectedDataset(dataset);
       setSelectedColumns([]);
       setData([]);
+      setTotalCount(0);
       setError('');
       setFilters({});
+      setPendingFilters({});
       setPagination({ page: 0, pageSize: 12 });
 
       const response = await API.get(`/columns/${dataset}`);
@@ -108,11 +112,17 @@ export default function SurveyAI() {
         ? prev.filter((col) => col !== column)
         : [...prev, column]
     );
+    // Clear data and any pending filters when column selection changes
+    setData([]);
+    setTotalCount(0);
+    setPendingFilters({});
     setPagination({ page: 0, pageSize: 12 });
   };
 
   const handleFilterChange = (filterObj) => {
-    setFilters(filterObj);
+    // Only update pending filters - do NOT fetch data yet
+    // Data will only be fetched when user clicks "Saturate & Pulse System"
+    setPendingFilters(filterObj);
     setPagination({ page: 0, pageSize: 12 });
   };
 
@@ -122,12 +132,23 @@ export default function SurveyAI() {
       return;
     }
 
+    // Require at least one filter to be selected
+    const activeFilters = { ...pendingFilters };
+    const hasFilters = Object.values(activeFilters).some(v => v && v.toString().trim());
+    if (!hasFilters) {
+      setError('Please select at least one filter (e.g. State Code) before extracting data.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
 
+      // Commit pending filters to active filters
+      setFilters(activeFilters);
+
       const filterConditions = {};
-      Object.entries(filters).forEach(([key, value]) => {
+      Object.entries(activeFilters).forEach(([key, value]) => {
         if (value && value.toString().trim()) {
           filterConditions[key] = value;
         }
@@ -144,6 +165,7 @@ export default function SurveyAI() {
       const response = await API.post('/data', payload);
       if (response.data.success) {
         setData(response.data.data || []);
+        setTotalCount(response.data.total || 0);
       } else {
         setError('Failed to fetch data: ' + (response.data.message || 'Unknown error'));
       }
@@ -164,12 +186,12 @@ export default function SurveyAI() {
     } catch (err) {}
   };
 
+  // Pagination-only re-fetch (only when data is already loaded and pagination changes)
   useEffect(() => {
-    if (selectedDataset && selectedColumns.length > 0) {
+    if (selectedDataset && selectedColumns.length > 0 && data.length > 0) {
       fetchData();
-      fetchStatistics();
     }
-  }, [selectedDataset, selectedColumns, filters, pagination]);
+  }, [pagination]);
 
   return (
     <div className="min-h-screen bg-[#fbfcff] flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
@@ -283,13 +305,13 @@ export default function SurveyAI() {
                       
                       <div className="flex items-center gap-3">
                         <button 
-                          onClick={() => setSelectedColumns(columns.map(c => c.name))}
+                          onClick={() => { setSelectedColumns(columns.map(c => c.name)); setData([]); setTotalCount(0); }}
                           className="px-6 py-3 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95"
                         >
                           Select All Fields
                         </button>
                         <button 
-                          onClick={() => setSelectedColumns([])}
+                          onClick={() => { setSelectedColumns([]); setData([]); setTotalCount(0); }}
                           className="px-6 py-3 bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-50 hover:text-red-500 transition-all active:scale-95 border border-transparent hover:border-red-100"
                         >
                           Clear Selection
@@ -376,16 +398,23 @@ export default function SurveyAI() {
                       columns={columns}
                       selectedColumns={selectedColumns}
                       data={data}
-                      filters={filters}
+                      filters={pendingFilters}
                       onChange={handleFilterChange}
+                      selectedDataset={selectedDataset}
                     />
                     <button
                       onClick={fetchData}
-                      disabled={loading}
-                      className="w-full mt-10 group relative overflow-hidden bg-gray-900 text-white rounded-2xl p-5 flex items-center justify-center gap-3 hover:bg-gray-800 transition-all shadow-2xl active:scale-95"
+                      disabled={loading || Object.values(pendingFilters).every(v => !v || !v.toString().trim())}
+                      className={`w-full mt-10 group relative overflow-hidden rounded-2xl p-5 flex items-center justify-center gap-3 transition-all shadow-2xl active:scale-95 ${
+                        Object.values(pendingFilters).some(v => v && v.toString().trim())
+                          ? 'bg-gray-900 text-white hover:bg-gray-800 cursor-pointer'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
                     >
                        {loading ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
-                       <span className="text-xs font-black uppercase tracking-[.3em]">{loading ? 'Synthesizing...' : 'Saturate & Pulse System'}</span>
+                       <span className="text-xs font-black uppercase tracking-[.3em]">
+                         {loading ? 'Synthesizing...' : Object.values(pendingFilters).some(v => v && v.toString().trim()) ? 'Saturate & Pulse System' : 'Select a Filter First'}
+                       </span>
                     </button>
                   </div>
                 </div>

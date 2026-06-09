@@ -134,14 +134,17 @@ async def get_datasets():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Query information schema for tables in public schema
+        # Query information schema for tables in public schema and economic_census
         cur.execute("""
-            SELECT tablename FROM pg_tables 
-            WHERE schemaname = 'public' 
-            ORDER BY tablename
+            SELECT schemaname, tablename FROM pg_tables 
+            WHERE schemaname = 'public' OR (schemaname = 'economic_census' AND tablename = 'enterprises_full')
+            UNION
+            SELECT schemaname, viewname as tablename FROM pg_views
+            WHERE schemaname = 'public'
+            ORDER BY schemaname, tablename
         """)
         
-        tables = [row[0] for row in cur.fetchall()]
+        tables = [f"{row[0]}.{row[1]}" if row[0] != 'public' else row[1] for row in cur.fetchall()]
         cur.close()
         conn.close()
         
@@ -162,17 +165,21 @@ async def get_datasets_hierarchical():
         
         # Query all tables
         cur.execute("""
-            SELECT tablename FROM pg_tables 
-            WHERE schemaname = 'public' 
-            ORDER BY tablename
+            SELECT schemaname, tablename FROM pg_tables 
+            WHERE schemaname = 'public' OR (schemaname = 'economic_census' AND tablename = 'enterprises_full')
+            UNION
+            SELECT schemaname, viewname as tablename FROM pg_views
+            WHERE schemaname = 'public'
+            ORDER BY schemaname, tablename
         """)
         
-        tables = [row[0] for row in cur.fetchall()]
+        tables = [f"{row[0]}.{row[1]}" if row[0] != 'public' else row[1] for row in cur.fetchall()]
         cur.close()
         conn.close()
         
         # Organize datasets by category
         hierarchical_data = {
+            "Economic Census": [],
             "HCES": [],
             "PLFS": [],
             "Survey": [],
@@ -181,11 +188,13 @@ async def get_datasets_hierarchical():
         
         for table in tables:
             # Categorize by table name prefix
-            if table.startswith("hces_"):
+            if table.startswith("economic_census."):
+                hierarchical_data["Economic Census"].append(table)
+            elif table.startswith("hces_"):
                 hierarchical_data["HCES"].append(table)
             elif table.startswith("plfs_"):
                 hierarchical_data["PLFS"].append(table)
-            elif table in ["person_survey", "survey_data"]:
+            elif table in ["person_survey", "survey_data", "census_data"]:
                 hierarchical_data["Survey"].append(table)
             else:
                 hierarchical_data["Other"].append(table)
@@ -201,7 +210,7 @@ async def get_datasets_hierarchical():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching hierarchical datasets: {str(e)}")
 
-@app.get("/columns/{table}")
+@app.get("/columns/{table:path}")
 async def get_columns(table: str):
     """Get columns for a specific table"""
     
@@ -210,15 +219,35 @@ async def get_columns(table: str):
     cur = conn.cursor()
     
     try:
-        # Get column information
-        cur.execute(f"""
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = %s
-            ORDER BY ordinal_position
-        """, (table,))
-        
-        columns = [{"name": row[0], "type": row[1]} for row in cur.fetchall()]
+        if table.startswith("economic_census.") and any(x in table for x in ["enterprise", "raw", "parsed", "full"]):
+            # Use variable metadata if available for enterprise tables
+            cur.execute("""
+                SELECT variable_name, data_type, description
+                FROM economic_census.variable_metadata
+                ORDER BY start_pos
+            """)
+            rows = cur.fetchall()
+            if rows:
+                columns = [{"name": row[0], "type": row[1], "description": row[2]} for row in rows]
+            else:
+                # Fallback to information_schema
+                table_name = table.split(".")[1]
+                cur.execute("""
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_schema = 'economic_census' AND table_name = %s
+                    ORDER BY ordinal_position
+                """, (table_name,))
+                columns = [{"name": row[0], "type": row[1]} for row in cur.fetchall()]
+        else:
+            # Get column information for public
+            cur.execute("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = %s AND table_schema = 'public'
+                ORDER BY ordinal_position
+            """, (table,))
+            columns = [{"name": row[0], "type": row[1]} for row in cur.fetchall()]
         
         if not columns:
             raise HTTPException(status_code=404, detail=f"Table '{table}' not found")
@@ -233,7 +262,87 @@ async def get_columns(table: str):
             "count": len(columns)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching columns: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching columns")
+
+# Reference endpoints for UI dropdowns
+@app.get("/reference/ec/states")
+async def get_states():
+    """Return all rows from economic_census.state_codes"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM economic_census.state_codes")
+        rows = [dict(zip([desc[0] for desc in cur.description], row)) for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"success": True, "data": rows, "count": len(rows)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching states: {str(e)}")
+
+@app.get("/reference/ec/districts")
+async def get_districts():
+    """Return all rows from economic_census.district_codes"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM economic_census.district_codes")
+        rows = [dict(zip([desc[0] for desc in cur.description], row)) for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"success": True, "data": rows, "count": len(rows)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching districts: {str(e)}")
+
+@app.get("/reference/ec/nic-codes")
+async def get_nic_codes():
+    """Return all rows from economic_census.nic_codes"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM economic_census.nic_codes")
+        rows = [dict(zip([desc[0] for desc in cur.description], row)) for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"success": True, "data": rows, "count": len(rows)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching nic codes: {str(e)}")
+
+@app.get("/distinct/{table:path}/{column}")
+async def get_distinct_values(table: str, column: str):
+    """Get distinct values for a specific column in a table (for filter dropdowns)"""
+    # Validate inputs
+    if not table.replace("_", "").replace(".", "").isalnum():
+        raise HTTPException(status_code=400, detail="Invalid table name")
+    if not column.replace("_", "").isalnum():
+        raise HTTPException(status_code=400, detail="Invalid column name")
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if "." in table:
+            schema_name, table_name = table.split(".", 1)
+            table_ref = f'"{schema_name}"."{table_name}"'
+        else:
+            table_ref = f'"{table}"'
+        
+        # Get distinct non-null values, ordered, with limit for performance
+        cur.execute(f"""
+            SELECT DISTINCT TRIM("{column}") as val
+            FROM {table_ref}
+            WHERE "{column}" IS NOT NULL AND TRIM("{column}") != ''
+            ORDER BY val
+            LIMIT 500
+        """)
+        
+        values = [row[0] for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "data": values, "count": len(values)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching distinct values: {str(e)}")
+
 
 @app.post("/data")
 async def fetch_data(request: DataRequest):
@@ -244,7 +353,7 @@ async def fetch_data(request: DataRequest):
         conn = get_db_connection()
         
         # Validate table name
-        if not request.table.replace("_", "").isalnum():
+        if not request.table.replace("_", "").replace(".", "").isalnum():
             raise HTTPException(status_code=400, detail="Invalid table name")
         
         # Validate column names
@@ -254,14 +363,35 @@ async def fetch_data(request: DataRequest):
         
         # Build safe query with properly quoted identifiers
         columns_str = ", ".join([f'"{col}"' for col in request.columns])
-        table_name = f'"{request.table}"'
+        
+        if "." in request.table:
+            schema_name, table_name = request.table.split(".", 1)
+            table_ref = f'"{schema_name}"."{table_name}"'
+        else:
+            table_ref = f'"{request.table}"'
+            
+        # Build WHERE clause from filters
+        where_clauses = []
+        where_values = []
+        
+        for col, val in request.filters.items():
+            if not col.replace("_", "").isalnum():
+                continue
+            # Use TRIM to handle padded strings in the database
+            where_clauses.append(f'TRIM("{col}") = %s')
+            where_values.append(str(val).strip())
+            
+        where_str = ""
+        if where_clauses:
+            where_str = " WHERE " + " AND ".join(where_clauses)
         
         # Use regular cursor to fetch data
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Query data
-        query = f"SELECT {columns_str} FROM {table_name} LIMIT %s OFFSET %s"
-        cur.execute(query, (int(request.limit), int(request.offset)))
+        query = f"SELECT {columns_str} FROM {table_ref}{where_str} LIMIT %s OFFSET %s"
+        params = tuple(where_values + [int(request.limit), int(request.offset)])
+        cur.execute(query, params)
         
         # Fetch as list of dicts
         rows = []
@@ -269,8 +399,8 @@ async def fetch_data(request: DataRequest):
             rows.append(dict(row))
         
         # Get total count
-        count_query = f"SELECT COUNT(*) as total FROM {table_name}"
-        cur.execute(count_query)
+        count_query = f"SELECT COUNT(*) as total FROM {table_ref}{where_str}"
+        cur.execute(count_query, tuple(where_values))
         total_count = cur.fetchone()["total"]
         
         cur.close()
@@ -296,7 +426,7 @@ async def fetch_data(request: DataRequest):
         if conn:
             conn.close()
 
-@app.get("/statistics/{table}")
+@app.get("/statistics/{table:path}")
 async def get_statistics(table: str, column: str = None):
     """Get statistics for numeric columns"""
     
@@ -305,6 +435,12 @@ async def get_statistics(table: str, column: str = None):
     
     try:
         if column:
+            if "." in table:
+                schema_name, table_name = table.split(".", 1)
+                table_ref = f'"{schema_name}"."{table_name}"'
+            else:
+                table_ref = f'public."{table}"'
+                
             query = f"""
                 SELECT 
                     COUNT(*) as total,
@@ -312,7 +448,7 @@ async def get_statistics(table: str, column: str = None):
                     MIN("{column}") as min,
                     MAX("{column}") as max,
                     STDDEV("{column}") as stddev
-                FROM public.{table}
+                FROM {table_ref}
                 WHERE "{column}" IS NOT NULL
             """
             cur.execute(query)
@@ -366,6 +502,51 @@ async def get_district_codes(state_code: str = None):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching district codes: {str(e)}")
+
+@app.get("/reference/ec/states")
+async def get_ec_states():
+    """Get all states for Economic Census"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT state_code, state_name FROM economic_census.state_codes ORDER BY state_code")
+        data = cur.fetchall()
+        cur.close()
+        conn.close()
+        return {"success": True, "data": data, "count": len(data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching EC states: {str(e)}")
+
+@app.get("/reference/ec/districts")
+async def get_ec_districts(state_code: int = None):
+    """Get districts for Economic Census"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if state_code:
+            cur.execute("SELECT district_code, district_name FROM economic_census.district_codes WHERE state_code = %s ORDER BY district_code", (state_code,))
+        else:
+            cur.execute("SELECT state_code, district_code, district_name FROM economic_census.district_codes ORDER BY state_code, district_code")
+        data = cur.fetchall()
+        cur.close()
+        conn.close()
+        return {"success": True, "data": data, "count": len(data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching EC districts: {str(e)}")
+
+@app.get("/reference/ec/nic-codes")
+async def get_ec_nic_codes():
+    """Get NIC codes for Economic Census"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT nic_code, description FROM economic_census.nic_codes ORDER BY nic_code")
+        data = cur.fetchall()
+        cur.close()
+        conn.close()
+        return {"success": True, "data": data, "count": len(data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching EC NIC codes: {str(e)}")
 
 @app.get("/reference/states")
 async def get_states():
@@ -499,26 +680,36 @@ async def get_analytics_summary():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
 
-@app.get("/analytics/data-quality/{table}")
+@app.get("/analytics/data-quality/{table:path}")
 async def get_data_quality(table: str):
     """Analyze data quality for a table"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        if "." in table:
+            schema_name, table_name = table.split(".", 1)
+            table_ref = f'"{schema_name}"."{table_name}"'
+            query_schema = schema_name
+            query_table = table_name
+        else:
+            table_ref = f'public."{table}"'
+            query_schema = 'public'
+            query_table = table
+            
         # Get column info
         cur.execute("""
             SELECT column_name, data_type 
             FROM information_schema.columns 
-            WHERE table_name = %s
+            WHERE table_schema = %s AND table_name = %s
             ORDER BY ordinal_position
-        """, (table,))
+        """, (query_schema, query_table))
         
         columns = cur.fetchall()
         quality_metrics = []
         
         # Get total rows
-        total_rows_query = f'SELECT COUNT(*) as total FROM "{table}"'
+        total_rows_query = f'SELECT COUNT(*) as total FROM {table_ref}'
         cur.execute(total_rows_query)
         total_result = cur.fetchone()
         total_rows = total_result['total'] if total_result else 0
@@ -528,7 +719,7 @@ async def get_data_quality(table: str):
             col_type = col['data_type']
             
             # Count nulls
-            cur.execute(f'SELECT COUNT(*) as null_count FROM "{table}" WHERE "{col_name}" IS NULL')
+            cur.execute(f'SELECT COUNT(*) as null_count FROM {table_ref} WHERE "{col_name}" IS NULL')
             null_result = cur.fetchone()
             null_count = null_result['null_count'] if null_result else 0
             
@@ -557,17 +748,23 @@ async def get_data_quality(table: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing data quality: {str(e)}")
 
-@app.get("/analytics/column-distribution/{table}/{column}")
+@app.get("/analytics/column-distribution/{table:path}/{column}")
 async def get_column_distribution(table: str, column: str):
     """Get value distribution for a column"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        if "." in table:
+            schema_name, table_name = table.split(".", 1)
+            table_ref = f'"{schema_name}"."{table_name}"'
+        else:
+            table_ref = f'public."{table}"'
+            
         # For categorical data - get top values
         cur.execute(f"""
             SELECT "{column}" as value, COUNT(*) as count
-            FROM "{table}"
+            FROM {table_ref}
             WHERE "{column}" IS NOT NULL
             GROUP BY "{column}"
             ORDER BY count DESC
@@ -587,21 +784,27 @@ async def get_column_distribution(table: str, column: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting distribution: {str(e)}")
 
-@app.get("/analytics/integrity/{table}")
+@app.get("/analytics/integrity/{table:path}")
 async def get_integrity_audit(table: str):
     """Detect duplicates and repeated entries in a dataset"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        if "." in table:
+            schema_name, table_name = table.split(".", 1)
+            table_ref = f'"{schema_name}"."{table_name}"'
+        else:
+            table_ref = f'public."{table}"'
+            
         # 1. Detect Duplicate Rows (Total Count)
         # This is a generic check. In a production set, we usually check by a Unique ID if available.
         # Here we check the whole row.
-        cur.execute(f'SELECT COUNT(*) as total FROM "{table}"')
+        cur.execute(f'SELECT COUNT(*) as total FROM {table_ref}')
         total_rows = cur.fetchone()['total']
         
         # Get count of unique rows
-        cur.execute(f'SELECT COUNT(*) FROM (SELECT DISTINCT * FROM "{table}") as unique_rows')
+        cur.execute(f'SELECT COUNT(*) FROM (SELECT DISTINCT * FROM {table_ref}) as unique_rows')
         unique_count = cur.fetchone()['count']
         
         duplicate_count = total_rows - unique_count
@@ -610,8 +813,8 @@ async def get_integrity_audit(table: str):
         # We'll pick the most frequent repeated rows
         cur.execute(f"""
             SELECT *, COUNT(*) as occurrence_count
-            FROM "{table}"
-            GROUP BY {table}.*
+            FROM {table_ref}
+            GROUP BY {table_ref}.*
             HAVING COUNT(*) > 1
             ORDER BY occurrence_count DESC
             LIMIT 5
