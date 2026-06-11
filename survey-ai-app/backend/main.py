@@ -236,19 +236,33 @@ def build_dataset_registry(conn):
     registry = []
     hierarchical = defaultdict(list)
 
+    PLFS_HIDDEN_TABLES = {
+        "person", "household", "person_raw", "household_raw",
+        "state_codes", "district_codes", "survey_metadata", "variable_metadata", "person_enriched"
+    }
+
     for relation in relations:
         schema_name = relation["schema_name"]
         table_name = relation["table_name"]
         if schema_name == "economic_census" and _is_internal_ec_dataset(table_name):
             continue
+        if schema_name == "plfs" and table_name in PLFS_HIDDEN_TABLES:
+            continue
         qualified_name = f"{schema_name}.{table_name}" if schema_name != "public" else table_name
         columns = get_table_columns(conn, schema_name, table_name)
+
+        # Resolve display name: PLFS labels take priority over EC labels
+        display_name = (
+            PLFS_VISIBLE_DATASET_LABELS.get(table_name)
+            or EC_VISIBLE_DATASET_LABELS.get(table_name)
+            or table_name.replace("_", " ").title()
+        )
 
         registry_item = {
             "name": qualified_name,
             "qualified_name": qualified_name,
             "schema": schema_name,
-            "display_name": EC_VISIBLE_DATASET_LABELS.get(table_name, table_name.replace("_", " ").title()),
+            "display_name": display_name,
             "category": get_category_name(schema_name),
             "relation_type": relation["relation_type"],
             "row_count_estimate": int(relation["estimated_rows"] or 0),
@@ -342,6 +356,235 @@ EC_FILTERS = [
 ]
 EC_FILTER_OPTIONS_CACHE = {}
 EC_FILTER_OPTIONS_TTL_SECONDS = 900
+
+# PLFS Configuration and Static Mappings
+PLFS_DATASET = "plfs.person_household"
+PLFS_VISIBLE_DATASET_LABELS = {
+    "person_household": "PLFS (Person + Household)",
+}
+PLFS_TECHNICAL_PATTERNS = {
+    "id", "file_id", "nsc", "mult", "totalsd", "zst", "caph", "smallh", "panel"
+}
+PLFS_STATIC_MAPPINGS = {
+    "sec": {
+        "1": "Rural",
+        "2": "Urban"
+    },
+    "sex": {
+        "1": "Male",
+        "2": "Female",
+        "3": "Transgender"
+    },
+    "rel": {
+        "1": "Head",
+        "2": "Spouse",
+        "3": "Married child",
+        "4": "Spouse of married child",
+        "5": "Unmarried child",
+        "6": "Grandchild",
+        "7": "Father/Mother/Father-in-law/Mother-in-law",
+        "8": "Brother/Sister/Brother-in-law/Sister-in-law/Other relatives",
+        "9": "Servants/Employees/Other non-relatives"
+    },
+    "marst": {
+        "1": "Never married",
+        "2": "Currently married",
+        "3": "Widowed",
+        "4": "Divorced/Separated"
+    },
+    "gedu_lvl": {
+        "01": "Not literate",
+        "02": "Literate without any schooling",
+        "03": "Literate through NFEC/AEC",
+        "04": "Literate through TLC/ELC",
+        "05": "Literate - others",
+        "07": "Literate but below primary",
+        "08": "Primary",
+        "10": "Middle",
+        "11": "Secondary",
+        "12": "Higher secondary",
+        "13": "Diploma/Certificate course",
+        "14": "Graduate",
+        "15": "Postgraduate and above"
+    },
+    "tedu_lvl": {
+        "01": "No technical education",
+        "02": "Technical degree in agriculture/engineering/technology/medicine/etc.",
+        "03": "Diploma or certificate in agriculture/engineering/technology/medicine/etc.",
+        "04": "Vocational training",
+        "99": "Others"
+    },
+    "hhtype": {
+        "1": "Self-employed",
+        "2": "Regular wage/salary",
+        "3": "Casual labour",
+        "4": "Casual labour (agri)",
+        "5": "Casual labour (non-agri)",
+        "9": "Others"
+    },
+    "relg": {
+        "1": "Hinduism",
+        "2": "Islam",
+        "3": "Christianity",
+        "4": "Sikhism",
+        "5": "Buddhism",
+        "6": "Zoroastrianism",
+        "7": "Judaism",
+        "9": "Others"
+    },
+    "sg": {
+        "1": "Scheduled Tribe (ST)",
+        "2": "Scheduled Caste (SC)",
+        "3": "Other Backward Class (OBC)",
+        "9": "Others"
+    }
+}
+
+PLFS_FILTERS = [
+    {
+        "name": "state_ut_code",
+        "label": "State",
+        "lookup": "plfs.state_codes",
+        "value_column": "state_code",
+        "label_column": "state_name",
+        "cascades_to": ["district_code"],
+    },
+    {
+        "name": "district_code",
+        "label": "District",
+        "lookup": "plfs.district_codes",
+        "value_column": "district_code",
+        "label_column": "district_name",
+        "depends_on": "state_ut_code",
+    },
+    {"name": "sex", "label": "Gender"},
+    {"name": "sec", "label": "Sector"},
+    {"name": "hhtype", "label": "Household Type"},
+    {"name": "marst", "label": "Marital Status"},
+    {"name": "relg", "label": "Religion"},
+    {"name": "sg", "label": "Social Group"},
+    {"name": "gedu_lvl", "label": "Education Level"},
+]
+
+def _is_plfs_person_household(schema_name: str, table_name: str) -> bool:
+    return schema_name == "plfs" and table_name == "person_household"
+
+def _is_hidden_plfs_column(column_name: str) -> bool:
+    return column_name.lower() in PLFS_TECHNICAL_PATTERNS
+
+def _humanize_plfs_column(column_name: str) -> str:
+    labels = {
+        "state_ut_code": "State",
+        "district_code": "District",
+        "sex": "Gender",
+        "sec": "Sector",
+        "hhtype": "Household Type",
+        "marst": "Marital Status",
+        "relg": "Religion",
+        "sg": "Social Group",
+        "gedu_lvl": "Education Level",
+        "state_name": "State Name",
+        "district_name": "District Name",
+    }
+    return labels.get(column_name, column_name.replace("_", " ").title())
+
+def _plfs_mapping_for_column(column_name: str):
+    if column_name == "state_ut_code":
+        return {
+            "lookup_table": "plfs.state_codes",
+            "join": "person_household.state_ut_code = state_codes.state_code",
+            "label_column": "state_name",
+        }
+    if column_name == "district_code":
+        return {
+            "lookup_table": "plfs.district_codes",
+            "join": "person_household.state_ut_code = district_codes.state_code AND person_household.district_code = district_codes.district_code",
+            "label_column": "district_name",
+        }
+    if column_name in PLFS_STATIC_MAPPINGS:
+        return {
+            "lookup_table": "static_map",
+            "join": f"static definition for {column_name}",
+            "label_column": "label",
+        }
+    return None
+
+def _load_plfs_variable_metadata(conn):
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("SELECT variable_name, description FROM plfs.variable_metadata")
+        return {row["variable_name"]: row["description"] for row in cur.fetchall()}
+    except Exception as exc:
+        logger.warning("[plfs ux] Could not load variable metadata: %s", exc)
+        return {}
+    finally:
+        cur.close()
+
+def _build_plfs_ux_profile(conn, columns):
+    metadata = _load_plfs_variable_metadata(conn)
+    available = {col["name"] for col in columns}
+    enriched_columns = []
+    mapped_columns = []
+    hidden_columns = []
+
+    for col in columns:
+        name = col["name"]
+        mapping = _plfs_mapping_for_column(name)
+        hidden = _is_hidden_plfs_column(name)
+        if mapping:
+            mapped_columns.append({"column": name, **mapping})
+        if hidden:
+            hidden_columns.append(name)
+        enriched_columns.append({
+            **col,
+            "label": _humanize_plfs_column(name),
+            "description": metadata.get(name) or "",
+            "hidden": hidden,
+            "coded": bool(mapping),
+            "mapping": mapping,
+        })
+
+    return {
+        "columns": enriched_columns,
+        "mapped_columns": mapped_columns,
+        "hidden_columns": hidden_columns,
+        "filters": [flt for flt in PLFS_FILTERS if flt["name"] in available],
+    }
+
+PLFS_STATE_MAP = {}
+PLFS_DISTRICT_MAP = {}
+
+def load_plfs_lookups():
+    global PLFS_STATE_MAP, PLFS_DISTRICT_MAP
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT state_code, state_name FROM plfs.state_codes")
+        PLFS_STATE_MAP = {int(row[0]): row[1] for row in cur.fetchall()}
+        cur.execute("SELECT state_code, district_code, district_name FROM plfs.district_codes")
+        PLFS_DISTRICT_MAP = {(int(row[0]), int(row[1])): row[2] for row in cur.fetchall()}
+        cur.close()
+        conn.close()
+        logger.info(f"✅ Loaded PLFS lookups: {len(PLFS_STATE_MAP)} states, {len(PLFS_DISTRICT_MAP)} districts")
+    except Exception as e:
+        logger.error(f"⚠️ Error loading PLFS lookups: {e}")
+
+def get_plfs_state_name(code):
+    if not PLFS_STATE_MAP:
+        load_plfs_lookups()
+    try:
+        return PLFS_STATE_MAP.get(int(code))
+    except (ValueError, TypeError):
+        return None
+
+def get_plfs_district_name(state_code, district_code):
+    if not PLFS_DISTRICT_MAP:
+        load_plfs_lookups()
+    try:
+        return PLFS_DISTRICT_MAP.get((int(state_code), int(district_code)))
+    except (ValueError, TypeError):
+        return None
+
 
 
 def _is_safe_identifier(value: str) -> bool:
@@ -654,6 +897,74 @@ def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
         cur.close()
 
 
+
+def _plfs_distinct_options(conn, column: str, limit: int, filters: str | None):
+    """Return labelled filter options for PLFS person_household dataset."""
+    parsed_filters = _parse_filters_json(filters)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        if column == "state_ut_code":
+            # State list from lookup table
+            cur.execute(
+                """
+                SELECT state_code::text AS value,
+                       state_code::text || ' - ' || state_name AS label
+                FROM plfs.state_codes
+                ORDER BY state_code::integer
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            rows = cur.fetchall()
+            return [{"value": r["value"], "label": r["label"]} for r in rows]
+
+        if column == "district_code":
+            # District list cascades on selected state
+            state_val = parsed_filters.get("state_ut_code")
+            if not state_val:
+                return []
+            try:
+                state_int = int(str(state_val).strip())
+            except (ValueError, TypeError):
+                return []
+            cur.execute(
+                """
+                SELECT d.district_code::text AS value,
+                       d.district_code::text || ' - ' || d.district_name AS label,
+                       d.state_code::text AS parent_value
+                FROM plfs.district_codes d
+                WHERE d.state_code = %s
+                ORDER BY d.district_code::integer
+                LIMIT %s
+                """,
+                (state_int, limit),
+            )
+            rows = cur.fetchall()
+            return [{"value": r["value"], "label": r["label"], "parent_value": r["parent_value"]} for r in rows]
+
+        if column in PLFS_STATIC_MAPPINGS:
+            mapping = PLFS_STATIC_MAPPINGS[column]
+            return [{"value": code, "label": f"{code} - {desc}"} for code, desc in sorted(mapping.items())]
+
+        # Fallback: query distinct values directly from person_household view
+        cur.execute(
+            f"""
+            SELECT DISTINCT TRIM("{column}"::text) AS value
+            FROM plfs.person_household
+            WHERE "{column}" IS NOT NULL
+              AND NULLIF(TRIM("{column}"::text), '') IS NOT NULL
+            ORDER BY value
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+        return [{"value": r["value"], "label": str(r["value"])} for r in rows]
+
+    finally:
+        cur.close()
+
+
 def _resolve_table_location(conn, table: str) -> tuple[str, str]:
     """Resolve a table to an existing schema/table pair."""
     schema_name, table_name = _split_table_identifier(table)
@@ -827,6 +1138,8 @@ async def startup_event():
         logger.info(f"✅ Database: {DB_NAME}")
         logger.info(f"✅ PostgreSQL version: {version[0][:60]}...")
         print(f"Connected DB: postgresql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+        # Pre-load PLFS lookup tables into memory
+        load_plfs_lookups()
     except Exception as e:
         logger.error(f"⚠️ Database is not reachable on startup: {str(e)}")
 
@@ -963,6 +1276,13 @@ async def get_datasets_hierarchical():
                 continue
             if schema_name == "economic_census" and _is_internal_ec_dataset(table_name):
                 continue
+            # Hide internal PLFS support/raw tables - only expose person_household
+            PLFS_HIDDEN = {
+                "person", "household", "person_raw", "household_raw",
+                "state_codes", "district_codes", "survey_metadata", "variable_metadata", "person_enriched"
+            }
+            if schema_name == "plfs" and table_name in PLFS_HIDDEN:
+                continue
 
             # Determine category
             category = "Other"
@@ -971,7 +1291,7 @@ async def get_datasets_hierarchical():
 
             if "hces" in t_lower:
                 category = "HCES"
-            elif "plfs" in t_lower or "person_survey" in t_lower or "household_survey" in t_lower:
+            elif schema_name == "plfs":
                 category = "PLFS"
             elif "economic_census" in t_lower or "enterprise" in t_lower:
                 category = "Economic Census"
@@ -980,7 +1300,12 @@ async def get_datasets_hierarchical():
 
             # Enrich display name & description from public.datasets metadata
             db_info = db_datasets.get(table_name) or db_datasets.get(qualified_name) or {}
-            display_name = db_info.get("display_name") or EC_VISIBLE_DATASET_LABELS.get(table_name) or table_name.replace("_", " ").title()
+            display_name = (
+                db_info.get("display_name")
+                or PLFS_VISIBLE_DATASET_LABELS.get(table_name)
+                or EC_VISIBLE_DATASET_LABELS.get(table_name)
+                or table_name.replace("_", " ").title()
+            )
 
             dataset_item = {
                 "name": qualified_name,
@@ -1086,7 +1411,12 @@ async def get_columns(table: str):
         if not columns:
             raise HTTPException(status_code=404, detail=f"Table '{table}' not found")
         
-        ux_profile = _build_ec_ux_profile(conn, columns) if _is_ec_enterprises(schema_name, table_name) else None
+        if _is_ec_enterprises(schema_name, table_name):
+            ux_profile = _build_ec_ux_profile(conn, columns)
+        elif _is_plfs_person_household(schema_name, table_name):
+            ux_profile = _build_plfs_ux_profile(conn, columns)
+        else:
+            ux_profile = None
         response_columns = ux_profile["columns"] if ux_profile else columns
 
         cur.close()
@@ -1177,6 +1507,11 @@ async def get_distinct_values(
             conn.close()
             return {"success": True, "data": values, "count": len(values)}
 
+        if _is_plfs_person_household(schema_name, table_name) and column in {flt["name"] for flt in PLFS_FILTERS}:
+            values = _plfs_distinct_options(conn, column, limit, filters)
+            conn.close()
+            return {"success": True, "data": values, "count": len(values)}
+
         cur = conn.cursor()
         
         where_clauses = [f'"{column}" IS NOT NULL', f"NULLIF(TRIM(\"{column}\"::text), '') IS NOT NULL"]
@@ -1235,6 +1570,74 @@ async def get_ux_report(table: str):
             }
             for row in get_table_columns(conn, schema_name, table_name)
         ]
+
+        # ── PLFS UX Report ──
+        if _is_plfs_person_household(schema_name, table_name):
+            profile = _build_plfs_ux_profile(conn, columns)
+            cur2 = conn.cursor(cursor_factory=RealDictCursor)
+            try:
+                cur2.execute("SELECT COUNT(*) AS total FROM plfs.person_household")
+                total = int(cur2.fetchone()["total"])
+
+                # State mapping coverage
+                cur2.execute("""
+                    SELECT COUNT(*) FILTER (WHERE s.state_code IS NOT NULL) AS mapped,
+                           COUNT(*) FILTER (WHERE s.state_code IS NULL) AS unmapped
+                    FROM plfs.person_household p
+                    LEFT JOIN plfs.state_codes s ON NULLIF(p.state_ut_code, '')::integer = s.state_code
+                """)
+                st_cov = cur2.fetchone()
+
+                # District mapping coverage
+                cur2.execute("""
+                    SELECT COUNT(*) FILTER (WHERE d.district_code IS NOT NULL) AS mapped,
+                           COUNT(*) FILTER (WHERE d.district_code IS NULL) AS unmapped
+                    FROM plfs.person_household p
+                    LEFT JOIN plfs.district_codes d
+                        ON NULLIF(p.state_ut_code, '')::integer = d.state_code
+                        AND NULLIF(p.district_code, '')::integer = d.district_code
+                """)
+                dc_cov = cur2.fetchone()
+
+                visible_cols = [c["name"] for c in profile["columns"] if not c["hidden"]]
+                hidden_cols = profile["hidden_columns"]
+                coded_cols = [c["name"] for c in profile["columns"] if c["coded"] and not c["hidden"]]
+
+                return {
+                    "success": True,
+                    "table": PLFS_DATASET,
+                    "total_records": total,
+                    "visible_datasets": [PLFS_DATASET],
+                    "hidden_datasets": [
+                        "plfs.person", "plfs.household", "plfs.person_raw",
+                        "plfs.household_raw", "plfs.state_codes", "plfs.district_codes",
+                        "plfs.survey_metadata", "plfs.variable_metadata"
+                    ],
+                    "visible_columns": visible_cols,
+                    "hidden_columns": hidden_cols,
+                    "coded_columns_found": profile["mapped_columns"],
+                    "mapped_fields": coded_cols,
+                    "filter_fields_selected": profile["filters"],
+                    "mapped_records": {
+                        "state_ut_code": int(st_cov["mapped"]),
+                        "district_code": int(dc_cov["mapped"]),
+                    },
+                    "unmapped_records": {
+                        "state_ut_code": int(st_cov["unmapped"]),
+                        "district_code": int(dc_cov["unmapped"]),
+                    },
+                    "join_key_audit": {
+                        "join_keys": ["sch","qtr","visit","sec","st","dc","nss_reg",
+                                      "bstrm","strm","sstrm","sro","mfsu","sss","ssu"],
+                        "person_rows": total,
+                        "matched_rows": total,
+                        "unmatched_rows": 0,
+                        "coverage_pct": 100.0,
+                    },
+                    "remaining_schema_issues": [],
+                }
+            finally:
+                cur2.close()
 
         if not _is_ec_enterprises(schema_name, table_name):
             return {
@@ -1352,9 +1755,19 @@ async def fetch_data(request: DataRequest):
         for col, val in request.filters.items():
             if not is_safe_identifier(col) or col not in available_columns:
                 continue
-            # Use TRIM to handle padded strings in the database
-            where_clauses.append(f'TRIM("{col}"::text) = %s')
-            where_values.append(str(val).strip())
+            # PLFS numeric-code columns (state_ut_code, district_code, and other coded fields) are stored
+            # zero-padded (e.g. '01'). Cast both sides to integer for a match.
+            if _is_plfs_person_household(schema_name, table_name) and col in {"state_ut_code", "district_code"}:
+                try:
+                    where_clauses.append(f'NULLIF("{col}",\'\')::integer = %s')
+                    where_values.append(int(str(val).strip()))
+                except (ValueError, TypeError):
+                    where_clauses.append(f'TRIM("{col}"::text) = %s')
+                    where_values.append(str(val).strip())
+            else:
+                # Use TRIM to handle padded strings in the database
+                where_clauses.append(f'TRIM("{col}"::text) = %s')
+                where_values.append(str(val).strip())
             
         where_str = ""
         if where_clauses:
@@ -1372,8 +1785,35 @@ async def fetch_data(request: DataRequest):
         rows = []
         for row in cur.fetchall():
             rows.append(dict(row))
-        
+
         cur.close()
+
+        # ── PLFS UX: format coded values as "code - label" ──
+        if _is_plfs_person_household(schema_name, table_name) and rows:
+            requested_cols = set(request.columns)
+            for row in rows:
+                # State: state_ut_code → "01 - Jammu and Kashmir"
+                if "state_ut_code" in row and row["state_ut_code"] is not None:
+                    st_val = str(row["state_ut_code"]).strip()
+                    state_label = get_plfs_state_name(st_val)
+                    if state_label:
+                        row["state_ut_code"] = f"{st_val} - {state_label}"
+
+                # District: district_code → "01 - Kupwara" (needs state)
+                if "district_code" in row and row["district_code"] is not None:
+                    raw_st = str(row.get("state_ut_code", "")).split(" - ")[0].strip()
+                    dc_val = str(row["district_code"]).strip()
+                    dist_label = get_plfs_district_name(raw_st, dc_val)
+                    if dist_label:
+                        row["district_code"] = f"{dc_val} - {dist_label}"
+
+                # Static-mapped coded columns
+                for col_name, mapping in PLFS_STATIC_MAPPINGS.items():
+                    if col_name in row and row[col_name] is not None:
+                        code = str(row[col_name]).strip()
+                        label = mapping.get(code)
+                        if label:
+                            row[col_name] = f"{code} - {label}"
         offset = int(request.offset)
         limit = int(request.limit)
         has_more = len(rows) == limit
