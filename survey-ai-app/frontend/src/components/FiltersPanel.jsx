@@ -36,6 +36,13 @@ export default function FiltersPanel({
     () => filterableColumns.map((c) => c.name).join(','),
     [filterableColumns]
   );
+  const filterLoadSignature = useMemo(
+    () =>
+      filterableColumns
+        .map((column) => `${column.name}:${column.depends_on ? filters[column.depends_on] || '' : ''}`)
+        .join('|'),
+    [filterableColumns, filters]
+  );
 
   const [distinctValues, setDistinctValues] = React.useState({});
   const [loadingDistinct, setLoadingDistinct] = React.useState({});
@@ -46,15 +53,30 @@ export default function FiltersPanel({
   React.useEffect(() => {
     if (!selectedDataset || !filterableColumnNames) return;
 
-    const colNames = filterableColumnNames.split(',').filter(Boolean);
-    const filterKey = JSON.stringify(filters || {});
-    const cacheKeyFor = (col) => `${selectedDataset}:${col}:${filterKey}`;
-    const missingCols = colNames.filter((col) => !distinctOptionsCache.has(cacheKeyFor(col)));
+    const columnsToLoad = filterableColumns.filter((column) => !column.depends_on || filters[column.depends_on]);
+    const skippedCols = filterableColumns
+      .filter((column) => column.depends_on && !filters[column.depends_on])
+      .map((column) => column.name);
+    if (skippedCols.length > 0) {
+      setLoadingDistinct(prev => {
+        const next = { ...prev };
+        skippedCols.forEach((col) => {
+          next[col] = false;
+        });
+        return next;
+      });
+    }
+
+    const cacheKeyFor = (column) => {
+      const parentPart = column.depends_on ? `${column.depends_on}=${filters[column.depends_on] || ''}` : 'base';
+      return `${selectedDataset}:${column.name}:${parentPart}`;
+    };
+    const missingCols = columnsToLoad.filter((column) => !distinctOptionsCache.has(cacheKeyFor(column)));
 
     const cachedValues = {};
-    colNames.forEach((col) => {
-      const cached = distinctOptionsCache.get(cacheKeyFor(col));
-      if (cached) cachedValues[col] = cached;
+    columnsToLoad.forEach((column) => {
+      const cached = distinctOptionsCache.get(cacheKeyFor(column));
+      if (cached) cachedValues[column.name] = cached;
     });
     if (Object.keys(cachedValues).length > 0) {
       setDistinctValues(prev => ({ ...prev, ...cachedValues }));
@@ -67,17 +89,18 @@ export default function FiltersPanel({
     let cancelled = false;
     const fetchDistinct = async () => {
       const newLoadingState = {};
-      missingCols.forEach(col => newLoadingState[col] = true);
+      missingCols.forEach(column => newLoadingState[column.name] = true);
       setLoadingDistinct(prev => ({ ...prev, ...newLoadingState }));
       
       const results = {};
       
       await Promise.all(
-        missingCols.map(async (colName) => {
+        missingCols.map(async (column) => {
+          const colName = column.name;
           try {
             const params = new URLSearchParams({ limit: '10000' });
-            if (filters && Object.keys(filters).length > 0) {
-              params.set('filters', JSON.stringify(filters));
+            if (column.depends_on) {
+              params.set('filters', JSON.stringify({ [column.depends_on]: filters[column.depends_on] }));
             }
             const url = `/api/ai/distinct/${selectedDataset}/${colName}?${params.toString()}`;
             const res = await fetch(url).then((r) => r.json());
@@ -95,7 +118,7 @@ export default function FiltersPanel({
                   label: String(v).substring(0, 80),
                 };
               });
-              distinctOptionsCache.set(cacheKeyFor(colName), results[colName]);
+              distinctOptionsCache.set(cacheKeyFor(column), results[colName]);
               console.log(`[Filter] ${colName}: ${results[colName].length} options`);
             } else if (!cancelled) {
               setFilterErrors(prev => ({...prev, [colName]: res.error || 'Failed to load'}));
@@ -123,7 +146,7 @@ export default function FiltersPanel({
     return () => {
       cancelled = true;
     };
-  }, [selectedDataset, filterableColumnNames, filters]);
+  }, [selectedDataset, filterableColumnNames, filterLoadSignature]);
 
   // ── Local unique-value fallback (computed from current data) ──
   const uniqueValues = useMemo(() => {

@@ -17,6 +17,7 @@ import logging
 import json
 import time
 from collections import defaultdict
+from time import monotonic
 
 # Configure logging
 logging.basicConfig(
@@ -238,6 +239,8 @@ def build_dataset_registry(conn):
     for relation in relations:
         schema_name = relation["schema_name"]
         table_name = relation["table_name"]
+        if schema_name == "economic_census" and _is_internal_ec_dataset(table_name):
+            continue
         qualified_name = f"{schema_name}.{table_name}" if schema_name != "public" else table_name
         columns = get_table_columns(conn, schema_name, table_name)
 
@@ -245,7 +248,7 @@ def build_dataset_registry(conn):
             "name": qualified_name,
             "qualified_name": qualified_name,
             "schema": schema_name,
-            "display_name": table_name.replace("_", " ").title(),
+            "display_name": EC_VISIBLE_DATASET_LABELS.get(table_name, table_name.replace("_", " ").title()),
             "category": get_category_name(schema_name),
             "relation_type": relation["relation_type"],
             "row_count_estimate": int(relation["estimated_rows"] or 0),
@@ -271,6 +274,19 @@ def build_dataset_registry(conn):
 SYSTEM_SCHEMAS = {"pg_catalog", "information_schema", "pg_toast"}
 PREFERRED_SCHEMA_ORDER = {"public": 0, "economic_census": 1, "plfs": 2}
 EC_ENTERPRISES_DATASET = "economic_census.enterprises_full"
+EC_VISIBLE_DATASET_LABELS = {
+    "enterprises_full": "Economic Census",
+}
+EC_INTERNAL_TABLE_PATTERNS = (
+    "code",
+    "metadata",
+    "staging",
+    "view",
+    "raw",
+    "parsed",
+    "audit",
+    "enriched",
+)
 EC_TECHNICAL_PATTERNS = (
     "id",
     "_id",
@@ -324,6 +340,8 @@ EC_FILTERS = [
     {"name": "enterprise_classification", "label": "Enterprise Type"},
     {"name": "social_group_owner", "label": "Social Group"},
 ]
+EC_FILTER_OPTIONS_CACHE = {}
+EC_FILTER_OPTIONS_TTL_SECONDS = 900
 
 
 def _is_safe_identifier(value: str) -> bool:
@@ -347,6 +365,10 @@ def _format_qualified_name(schema_name: str, table_name: str) -> str:
 
 def _is_ec_enterprises(schema_name: str, table_name: str) -> bool:
     return schema_name == "economic_census" and table_name == "enterprises_full"
+
+
+def _is_internal_ec_dataset(table_name: str) -> bool:
+    return table_name not in EC_VISIBLE_DATASET_LABELS
 
 
 def _is_hidden_ec_column(column_name: str) -> bool:
@@ -452,18 +474,78 @@ def _parse_filters_json(filters: str | None):
 
 def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
     parsed_filters = _parse_filters_json(filters)
+    relevant_filters = {}
+    if column == "district_code" and parsed_filters.get("state_code") not in (None, ""):
+        relevant_filters["state_code"] = str(parsed_filters["state_code"]).strip()
+    elif column == "activity_code" and parsed_filters.get("major_activity_code") not in (None, ""):
+        relevant_filters["major_activity_code"] = str(parsed_filters["major_activity_code"])
+    cache_key = (column, int(limit), tuple(sorted(relevant_filters.items())))
+    cached = EC_FILTER_OPTIONS_CACHE.get(cache_key)
+    now = monotonic()
+    if cached and now - cached["created_at"] < EC_FILTER_OPTIONS_TTL_SECONDS:
+        return cached["data"]
+
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
+        parent_column = None
+        parent_value = None
+        if column == "district_code":
+            parent_column = "state_code"
+            parent_value = relevant_filters.get("state_code")
+            if not parent_value:
+                return []
+        elif column == "activity_code":
+            parent_column = "major_activity_code"
+            parent_value = relevant_filters.get("major_activity_code")
+            if not parent_value:
+                return []
+
+        if column in {flt["name"] for flt in EC_FILTERS}:
+            if parent_column:
+                cur.execute(
+                    """
+                    SELECT value, label, parent_value
+                    FROM economic_census.filter_options
+                    WHERE dataset_name = %s
+                      AND column_name = %s
+                      AND parent_column = %s
+                      AND parent_value = %s
+                    ORDER BY sort_order, label
+                    LIMIT %s
+                    """,
+                    (EC_ENTERPRISES_DATASET, column, parent_column, parent_value, limit),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT value, label, parent_value
+                    FROM economic_census.filter_options
+                    WHERE dataset_name = %s
+                      AND column_name = %s
+                      AND parent_column IS NULL
+                    ORDER BY sort_order, label
+                    LIMIT %s
+                    """,
+                    (EC_ENTERPRISES_DATASET, column, limit),
+                )
+            rows = cur.fetchall()
+            if rows:
+                data = [
+                    {
+                        "value": row["value"],
+                        "label": row["label"],
+                        **({"parent_value": row["parent_value"]} if row.get("parent_value") else {}),
+                    }
+                    for row in rows
+                ]
+                EC_FILTER_OPTIONS_CACHE[cache_key] = {"created_at": now, "data": data}
+                return data
+
         if column == "state_code":
             cur.execute(
                 """
                 SELECT sc.state_code AS value, sc.state_name AS label
                 FROM economic_census.state_codes sc
-                WHERE EXISTS (
-                    SELECT 1
-                    FROM economic_census.enterprises_full e
-                    WHERE NULLIF(e.state_code, '')::integer = sc.state_code
-                )
                 ORDER BY sc.state_name
                 LIMIT %s
                 """,
@@ -479,12 +561,6 @@ def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
                            dc.state_code AS parent_value
                     FROM economic_census.district_codes dc
                     WHERE dc.state_code = %s
-                      AND EXISTS (
-                          SELECT 1
-                          FROM economic_census.enterprises_full e
-                          WHERE NULLIF(e.state_code, '')::integer = dc.state_code
-                            AND NULLIF(e.district_code, '')::integer = dc.district_code
-                      )
                     ORDER BY dc.district_name
                     LIMIT %s
                     """,
@@ -497,12 +573,6 @@ def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
                            dc.district_name AS label,
                            dc.state_code AS parent_value
                     FROM economic_census.district_codes dc
-                    WHERE EXISTS (
-                        SELECT 1
-                        FROM economic_census.enterprises_full e
-                        WHERE NULLIF(e.state_code, '')::integer = dc.state_code
-                          AND NULLIF(e.district_code, '')::integer = dc.district_code
-                    )
                     ORDER BY dc.state_code, dc.district_name
                     LIMIT %s
                     """,
@@ -524,11 +594,12 @@ def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
             )
         elif column == "activity_code":
             category = parsed_filters.get("major_activity_code")
+            if category in (None, ""):
+                return []
             params = []
             category_clause = ""
-            if category not in (None, ""):
-                category_clause = "AND e.major_activity_code = %s"
-                params.append(str(category))
+            category_clause = "AND e.major_activity_code = %s"
+            params.append(str(category))
             cur.execute(
                 f"""
                 SELECT e.activity_code AS value,
@@ -569,7 +640,7 @@ def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
             )
 
         rows = cur.fetchall()
-        return [
+        data = [
             {
                 "value": row["value"],
                 "label": f"{str(row['value']).strip()} - {row['label']}" if column in {"state_code", "activity_code", "major_activity_code"} else str(row["label"]),
@@ -577,6 +648,8 @@ def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
             }
             for row in rows
         ]
+        EC_FILTER_OPTIONS_CACHE[cache_key] = {"created_at": now, "data": data}
+        return data
     finally:
         cur.close()
 
@@ -888,6 +961,8 @@ async def get_datasets_hierarchical():
                 "users", "sessions", "otp_challenges", "transactions", "usage_logs", "datasets", "data_records"
             }:
                 continue
+            if schema_name == "economic_census" and _is_internal_ec_dataset(table_name):
+                continue
 
             # Determine category
             category = "Other"
@@ -905,7 +980,7 @@ async def get_datasets_hierarchical():
 
             # Enrich display name & description from public.datasets metadata
             db_info = db_datasets.get(table_name) or db_datasets.get(qualified_name) or {}
-            display_name = db_info.get("display_name") or table_name.replace("_", " ").title()
+            display_name = db_info.get("display_name") or EC_VISIBLE_DATASET_LABELS.get(table_name) or table_name.replace("_", " ").title()
 
             dataset_item = {
                 "name": qualified_name,
