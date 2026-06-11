@@ -2,7 +2,7 @@
 Survey AI Data Explorer API endpoints
 Handles filtering, distinct values, and dynamic SQL query building
 """
-from fastapi import APIRouter, Depends, HTTPException, Query as QueryParam
+from fastapi import APIRouter, Depends, HTTPException, Query as QueryParam, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text, MetaData, Table, and_, distinct
 from typing import Optional, List, Dict, Any
@@ -266,7 +266,7 @@ async def get_distinct_column_values(
 
 @router.post("/data")
 async def query_data_with_filters(
-    body: Dict[str, Any],
+    body: Dict[str, Any] = Body(...),
     db: Session = Depends(get_db)
 ):
     """
@@ -291,8 +291,8 @@ async def query_data_with_filters(
         filters = body.get('filters', {})
         limit = min(int(body.get('limit', 100)), 10000)
         offset = int(body.get('offset', 0))
-        
-        logger.info(f"Query: table={table}, columns={len(columns)}, filters={filters}")
+
+        logger.info(f"[QUERY REQUEST] Table={table}, Columns={columns}, Filters={filters}, Limit={limit}, Offset={offset}")
         
         if not table:
             return {
@@ -347,10 +347,10 @@ async def query_data_with_filters(
         
         # Get total count
         total = query.count()
-        
+
         # Apply pagination
         results = query.limit(limit).offset(offset).all()
-        
+
         # Convert to list of dicts
         data = []
         for row in results:
@@ -358,8 +358,8 @@ async def query_data_with_filters(
             for i, col in enumerate(columns):
                 row_dict[col] = row[i]
             data.append(row_dict)
-        
-        logger.info(f"Query returned {len(data)} records (total: {total})")
+
+        logger.info(f"[QUERY SUCCESS] Returned {len(data)} records out of {total} matching filter conditions. Filters applied: {filter_conditions}")
         
         return {
             'success': True,
@@ -485,7 +485,108 @@ async def get_districts(
         }
 
 
-@router.get("/statistics/{dataset}")
+@router.get("/reference/ec/states")
+async def get_economic_census_states(db: Session = Depends(get_db)):
+    """Get all available states from economic census data"""
+    try:
+        states = []
+        inspector = inspect(db.bind)
+        all_tables = inspector.get_table_names()
+
+        for table in all_tables:
+            if 'economic_census' in table.lower():
+                try:
+                    for col_name in ['state_code', 'State_Code', 'State_UT_Code']:
+                        if any(col['name'] == col_name for col in inspector.get_columns(table)):
+                            metadata = MetaData()
+                            db_table = Table(table, metadata, autoload_with=db.bind)
+                            state_query = db.query(distinct(getattr(db_table.c, col_name))).order_by(getattr(db_table.c, col_name))
+                            for (state_code,) in state_query.limit(37).all():
+                                if state_code is not None:
+                                    states.append({
+                                        'state_code': state_code,
+                                        'state_name': f'State {state_code}'
+                                    })
+                            break
+
+                    if states:
+                        break
+                except:
+                    continue
+
+        logger.debug(f"Economic census states: {len(states)} records")
+        return {
+            'success': True,
+            'data': states,
+            'total': len(states)
+        }
+    except Exception as e:
+        logger.error(f"Error getting economic census states: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'data': []
+        }
+
+
+@router.get("/reference/ec/districts")
+async def get_economic_census_districts(
+    state_code: Optional[str] = QueryParam(None),
+    db: Session = Depends(get_db)
+):
+    """Get all available districts from economic census data, optionally filtered by state"""
+    try:
+        districts = []
+        inspector = inspect(db.bind)
+        all_tables = inspector.get_table_names()
+
+        for table in all_tables:
+            if 'economic_census' in table.lower():
+                try:
+                    for col_name in ['district_code', 'District_Code']:
+                        if any(col['name'] == col_name for col in inspector.get_columns(table)):
+                            metadata = MetaData()
+                            db_table = Table(table, metadata, autoload_with=db.bind)
+
+                            query = db.query(distinct(getattr(db_table.c, col_name)))
+
+                            if state_code:
+                                for state_col_name in ['state_code', 'State_Code', 'State_UT_Code']:
+                                    if any(col['name'] == state_col_name for col in inspector.get_columns(table)):
+                                        query = query.filter(getattr(db_table.c, state_col_name) == state_code)
+                                        break
+
+                            district_query = query.order_by(getattr(db_table.c, col_name))
+                            for (district_code,) in district_query.limit(1000).all():
+                                if district_code is not None:
+                                    districts.append({
+                                        'district_code': district_code,
+                                        'district_name': f'District {district_code}',
+                                        'state_code': state_code
+                                    })
+                            break
+
+                    if districts:
+                        break
+                except:
+                    continue
+
+        logger.debug(f"Economic census districts for state {state_code}: {len(districts)} records")
+        return {
+            'success': True,
+            'data': districts,
+            'total': len(districts)
+        }
+    except Exception as e:
+        logger.error(f"Error getting economic census districts: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'data': []
+        }
+
+
+
 async def get_dataset_statistics(
     dataset: str,
     filters: Optional[str] = QueryParam(None),

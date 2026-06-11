@@ -542,8 +542,8 @@ export default function SurveyAI() {
               </section>
             )}
 
-            {/* Step 4: Data Representation (Table) */}
-            {selectedDataset && selectedColumns.length > 0 && data.length > 0 && (
+            {/* Step 4: Data Representation (Table or No Data Message) */}
+            {selectedDataset && selectedColumns.length > 0 && (filters && Object.keys(filters).length > 0) && (
               <section className="relative animate-in slide-in-from-bottom-8 duration-700">
                 <div className="absolute left-[19px] top-[-48px] bottom-[calc(100%-8px)] w-[2px] bg-gradient-to-b from-violet-600 to-indigo-100 opacity-20"></div>
                 <div className="flex items-center gap-4 mb-8">
@@ -552,39 +552,59 @@ export default function SurveyAI() {
                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Active Topology Representation</h3>
                 </div>
                 <div className="pl-14">
-                  <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden">
-                    <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-white to-gray-50/50">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-                          <Database size={20} />
+                  {data.length > 0 ? (
+                    <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden">
+                      <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-white to-gray-50/50">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                            <Database size={20} />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest leading-none">High Fidelity Grid</h4>
+                            <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">Verified Entry Retrieval ({totalCount} total records)</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest leading-none">High Fidelity Grid</h4>
-                          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">Verified Entry Retrieval</p>
+                        <DataExportActions
+                          data={data}
+                          selectedColumns={selectedColumns}
+                          selectedDataset={selectedDataset}
+                        />
+                      </div>
+                      <div className="p-2">
+                        <DataTable
+                          columns={selectedColumns}
+                          data={data}
+                          pagination={pagination}
+                          onPageChange={(page) => setPagination({ ...pagination, page })}
+                          onPageSizeChange={(pageSize) => setPagination({ page: 0, pageSize })}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xl p-12 text-center">
+                      <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-amber-200">
+                        <AlertCircle className="text-amber-500" size={40} />
+                      </div>
+                      <h4 className="text-lg font-black text-gray-900 uppercase tracking-tight italic mb-2">No Data Found</h4>
+                      <p className="text-xs font-medium text-gray-500 mt-2 max-w-sm mx-auto">The selected filters did not match any records in the dataset. Try adjusting your filter selections.</p>
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Applied Filters:</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {Object.entries(filters).map(([key, value]) => (
+                            <span key={key} className="inline-flex items-center gap-1 bg-gray-50 text-gray-700 rounded text-[10px] font-semibold px-3 py-1.5 border border-gray-200">
+                              {key.replace(/_/g, ' ')}: <strong>{value}</strong>
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <DataExportActions
-                        data={data}
-                        selectedColumns={selectedColumns}
-                        selectedDataset={selectedDataset}
-                      />
                     </div>
-                    <div className="p-2">
-                      <DataTable
-                        columns={selectedColumns}
-                        data={data}
-                        pagination={pagination}
-                        onPageChange={(page) => setPagination({ ...pagination, page })}
-                        onPageSizeChange={(pageSize) => setPagination({ page: 0, pageSize })}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               </section>
             )}
 
             {/* Step 5: Data Visualization (Charts) */}
-            {data.length > 0 && (
+            {data.length > 0 && chartData.length > 0 && (
               <section className="relative animate-in slide-in-from-bottom-8 duration-700">
                 <div className="absolute left-[19px] top-[-48px] bottom-[calc(100%-8px)] w-[2px] bg-gradient-to-b from-indigo-600 to-transparent opacity-20"></div>
                 <div className="flex items-center gap-4 mb-8">
