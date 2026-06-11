@@ -57,11 +57,11 @@ def check_environment():
     try:
         import psycopg2
         conn = psycopg2.connect(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234',
+            password='NewPassword123',
             connect_timeout=3
         )
         conn.close()
@@ -93,7 +93,7 @@ def print_setup_instructions():
    $ sudo systemctl start postgresql
 
 3. CREATE DATABASE (if not exists):
-   $ psql -U postgres -c "CREATE DATABASE survey_db;"
+    $ psql -U postgres -h 187.127.138.4 -c "CREATE DATABASE statahon_db;"
 
 4. PREPARE CSV FILE:
    - Place your CSV file in: data/survey_data.csv
@@ -119,11 +119,11 @@ uploader.upload_csv('data/survey_data.csv')
 
 # Example 2: Custom configuration
 uploader = RobustCSVUploader(
-    host='localhost',
+    host='187.127.138.4',
     port=5432,
-    database='survey_db',
+    database='statahon_db',
     user='postgres',
-    password='1234',
+    password='NewPassword123',
     chunksize=5000
 )
 success = uploader.upload_csv('data/survey_data.csv')

@@ -2,7 +2,6 @@ import React, { useMemo, useCallback } from 'react';
 import { Filter as FilterIcon, ChevronDown, AlertCircle } from 'lucide-react';
 
 const distinctOptionsCache = new Map();
-const referenceDataCache = new Map();
 
 export default function FiltersPanel({
   columns,
@@ -11,12 +10,26 @@ export default function FiltersPanel({
   filters,
   onChange,
   selectedDataset,
+  uxProfile,
 }) {
-  // Memoize filterable columns so the reference is stable across renders
-  const filterableColumns = useMemo(
-    () => columns.filter((col) => selectedColumns.includes(col.name)),
-    [columns, selectedColumns]
+  const filterConfig = uxProfile?.filters || null;
+  const columnByName = useMemo(
+    () => Object.fromEntries(columns.map((col) => [col.name, col])),
+    [columns]
   );
+
+  // Memoize filterable columns so the reference is stable across renders
+  const filterableColumns = useMemo(() => {
+    if (filterConfig?.length) {
+      return filterConfig
+        .map((config) => ({
+          ...(columnByName[config.name] || { name: config.name, type: 'unknown' }),
+          ...config,
+        }))
+        .filter((col) => columnByName[col.name]);
+    }
+    return columns.filter((col) => selectedColumns.includes(col.name) && !col.hidden);
+  }, [columns, selectedColumns, filterConfig, columnByName]);
 
   // Serialized column-name list for use as a stable useEffect dependency
   const filterableColumnNames = useMemo(
@@ -24,54 +37,9 @@ export default function FiltersPanel({
     [filterableColumns]
   );
 
-  const [referenceData, setReferenceData] = React.useState({
-    states: [],
-    districts: [],
-    nicCodes: [],
-  });
   const [distinctValues, setDistinctValues] = React.useState({});
   const [loadingDistinct, setLoadingDistinct] = React.useState({});
   const [filterErrors, setFilterErrors] = React.useState({});
-  const isEconomicCensus = selectedDataset?.startsWith('economic_census.');
-
-  // ── Reference data (states / districts / NIC codes) — fetch once ──
-  React.useEffect(() => {
-    if (!selectedDataset) return;
-
-    const referenceKey = isEconomicCensus ? 'economic_census' : 'default';
-    if (referenceDataCache.has(referenceKey)) {
-      setReferenceData(referenceDataCache.get(referenceKey));
-      return;
-    }
-
-    let cancelled = false;
-    const fetchReferences = async () => {
-      try {
-        const statesUrl = isEconomicCensus ? '/api/ai/reference/ec/states' : '/api/ai/reference/states';
-        const districtsUrl = isEconomicCensus ? '/api/ai/reference/ec/districts' : null;
-        const [statesRes, districtsRes] = await Promise.all([
-          fetch(statesUrl).then((r) => r.json()),
-          districtsUrl ? fetch(districtsUrl).then((r) => r.json()) : Promise.resolve({ success: true, data: [] }),
-        ]);
-        const refs = {
-          states: statesRes.success ? statesRes.data : [],
-          districts: districtsRes.success ? districtsRes.data : [],
-          nicCodes: [],
-        };
-        referenceDataCache.set(referenceKey, refs);
-        if (!cancelled) setReferenceData(refs);
-      } catch (err) {
-        console.error('Failed to fetch reference data:', err);
-        if (!cancelled) {
-          setFilterErrors(prev => ({...prev, reference: 'Failed to load reference data'}));
-        }
-      }
-    };
-    fetchReferences();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedDataset, isEconomicCensus]);
 
   // ── Distinct values for every non-reference column ──
   //    Loaded once per dataset/column and cached so selections do not reload the grid.
@@ -79,13 +47,13 @@ export default function FiltersPanel({
     if (!selectedDataset || !filterableColumnNames) return;
 
     const colNames = filterableColumnNames.split(',').filter(Boolean);
-    const REFERENCE_COLS = isEconomicCensus ? ['state_code', 'district_code'] : [];
-    const colsToFetch = colNames.filter((n) => !REFERENCE_COLS.includes(n.toLowerCase()));
-    const missingCols = colsToFetch.filter((col) => !distinctOptionsCache.has(`${selectedDataset}:${col}`));
+    const filterKey = JSON.stringify(filters || {});
+    const cacheKeyFor = (col) => `${selectedDataset}:${col}:${filterKey}`;
+    const missingCols = colNames.filter((col) => !distinctOptionsCache.has(cacheKeyFor(col)));
 
     const cachedValues = {};
-    colsToFetch.forEach((col) => {
-      const cached = distinctOptionsCache.get(`${selectedDataset}:${col}`);
+    colNames.forEach((col) => {
+      const cached = distinctOptionsCache.get(cacheKeyFor(col));
       if (cached) cachedValues[col] = cached;
     });
     if (Object.keys(cachedValues).length > 0) {
@@ -107,15 +75,27 @@ export default function FiltersPanel({
       await Promise.all(
         missingCols.map(async (colName) => {
           try {
-            const url = `/api/ai/distinct/${selectedDataset}/${colName}?limit=10000`;
+            const params = new URLSearchParams({ limit: '10000' });
+            if (filters && Object.keys(filters).length > 0) {
+              params.set('filters', JSON.stringify(filters));
+            }
+            const url = `/api/ai/distinct/${selectedDataset}/${colName}?${params.toString()}`;
             const res = await fetch(url).then((r) => r.json());
             
             if (!cancelled && res.success) {
-              results[colName] = res.data.map((v) => ({
-                value: v,
-                label: String(v).substring(0, 80),
-              }));
-              distinctOptionsCache.set(`${selectedDataset}:${colName}`, results[colName]);
+              results[colName] = res.data.map((v) => {
+                if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'value')) {
+                  return {
+                    value: v.value,
+                    label: String(v.label ?? v.value).substring(0, 120),
+                  };
+                }
+                return {
+                  value: v,
+                  label: String(v).substring(0, 80),
+                };
+              });
+              distinctOptionsCache.set(cacheKeyFor(colName), results[colName]);
               console.log(`[Filter] ${colName}: ${results[colName].length} options`);
             } else if (!cancelled) {
               setFilterErrors(prev => ({...prev, [colName]: res.error || 'Failed to load'}));
@@ -143,7 +123,7 @@ export default function FiltersPanel({
     return () => {
       cancelled = true;
     };
-  }, [selectedDataset, filterableColumnNames, isEconomicCensus]);
+  }, [selectedDataset, filterableColumnNames, filters]);
 
   // ── Local unique-value fallback (computed from current data) ──
   const uniqueValues = useMemo(() => {
@@ -171,10 +151,14 @@ export default function FiltersPanel({
       } else {
         newFilters[columnName] = value;
       }
+      const changedColumn = filterableColumns.find((col) => col.name === columnName);
+      (changedColumn?.cascades_to || []).forEach((child) => {
+        delete newFilters[child];
+      });
       console.log(`[Filter Change] ${columnName} = ${value}`, newFilters);
       onChange(newFilters);
     },
-    [filters, onChange]
+    [filters, onChange, filterableColumns]
   );
 
   const handleClearAll = useCallback(() => {
@@ -184,41 +168,14 @@ export default function FiltersPanel({
 
   // Get available options for a filter column
   const getFilterOptions = (columnName) => {
-    let options = [];
-
-    if (isEconomicCensus && columnName.toLowerCase() === 'state_code') {
-      options = referenceData.states.map((s) => ({
-        value: s.state_code,
-        label: `${s.state_code} - ${s.state_name}`,
-      }));
-    } else if (isEconomicCensus && columnName.toLowerCase() === 'district_code') {
-      const filteredDistricts = filters['state_code']
-        ? referenceData.districts.filter(
-            (d) =>
-              String(d.state_code) ===
-              String(filters['state_code'])
-          )
-        : referenceData.districts;
-      options = filteredDistricts.map((d) => ({
-        value: d.district_code,
-        label: `${d.district_code} - ${d.district_name}`,
-      }));
-    } else {
-      // Prefer distinct values from backend; fall back to local unique values
-      if (
-        distinctValues[columnName] &&
-        distinctValues[columnName].length > 0
-      ) {
-        options = distinctValues[columnName];
-      } else {
-        options = (uniqueValues[columnName] || []).map((val) => ({
-          value: val,
-          label: String(val).substring(0, 80),
-        }));
-      }
+    if (distinctValues[columnName] && distinctValues[columnName].length > 0) {
+      return distinctValues[columnName];
     }
 
-    return options;
+    return (uniqueValues[columnName] || []).map((val) => ({
+      value: val,
+      label: String(val).substring(0, 80),
+    }));
   };
 
   // ── Render ──
@@ -274,7 +231,8 @@ export default function FiltersPanel({
                 const options = getFilterOptions(column.name);
                 const isLoading = loadingDistinct[column.name] || false;
                 const hasError = filterErrors[column.name];
-                const displayName = column.name.replace(/_/g, ' ').toUpperCase();
+                const displayName = (column.label || column.name.replace(/_/g, ' ')).toUpperCase();
+                const parentMissing = column.depends_on && !filters[column.depends_on];
 
                 return (
                   <div key={column.name} className="space-y-2">
@@ -288,7 +246,7 @@ export default function FiltersPanel({
                         onChange={(e) =>
                           handleFilterChange(column.name, e.target.value)
                         }
-                        disabled={isLoading}
+                        disabled={isLoading || parentMissing}
                         className={`w-full px-4 py-2 border rounded text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-blue-900 appearance-none pr-8 bg-white hover:border-gray-500 transition cursor-pointer ${
                           isLoading ? 'opacity-50 cursor-not-allowed' : ''
                         } ${hasError ? 'border-red-300 bg-red-50' : 'border-gray-400'}`}
@@ -296,9 +254,11 @@ export default function FiltersPanel({
                         <option value="">
                           {isLoading 
                             ? '-- Loading...' 
+                            : parentMissing
+                            ? `-- Select ${(columnByName[column.depends_on]?.label || column.depends_on).replace(/_/g, ' ')} first`
                             : hasError 
                             ? '-- Error loading'
-                            : `-- Select ${column.name.replace(/_/g, ' ')} --`}
+                            : `-- Select ${column.label || column.name.replace(/_/g, ' ')} --`}
                         </option>
                         {options.map((opt, idx) => (
                           <option key={idx} value={opt.value}>

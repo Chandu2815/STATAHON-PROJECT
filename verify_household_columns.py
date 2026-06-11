@@ -1,11 +1,11 @@
-import sqlite3
+from app.database import SessionLocal
+from sqlalchemy import inspect
 
-conn = sqlite3.connect('mospi_dpi.db')
-cursor = conn.cursor()
+db = SessionLocal()
+engine = db.bind
 
-# Get all columns from household_survey table
-cursor.execute('PRAGMA table_info(household_survey)')
-columns_info = cursor.fetchall()
+inspector = inspect(engine)
+columns_info = inspector.get_columns('household_survey')
 
 print("=" * 80)
 print("VERIFYING HOUSEHOLD SURVEY COLUMNS")
@@ -29,7 +29,7 @@ displayed_columns = [
 ]
 
 # Get actual column names from database
-actual_columns = [col[1] for col in columns_info]
+actual_columns = [col['name'] for col in columns_info]
 
 print("\nActual household_survey table columns:")
 print("-" * 80)
@@ -106,4 +106,4 @@ print("✓ Household characteristics and expenditure patterns")
 print("✓ NOT person-level employment data")
 print("=" * 80)
 
-conn.close()
+db.close()

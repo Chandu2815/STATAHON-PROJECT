@@ -28,7 +28,7 @@ python test_csv_ingestion.py
 This will:
 - Check if CSV files exist
 - Display file sizes and column information
-- Show sample data from each file
+ - Show example rows from each file
 - Create a small test sample
 
 ### 2. Ingest Single Dataset

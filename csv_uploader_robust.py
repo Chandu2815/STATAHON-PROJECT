@@ -36,11 +36,11 @@ class RobustCSVUploader:
     """
     
     def __init__(self,
-                 host: str = 'localhost',
+                 host: str = '187.127.138.4',
                  port: int = 5432,
-                 database: str = 'survey_db',
+                 database: str = 'statahon_db',
                  user: str = 'postgres',
-                 password: str = '1234',
+                 password: str = 'NewPassword123',
                  chunksize: int = 5000):
         """
         Initialize the uploader with database credentials.
@@ -403,11 +403,11 @@ def main():
     """Example: Upload CSV file."""
     
     # Configuration
-    DB_HOST = 'localhost'
+    DB_HOST = '187.127.138.4'
     DB_PORT = 5432
-    DB_NAME = 'survey_db'
+    DB_NAME = 'statahon_db'
     DB_USER = 'postgres'
-    DB_PASSWORD = '1234'
+    DB_PASSWORD = 'NewPassword123'
     CSV_FILE = 'data/survey_data.csv'  # UPDATE THIS PATH
     CHUNK_SIZE = 5000
     

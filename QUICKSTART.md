@@ -34,13 +34,13 @@ Make sure PostgreSQL is running, then:
 python -m app.database
 ```
 
-### 6. Load Sample Data
+### 6. Load Example Data
 ```powershell
 # First, create the census data table in your database
 python -c "from app.database import init_db; init_db()"
 
-# Then ingest sample data
-python -m app.services.ingestion --config config/datasets/census_dataset.yaml --data data/sample_census_data.csv
+# Then ingest example data
+python -m app.services.ingestion --config config/datasets/census_dataset.yaml --data data/example_census_data.csv
 ```
 
 ### 7. Run the Application

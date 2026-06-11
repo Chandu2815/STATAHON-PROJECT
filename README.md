@@ -59,12 +59,12 @@ A scalable Data Portal Infrastructure built for the Ministry of Statistics and P
 │   └── middleware/                # Custom middleware
 │       ├── __init__.py
 │       └── rate_limiter.py
-├── config/                        # Configuration files
-│   ├── datasets/                  # Dataset metadata configs
-│   │   └── sample_dataset.yaml
+  ├── config/                        # Configuration files
+  │   ├── datasets/                  # Dataset metadata configs
+  │   │   └── example_dataset.yaml
 │   └── schema.yaml
-├── data/                          # Sample data
-│   └── sample_census_data.csv
+├── data/                          # Example data
+│   └── example_census_data.csv
 ├── tests/                         # Unit tests
 │   └── __init__.py
 ├── requirements.txt
@@ -107,9 +107,9 @@ cp .env.example .env
 python -m app.database
 ```
 
-6. **Ingest sample data**
+6. **Ingest example data**
 ```bash
-python -m app.services.ingestion --config config/datasets/sample_dataset.yaml
+python -m app.services.ingestion --config config/datasets/example_dataset.yaml
 ```
 
 ## Available Datasets

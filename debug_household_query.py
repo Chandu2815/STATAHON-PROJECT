@@ -1,18 +1,19 @@
-import sqlite3
+from app.database import SessionLocal
+from sqlalchemy import text, inspect
 
-conn = sqlite3.connect('mospi_dpi.db')
-cursor = conn.cursor()
+db = SessionLocal()
+engine = db.bind
 
 print("=" * 80)
-print("DEBUGGING HOUSEHOLD SURVEY QUERY")
+print("DEBUGGING HOUSEHOLD SURVEY QUERY (PostgreSQL)")
 print("=" * 80)
 
 # Check Chhattisgarh data - State code 22
 print("\n1. Checking Chhattisgarh data:")
 print("-" * 80)
 
-cursor.execute('SELECT COUNT(*) FROM household_survey WHERE State_Ut_Code = 22')
-chhattisgarh_count = cursor.fetchone()[0]
+with engine.connect() as conn:
+    chhattisgarh_count = conn.execute(text('SELECT COUNT(*) FROM household_survey WHERE State_Ut_Code = 22')).fetchone()[0]
 print(f"Total Chhattisgarh records: {chhattisgarh_count}")
 
 # Check with sector filter (Rural = 1)
@@ -23,8 +24,8 @@ print(f"Chhattisgarh + Rural: {rural_count}")
 # Check what columns household_survey has
 print("\n2. Checking household_survey columns:")
 print("-" * 80)
-cursor.execute('PRAGMA table_info(household_survey)')
-columns = [col[1] for col in cursor.fetchall()]
+inspector = inspect(engine)
+columns = [c['name'] for c in inspector.get_columns('household_survey')]
 
 has_sex = 'Sex' in columns or 'Gender' in columns
 has_age = 'Age' in columns or 'Age_Group' in columns
@@ -40,21 +41,23 @@ if not has_age:
 # Show sample Chhattisgarh records
 print("\n3. Sample Chhattisgarh household records:")
 print("-" * 80)
-cursor.execute('''
-    SELECT State_Ut_Code, District_Code, Sector, Household_Size, 
-           Monthly_Consumer_Expenditure, Religion, Social_Group
-    FROM household_survey 
-    WHERE State_Ut_Code = 22 AND Sector = 1
-    LIMIT 5
-''')
-for row in cursor.fetchall():
+with engine.connect() as conn:
+    rows = conn.execute(text('''
+        SELECT State_Ut_Code, District_Code, Sector, Household_Size,
+               Monthly_Consumer_Expenditure, Religion, Social_Group
+        FROM household_survey
+        WHERE State_Ut_Code = 22 AND Sector = 1
+        LIMIT 5
+    ''')).fetchall()
+
+for row in rows:
     print(f"State={row[0]}, District={row[1]}, Sector={row[2]}, Size={row[3]}, Expenditure=₹{row[4]}, Religion={row[5]}, SocialGroup={row[6]}")
 
 # Check available states
 print("\n4. Available states in household_survey:")
 print("-" * 80)
-cursor.execute('SELECT DISTINCT State_Ut_Code FROM household_survey ORDER BY State_Ut_Code')
-states = [row[0] for row in cursor.fetchall()]
+with engine.connect() as conn:
+    states = [r[0] for r in conn.execute(text('SELECT DISTINCT State_Ut_Code FROM household_survey ORDER BY State_Ut_Code')).fetchall()]
 print(f"State codes: {states}")
 
 if 22 in states:
@@ -71,4 +74,4 @@ print("These filters only apply to Person Survey (individual-level data).")
 print("\nThe backend is likely ignoring these filters or failing the query.")
 print("=" * 80)
 
-conn.close()
+db.close()

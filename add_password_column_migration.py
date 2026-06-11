@@ -1,19 +1,10 @@
-"""
-Add password column to users table
-"""
-from sqlalchemy import create_engine, text
-
-# Create engine
-engine = create_engine('sqlite:///./mospi_dpi.db')
+"""Add password column to users table (PostgreSQL-only)"""
+from app.database import engine
+from sqlalchemy import text
 
 try:
     with engine.connect() as conn:
-        # Add password column
-        conn.execute(text('ALTER TABLE users ADD COLUMN password VARCHAR(255);'))
-        conn.commit()
-        print("✅ Password column added successfully!")
+        conn.execute(text('ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password VARCHAR(255);'))
+        print("✅ Password column ensured successfully!")
 except Exception as e:
-    if "duplicate column name" in str(e).lower():
-        print("ℹ️  Password column already exists")
-    else:
-        print(f"❌ Error: {e}")
+    print(f"❌ Error performing migration: {e}")

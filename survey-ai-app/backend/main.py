@@ -11,9 +11,12 @@ from typing import List, Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
+import re
 from dotenv import load_dotenv
 import logging
 import json
+import time
+from collections import defaultdict
 
 # Configure logging
 logging.basicConfig(
@@ -78,6 +81,644 @@ DB_CONFIG = {
     "password": DB_PASSWORD,
     "connect_timeout": 10,
 }
+
+SYSTEM_SCHEMAS = {"information_schema", "pg_catalog"}
+SCHEMA_CATEGORY_MAP = {
+    "public": "Public",
+    "economic_census": "Economic Census",
+    "plfs": "PLFS",
+}
+
+
+def is_safe_identifier(value: str) -> bool:
+    return bool(value) and value.replace("_", "").replace("$", "").isalnum()
+
+
+def is_safe_qualified_name(value: str) -> bool:
+    if "." in value:
+        schema_name, table_name = value.split(".", 1)
+        return is_safe_identifier(schema_name) and is_safe_identifier(table_name)
+    return is_safe_identifier(value)
+
+
+def get_category_name(schema_name: str) -> str:
+    return SCHEMA_CATEGORY_MAP.get(schema_name, schema_name.replace("_", " ").title())
+
+
+def quote_relation(schema_name: str, table_name: str) -> str:
+    return f'"{schema_name}"."{table_name}"'
+
+
+def discover_relations(conn):
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(
+        """
+        SELECT
+            n.nspname AS schema_name,
+            c.relname AS table_name,
+            c.relkind AS relation_kind,
+            CASE c.relkind
+                WHEN 'r' THEN 'table'
+                WHEN 'p' THEN 'partitioned table'
+                WHEN 'v' THEN 'view'
+                WHEN 'm' THEN 'materialized view'
+                ELSE 'relation'
+            END AS relation_type,
+            COALESCE(obj_description(c.oid), '') AS relation_comment,
+            COALESCE(c.reltuples::bigint, 0) AS estimated_rows
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+          AND n.nspname NOT LIKE 'pg_toast%%'
+          AND n.nspname NOT LIKE 'pg_temp_%%'
+          AND c.relkind IN ('r', 'p', 'v', 'm')
+        ORDER BY
+            CASE n.nspname
+                WHEN 'public' THEN 0
+                WHEN 'economic_census' THEN 1
+                WHEN 'plfs' THEN 2
+                ELSE 3
+            END,
+            n.nspname,
+            c.relname
+        """
+    )
+    relations = cur.fetchall()
+    cur.close()
+    return relations
+
+
+def get_table_columns(conn, schema_name: str, table_name: str):
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(
+        """
+        SELECT
+            column_name,
+            data_type,
+            udt_name,
+            is_nullable,
+            column_default,
+            ordinal_position
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        """,
+        (schema_name, table_name),
+    )
+    columns = cur.fetchall()
+    cur.close()
+    return columns
+
+
+def resolve_relation(conn, table: str):
+    if not is_safe_qualified_name(table):
+        raise HTTPException(status_code=400, detail="Invalid table name")
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    if "." in table:
+        schema_name, table_name = table.split(".", 1)
+        cur.execute(
+            """
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_schema = %s AND table_name = %s
+            UNION ALL
+            SELECT table_schema, table_name
+            FROM information_schema.views
+            WHERE table_schema = %s AND table_name = %s
+            LIMIT 1
+            """,
+            (schema_name, table_name, schema_name, table_name),
+        )
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Table '{table}' not found")
+        return row["table_schema"], row["table_name"], quote_relation(row["table_schema"], row["table_name"])
+
+    cur.execute(
+        """
+        SELECT table_schema, table_name
+        FROM information_schema.tables
+        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+          AND table_name = %s
+        ORDER BY
+            CASE table_schema
+                WHEN 'public' THEN 0
+                WHEN 'economic_census' THEN 1
+                WHEN 'plfs' THEN 2
+                ELSE 3
+            END,
+            table_schema
+        LIMIT 1
+        """,
+        (table,),
+    )
+    row = cur.fetchone()
+    cur.close()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Table '{table}' not found")
+    return row["table_schema"], row["table_name"], quote_relation(row["table_schema"], row["table_name"])
+
+
+def build_dataset_registry(conn):
+    relations = discover_relations(conn)
+    logger.info(
+        "[datasets] schemas found=%s",
+        sorted({relation["schema_name"] for relation in relations}),
+    )
+    logger.info(
+        "[datasets] tables found=%s",
+        [f"{relation['schema_name']}.{relation['table_name']}" for relation in relations],
+    )
+
+    registry = []
+    hierarchical = defaultdict(list)
+
+    for relation in relations:
+        schema_name = relation["schema_name"]
+        table_name = relation["table_name"]
+        qualified_name = f"{schema_name}.{table_name}" if schema_name != "public" else table_name
+        columns = get_table_columns(conn, schema_name, table_name)
+
+        registry_item = {
+            "name": qualified_name,
+            "qualified_name": qualified_name,
+            "schema": schema_name,
+            "display_name": table_name.replace("_", " ").title(),
+            "category": get_category_name(schema_name),
+            "relation_type": relation["relation_type"],
+            "row_count_estimate": int(relation["estimated_rows"] or 0),
+            "column_count": len(columns),
+            "columns": [
+                {
+                    "name": column["column_name"],
+                    "type": column["data_type"],
+                    "udt_name": column["udt_name"],
+                    "nullable": column["is_nullable"] == "YES",
+                    "default": column["column_default"],
+                }
+                for column in columns
+            ],
+            "relation_comment": relation["relation_comment"],
+        }
+        registry.append(registry_item)
+        hierarchical[registry_item["category"]].append(registry_item)
+
+    logger.info("[datasets] datasets loaded=%s", len(registry))
+    return registry, dict(hierarchical)
+
+SYSTEM_SCHEMAS = {"pg_catalog", "information_schema", "pg_toast"}
+PREFERRED_SCHEMA_ORDER = {"public": 0, "economic_census": 1, "plfs": 2}
+EC_ENTERPRISES_DATASET = "economic_census.enterprises_full"
+EC_TECHNICAL_PATTERNS = (
+    "id",
+    "_id",
+    "sno",
+    "serial",
+    "enumeration_block",
+    "additional_eb",
+    "file_code",
+    "timestamp",
+    "created_at",
+    "updated_at",
+    "metadata",
+    "ingest",
+    "staging",
+)
+EC_FILTERS = [
+    {
+        "name": "state_code",
+        "label": "State",
+        "lookup": "economic_census.state_codes",
+        "value_column": "state_code",
+        "label_column": "state_name",
+        "cascades_to": ["district_code"],
+    },
+    {
+        "name": "district_code",
+        "label": "District",
+        "lookup": "economic_census.district_codes",
+        "value_column": "district_code",
+        "label_column": "district_name",
+        "depends_on": "state_code",
+    },
+    {
+        "name": "major_activity_code",
+        "label": "NIC Category",
+        "lookup": "economic_census.variable_metadata",
+        "value_column": "major_activity_code",
+        "label_column": None,
+        "cascades_to": ["activity_code"],
+    },
+    {
+        "name": "activity_code",
+        "label": "Activity/NIC",
+        "lookup": "economic_census.nic_codes",
+        "value_column": "nic_code",
+        "label_column": "description",
+        "depends_on": "major_activity_code",
+    },
+    {"name": "sector", "label": "Sector"},
+    {"name": "ownership_type", "label": "Ownership"},
+    {"name": "enterprise_classification", "label": "Enterprise Type"},
+    {"name": "social_group_owner", "label": "Social Group"},
+]
+
+
+def _is_safe_identifier(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9_.]+", value or ""))
+
+
+def _quote_identifier(value: str) -> str:
+    return '"' + value.replace('"', '""') + '"'
+
+
+def _split_table_identifier(table: str) -> tuple[str | None, str]:
+    if "." in table:
+        schema_name, table_name = table.split(".", 1)
+        return schema_name, table_name
+    return None, table
+
+
+def _format_qualified_name(schema_name: str, table_name: str) -> str:
+    return table_name if schema_name == "public" else f"{schema_name}.{table_name}"
+
+
+def _is_ec_enterprises(schema_name: str, table_name: str) -> bool:
+    return schema_name == "economic_census" and table_name == "enterprises_full"
+
+
+def _is_hidden_ec_column(column_name: str) -> bool:
+    lower = column_name.lower()
+    return any(pattern == lower or pattern in lower for pattern in EC_TECHNICAL_PATTERNS)
+
+
+def _humanize_ec_column(column_name: str) -> str:
+    labels = {
+        "state_code": "State",
+        "district_code": "District",
+        "activity_code": "Activity/NIC",
+        "major_activity_code": "NIC Category",
+        "ownership_type": "Ownership",
+        "enterprise_classification": "Enterprise Type",
+        "social_group_owner": "Social Group",
+    }
+    return labels.get(column_name, column_name.replace("_", " ").title())
+
+
+def _ec_mapping_for_column(column_name: str):
+    direct = {
+        "state_code": {
+            "lookup_table": "economic_census.state_codes",
+            "join": "enterprises_full.state_code = state_codes.state_code",
+            "label_column": "state_name",
+        },
+        "district_code": {
+            "lookup_table": "economic_census.district_codes",
+            "join": "enterprises_full.state_code = district_codes.state_code AND enterprises_full.district_code = district_codes.district_code",
+            "label_column": "district_name",
+        },
+        "activity_code": {
+            "lookup_table": "economic_census.nic_codes",
+            "join": "enterprises_full.activity_code = nic_codes.nic_code",
+            "label_column": "description",
+        },
+    }
+    if column_name in direct:
+        return direct[column_name]
+    if column_name.endswith("_code") or column_name in {"sector", "ownership_type", "enterprise_classification", "social_group_owner"}:
+        return {
+            "lookup_table": "economic_census.variable_metadata",
+            "join": f"metadata definition for {column_name}",
+            "label_column": "description",
+        }
+    return None
+
+
+def _load_ec_variable_metadata(conn):
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("SELECT variable_name, description FROM economic_census.variable_metadata")
+        return {row["variable_name"]: row["description"] for row in cur.fetchall()}
+    except Exception as exc:
+        logger.warning("[ec ux] Could not load variable metadata: %s", exc)
+        return {}
+    finally:
+        cur.close()
+
+
+def _build_ec_ux_profile(conn, columns):
+    metadata = _load_ec_variable_metadata(conn)
+    available = {col["name"] for col in columns}
+    enriched_columns = []
+    mapped_columns = []
+    hidden_columns = []
+
+    for col in columns:
+        name = col["name"]
+        mapping = _ec_mapping_for_column(name)
+        hidden = _is_hidden_ec_column(name)
+        if mapping:
+            mapped_columns.append({"column": name, **mapping})
+        if hidden:
+            hidden_columns.append(name)
+        enriched_columns.append({
+            **col,
+            "label": _humanize_ec_column(name),
+            "description": metadata.get(name),
+            "hidden": hidden,
+            "coded": bool(mapping),
+            "mapping": mapping,
+        })
+
+    return {
+        "columns": enriched_columns,
+        "mapped_columns": mapped_columns,
+        "hidden_columns": hidden_columns,
+        "filters": [flt for flt in EC_FILTERS if flt["name"] in available],
+    }
+
+
+def _parse_filters_json(filters: str | None):
+    if not filters:
+        return {}
+    try:
+        parsed = json.loads(filters)
+        return parsed if isinstance(parsed, dict) else {}
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+
+def _ec_distinct_options(conn, column: str, limit: int, filters: str | None):
+    parsed_filters = _parse_filters_json(filters)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        if column == "state_code":
+            cur.execute(
+                """
+                SELECT sc.state_code AS value, sc.state_name AS label
+                FROM economic_census.state_codes sc
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM economic_census.enterprises_full e
+                    WHERE NULLIF(e.state_code, '')::integer = sc.state_code
+                )
+                ORDER BY sc.state_name
+                LIMIT %s
+                """,
+                (limit,),
+            )
+        elif column == "district_code":
+            state_code = parsed_filters.get("state_code")
+            if state_code not in (None, ""):
+                cur.execute(
+                    """
+                    SELECT dc.district_code AS value,
+                           dc.district_name AS label,
+                           dc.state_code AS parent_value
+                    FROM economic_census.district_codes dc
+                    WHERE dc.state_code = %s
+                      AND EXISTS (
+                          SELECT 1
+                          FROM economic_census.enterprises_full e
+                          WHERE NULLIF(e.state_code, '')::integer = dc.state_code
+                            AND NULLIF(e.district_code, '')::integer = dc.district_code
+                      )
+                    ORDER BY dc.district_name
+                    LIMIT %s
+                    """,
+                    (int(str(state_code).strip()), limit),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT dc.district_code AS value,
+                           dc.district_name AS label,
+                           dc.state_code AS parent_value
+                    FROM economic_census.district_codes dc
+                    WHERE EXISTS (
+                        SELECT 1
+                        FROM economic_census.enterprises_full e
+                        WHERE NULLIF(e.state_code, '')::integer = dc.state_code
+                          AND NULLIF(e.district_code, '')::integer = dc.district_code
+                    )
+                    ORDER BY dc.state_code, dc.district_name
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+        elif column == "major_activity_code":
+            cur.execute(
+                """
+                SELECT major_activity_code AS value,
+                       'NIC category ' || btrim(major_activity_code) AS label
+                FROM economic_census.enterprises_full
+                WHERE major_activity_code IS NOT NULL
+                  AND btrim(major_activity_code) <> ''
+                GROUP BY major_activity_code
+                ORDER BY btrim(major_activity_code)
+                LIMIT %s
+                """,
+                (limit,),
+            )
+        elif column == "activity_code":
+            category = parsed_filters.get("major_activity_code")
+            params = []
+            category_clause = ""
+            if category not in (None, ""):
+                category_clause = "AND e.major_activity_code = %s"
+                params.append(str(category))
+            cur.execute(
+                f"""
+                SELECT e.activity_code AS value,
+                       COALESCE(n.description, 'Unmapped NIC code') AS label
+                FROM economic_census.enterprises_full e
+                LEFT JOIN economic_census.nic_codes n ON e.activity_code = n.nic_code
+                WHERE e.activity_code IS NOT NULL
+                  AND btrim(e.activity_code) <> ''
+                  {category_clause}
+                GROUP BY e.activity_code, n.description
+                ORDER BY e.activity_code
+                LIMIT %s
+                """,
+                tuple(params + [limit]),
+            )
+        else:
+            if column not in {flt["name"] for flt in EC_FILTERS}:
+                raise HTTPException(status_code=400, detail=f"Column '{column}' is not an Economic Census filter")
+            where_clauses = [f'e."{column}" IS NOT NULL', f"NULLIF(TRIM(e.\"{column}\"::text), '') IS NOT NULL"]
+            where_values = []
+            for filter_col, filter_val in parsed_filters.items():
+                if filter_col == column or filter_val in (None, ""):
+                    continue
+                if filter_col not in {flt["name"] for flt in EC_FILTERS}:
+                    continue
+                where_clauses.append(f'TRIM(e."{filter_col}"::text) = %s')
+                where_values.append(str(filter_val).strip())
+            cur.execute(
+                f"""
+                SELECT DISTINCT TRIM(e."{column}"::text) AS value,
+                       TRIM(e."{column}"::text) AS label
+                FROM economic_census.enterprises_full e
+                WHERE {" AND ".join(where_clauses)}
+                ORDER BY label
+                LIMIT %s
+                """,
+                tuple(where_values + [limit]),
+            )
+
+        rows = cur.fetchall()
+        return [
+            {
+                "value": row["value"],
+                "label": f"{str(row['value']).strip()} - {row['label']}" if column in {"state_code", "activity_code", "major_activity_code"} else str(row["label"]),
+                **({"parent_value": row["parent_value"]} if "parent_value" in row else {}),
+            }
+            for row in rows
+        ]
+    finally:
+        cur.close()
+
+
+def _resolve_table_location(conn, table: str) -> tuple[str, str]:
+    """Resolve a table to an existing schema/table pair."""
+    schema_name, table_name = _split_table_identifier(table)
+    cur = conn.cursor()
+    try:
+        if schema_name:
+            cur.execute(
+                """
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = %s AND table_name = %s
+                """,
+                (schema_name, table_name),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail=f"Table '{table}' not found")
+            return schema_name, table_name
+
+        cur.execute(
+            """
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_name = %s AND table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+            ORDER BY CASE table_schema
+                WHEN 'public' THEN 0
+                WHEN 'economic_census' THEN 1
+                WHEN 'plfs' THEN 2
+                ELSE 3
+            END, table_schema
+            """,
+            (table_name,),
+        )
+        matches = cur.fetchall()
+        if not matches:
+            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
+        return matches[0][0], matches[0][1]
+    finally:
+        cur.close()
+
+
+def _load_table_catalog(conn):
+    """Discover all tables and load their columns dynamically from Postgres catalog metadata."""
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            WITH column_stats AS (
+                SELECT
+                    table_schema,
+                    table_name,
+                    json_agg(
+                        json_build_object(
+                            'name', column_name,
+                            'type', data_type,
+                            'nullable', is_nullable,
+                            'position', ordinal_position
+                        )
+                        ORDER BY ordinal_position
+                    ) AS columns,
+                    COUNT(*) AS column_count,
+                    COUNT(*) FILTER (
+                        WHERE data_type IN ('smallint', 'integer', 'bigint', 'numeric', 'real', 'double precision', 'decimal')
+                    ) AS numeric_column_count
+                FROM information_schema.columns
+                WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+                GROUP BY table_schema, table_name
+            )
+            SELECT
+                t.table_schema,
+                t.table_name,
+                t.table_type,
+                COALESCE(obj_description(c.oid, 'pg_class'), '') AS table_comment,
+                COALESCE(s.n_live_tup, 0)::bigint AS row_estimate,
+                COALESCE(cs.column_count, 0) AS column_count,
+                COALESCE(cs.numeric_column_count, 0) AS numeric_column_count,
+                COALESCE(cs.columns, '[]'::json) AS columns
+            FROM information_schema.tables t
+            JOIN pg_namespace n ON n.nspname = t.table_schema
+            JOIN pg_class c ON c.relname = t.table_name AND c.relnamespace = n.oid
+            LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid
+            LEFT JOIN column_stats cs
+                ON cs.table_schema = t.table_schema AND cs.table_name = t.table_name
+            WHERE t.table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+            ORDER BY
+                CASE t.table_schema
+                    WHEN 'public' THEN 0
+                    WHEN 'economic_census' THEN 1
+                    WHEN 'plfs' THEN 2
+                    ELSE 3
+                END,
+                t.table_schema,
+                t.table_name
+            """
+        )
+        rows = cur.fetchall()
+        schemas_found = sorted({row["table_schema"] for row in rows}, key=lambda s: PREFERRED_SCHEMA_ORDER.get(s, 99))
+        tables_found = [_format_qualified_name(row["table_schema"], row["table_name"]) for row in rows]
+
+        logger.info("[datasets] schemas found: %s", schemas_found)
+        logger.info("[datasets] tables found: %s", tables_found)
+
+        registry = []
+        for row in rows:
+            schema_name = row["table_schema"]
+            table_name = row["table_name"]
+            qualified_name = _format_qualified_name(schema_name, table_name)
+            category = {
+                "public": "Public",
+                "economic_census": "Economic Census",
+                "plfs": "PLFS",
+            }.get(schema_name, schema_name.replace("_", " ").title())
+
+            dataset_kind = "reference" if table_name.endswith("_codes") or "metadata" in table_name else "dataset"
+            registry.append(
+                {
+                    "name": qualified_name,
+                    "schema": schema_name,
+                    "table": table_name,
+                    "display_name": table_name.replace("_", " ").title(),
+                    "category": category,
+                    "kind": dataset_kind,
+                    "table_type": row["table_type"],
+                    "row_count": int(row["row_estimate"] or 0),
+                    "column_count": int(row["column_count"] or 0),
+                    "numeric_column_count": int(row["numeric_column_count"] or 0),
+                    "table_comment": row["table_comment"] or "",
+                    "columns": row["columns"] or [],
+                }
+            )
+
+        logger.info("[datasets] datasets loaded: %s", len(registry))
+        return {
+            "schemas": schemas_found,
+            "tables": tables_found,
+            "datasets": registry,
+        }
+    finally:
+        cur.close()
 
 def get_db_connection():
     """Get database connection to VPS PostgreSQL"""
@@ -162,137 +803,227 @@ async def health_db():
 
 @app.get("/datasets")
 async def get_datasets():
-    """Get all available datasets (table names)"""
+    """Get all available datasets with registry metadata."""
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Query information schema for tables in public schema and economic_census
-        cur.execute("""
-            SELECT schemaname, tablename FROM pg_tables 
-            WHERE schemaname = 'public' OR (schemaname = 'economic_census' AND tablename = 'enterprises_full')
-            UNION
-            SELECT schemaname, viewname as tablename FROM pg_views
-            WHERE schemaname = 'public'
-            ORDER BY schemaname, tablename
-        """)
-        
-        tables = [f"{row[0]}.{row[1]}" if row[0] != 'public' else row[1] for row in cur.fetchall()]
-        cur.close()
+        registry, _ = build_dataset_registry(conn)
         conn.close()
         
         return {
             "success": True,
-            "datasets": tables,
-            "count": len(tables)
+            "datasets": registry,
+            "tables": [item["name"] for item in registry],
+            "count": len(registry)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching datasets: {str(e)}")
 
 @app.get("/datasets/hierarchical")
 async def get_datasets_hierarchical():
-    """Get datasets organized in hierarchical categories"""
+    """Get datasets organized by schema categories."""
+    t_start = time.time()
+    logger.info("[datasets/hierarchical] Request received")
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Query all tables
-        cur.execute("""
-            SELECT schemaname, tablename FROM pg_tables 
-            WHERE schemaname = 'public' OR (schemaname = 'economic_census' AND tablename = 'enterprises_full')
-            UNION
-            SELECT schemaname, viewname as tablename FROM pg_views
-            WHERE schemaname = 'public'
-            ORDER BY schemaname, tablename
-        """)
-        
-        tables = [f"{row[0]}.{row[1]}" if row[0] != 'public' else row[1] for row in cur.fetchall()]
+        # Step 1: Query public.datasets table for user metadata if it exists
+        db_datasets = {}
+        try:
+            cur.execute("SELECT name, table_name, description, config FROM public.datasets")
+            for row in cur.fetchall():
+                db_datasets[row["table_name"]] = {
+                    "display_name": row["name"],
+                    "description": row["description"],
+                    "config": row["config"] or {}
+                }
+        except Exception as e:
+            logger.warning(f"[datasets/hierarchical] Could not query public.datasets table: {e}")
+
+        # Step 2: Query DB catalog to fetch all schemas, tables, row counts, and column counts in one single query
+        t_sql_start = time.time()
+        catalog_query = """
+            SELECT 
+                n.nspname AS schema_name,
+                c.relname AS table_name,
+                COALESCE(c.reltuples::bigint, 0) AS row_count,
+                (
+                    SELECT count(*) 
+                    FROM pg_attribute a 
+                    WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+                ) AS column_count
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+              AND n.nspname NOT LIKE 'pg_temp_%'
+              AND c.relkind IN ('r', 'p', 'v', 'm')
+            ORDER BY 
+                CASE n.nspname
+                    WHEN 'public' THEN 0
+                    WHEN 'economic_census' THEN 1
+                    WHEN 'plfs' THEN 2
+                    ELSE 3
+                END,
+                n.nspname,
+                c.relname
+        """
+        cur.execute(catalog_query)
+        result = cur.fetchall()
+        sql_time = time.time() - t_sql_start
+        logger.info(f"[datasets/hierarchical] SQL execution time: {sql_time:.4f}s. Rows returned: {len(result)}")
+
+        # Step 3: Categorize and assemble the response payload
+        hierarchical = {}
+        flat_datasets = []
+        counts = {"total": 0}
+
+        for row in result:
+            schema_name = row["schema_name"]
+            table_name = row["table_name"]
+            row_estimate = max(0, int(row["row_count"]))
+            col_count = int(row["column_count"])
+
+            # Filter/Skip system tables in public schema
+            if schema_name == "public" and table_name in {
+                "users", "sessions", "otp_challenges", "transactions", "usage_logs", "datasets", "data_records"
+            }:
+                continue
+
+            # Determine category
+            category = "Other"
+            qualified_name = table_name if schema_name == "public" else f"{schema_name}.{table_name}"
+            t_lower = qualified_name.lower()
+
+            if "hces" in t_lower:
+                category = "HCES"
+            elif "plfs" in t_lower or "person_survey" in t_lower or "household_survey" in t_lower:
+                category = "PLFS"
+            elif "economic_census" in t_lower or "enterprise" in t_lower:
+                category = "Economic Census"
+            elif schema_name == "public":
+                category = "Public"
+
+            # Enrich display name & description from public.datasets metadata
+            db_info = db_datasets.get(table_name) or db_datasets.get(qualified_name) or {}
+            display_name = db_info.get("display_name") or table_name.replace("_", " ").title()
+
+            dataset_item = {
+                "name": qualified_name,
+                "schema": schema_name,
+                "table": table_name,
+                "display_name": display_name,
+                "row_count": row_estimate,
+                "column_count": col_count,
+                "description": db_info.get("description", ""),
+                "config": db_info.get("config", {})
+            }
+
+            hierarchical.setdefault(category, []).append(dataset_item)
+            flat_datasets.append(dataset_item)
+            counts[category] = counts.get(category, 0) + 1
+            counts["total"] += 1
+
         cur.close()
         conn.close()
-        
-        # Organize datasets by category
-        hierarchical_data = {
-            "Economic Census": [],
-            "HCES": [],
-            "PLFS": [],
-            "Survey": [],
-            "Other": []
-        }
-        
-        for table in tables:
-            # Categorize by table name prefix
-            if table.startswith("economic_census."):
-                hierarchical_data["Economic Census"].append(table)
-            elif table.startswith("hces_"):
-                hierarchical_data["HCES"].append(table)
-            elif table.startswith("plfs_"):
-                hierarchical_data["PLFS"].append(table)
-            elif table in ["person_survey", "survey_data", "census_data"]:
-                hierarchical_data["Survey"].append(table)
-            else:
-                hierarchical_data["Other"].append(table)
-        
-        # Remove empty categories
-        hierarchical_data = {k: v for k, v in hierarchical_data.items() if v}
-        
+
+        logger.info(
+            f"[datasets/hierarchical] Response sent. Total time: {time.time() - t_start:.4f}s. "
+            f"Returned {counts['total']} datasets across {len(hierarchical)} categories."
+        )
+
         return {
             "success": True,
-            "data": hierarchical_data,
-            "total_datasets": len(tables)
+            "data": hierarchical,
+            "categories": list(hierarchical.keys()),
+            "datasets": flat_datasets,
+            "counts": counts,
+            "total_datasets": counts["total"]
+        }
+
+    except HTTPException as e:
+        logger.error(f"[datasets/hierarchical] HTTP error: {e.detail}")
+        return {
+            "success": False,
+            "error": str(e.detail),
+            "data": {},
+            "categories": [],
+            "datasets": [],
+            "counts": {"total": 0},
+            "total_datasets": 0
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching hierarchical datasets: {str(e)}")
+        logger.error(f"[datasets/hierarchical] Error: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": f"Error fetching hierarchical datasets: {str(e)}",
+            "data": {},
+            "categories": [],
+            "datasets": [],
+            "counts": {"total": 0},
+            "total_datasets": 0
+        }
+
+@app.get("/datasets/registry")
+async def get_datasets_registry():
+    """Get the full dynamic dataset registry with schema, table, and column metadata."""
+    try:
+        conn = get_db_connection()
+        registry, hierarchical_data = build_dataset_registry(conn)
+        conn.close()
+        return {
+            "success": True,
+            "schemas": list(hierarchical_data.keys()),
+            "datasets": registry,
+            "count": len(registry),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching dataset registry: {str(e)}")
 
 @app.get("/columns/{table:path}")
 async def get_columns(table: str):
     """Get columns for a specific table"""
-    
-    # Validate table name (prevent SQL injection)
     conn = get_db_connection()
-    cur = conn.cursor()
     
     try:
-        if table.startswith("economic_census.") and any(x in table for x in ["enterprise", "raw", "parsed", "full"]):
-            # Use variable metadata if available for enterprise tables
-            cur.execute("""
-                SELECT variable_name, data_type, description
-                FROM economic_census.variable_metadata
-                ORDER BY start_pos
-            """)
-            rows = cur.fetchall()
-            if rows:
-                columns = [{"name": row[0], "type": row[1], "description": row[2]} for row in rows]
-            else:
-                # Fallback to information_schema
-                table_name = table.split(".")[1]
-                cur.execute("""
-                    SELECT column_name, data_type 
-                    FROM information_schema.columns 
-                    WHERE table_schema = 'economic_census' AND table_name = %s
-                    ORDER BY ordinal_position
-                """, (table_name,))
-                columns = [{"name": row[0], "type": row[1]} for row in cur.fetchall()]
-        else:
-            # Get column information for public
-            cur.execute("""
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = %s AND table_schema = 'public'
-                ORDER BY ordinal_position
-            """, (table,))
-            columns = [{"name": row[0], "type": row[1]} for row in cur.fetchall()]
+        schema_name, table_name, _ = resolve_relation(conn, table)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT column_name, data_type, udt_name, is_nullable, column_default, ordinal_position
+            FROM information_schema.columns
+            WHERE table_schema = %s AND table_name = %s
+            ORDER BY ordinal_position
+            """,
+            (schema_name, table_name),
+        )
+        columns = [
+            {
+                "name": row[0],
+                "type": row[1],
+                "udt_name": row[2],
+                "nullable": row[3] == "YES",
+                "default": row[4],
+                "position": row[5],
+            }
+            for row in cur.fetchall()
+        ]
         
         if not columns:
             raise HTTPException(status_code=404, detail=f"Table '{table}' not found")
         
+        ux_profile = _build_ec_ux_profile(conn, columns) if _is_ec_enterprises(schema_name, table_name) else None
+        response_columns = ux_profile["columns"] if ux_profile else columns
+
         cur.close()
         conn.close()
         
         return {
             "success": True,
-            "table": table,
-            "columns": columns,
-            "count": len(columns)
+            "table": _format_qualified_name(schema_name, table_name),
+            "schema": schema_name,
+            "columns": response_columns,
+            "count": len(columns),
+            "ux_profile": ux_profile,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching columns")
@@ -354,21 +1085,24 @@ async def get_distinct_values(
     filters: str = Query(default=None),
 ):
     """Get distinct values for a specific column in a table (for filter dropdowns)"""
-    # Validate inputs
-    if not table.replace("_", "").replace(".", "").isalnum():
+    if not is_safe_qualified_name(table):
         raise HTTPException(status_code=400, detail="Invalid table name")
-    if not column.replace("_", "").isalnum():
+    if not is_safe_identifier(column):
         raise HTTPException(status_code=400, detail="Invalid column name")
     
     try:
         conn = get_db_connection()
+        schema_name, table_name, table_ref = resolve_relation(conn, table)
+        available_columns = {row["column_name"] for row in get_table_columns(conn, schema_name, table_name)}
+        if column not in available_columns:
+            raise HTTPException(status_code=400, detail=f"Column '{column}' not found in '{table}'")
+
+        if _is_ec_enterprises(schema_name, table_name) and column in {flt["name"] for flt in EC_FILTERS}:
+            values = _ec_distinct_options(conn, column, limit, filters)
+            conn.close()
+            return {"success": True, "data": values, "count": len(values)}
+
         cur = conn.cursor()
-        
-        if "." in table:
-            schema_name, table_name = table.split(".", 1)
-            table_ref = f'"{schema_name}"."{table_name}"'
-        else:
-            table_ref = f'"{table}"'
         
         where_clauses = [f'"{column}" IS NOT NULL', f"NULLIF(TRIM(\"{column}\"::text), '') IS NOT NULL"]
         where_values = []
@@ -409,6 +1143,114 @@ async def get_distinct_values(
         raise HTTPException(status_code=500, detail=f"Error fetching distinct values: {str(e)}")
 
 
+@app.get("/ux-report/{table:path}")
+async def get_ux_report(table: str):
+    """Report UX mapping coverage and schema issues for Economic Census."""
+    conn = get_db_connection()
+    try:
+        schema_name, table_name, _ = resolve_relation(conn, table)
+        columns = [
+            {
+                "name": row["column_name"],
+                "type": row["data_type"],
+                "udt_name": row["udt_name"],
+                "nullable": row["is_nullable"] == "YES",
+                "default": row["column_default"],
+                "position": row["ordinal_position"],
+            }
+            for row in get_table_columns(conn, schema_name, table_name)
+        ]
+
+        if not _is_ec_enterprises(schema_name, table_name):
+            return {
+                "success": True,
+                "table": _format_qualified_name(schema_name, table_name),
+                "coded_columns_found": [],
+                "lookup_tables_used": [],
+                "filter_fields_selected": [],
+                "mapped_records": {},
+                "unmapped_records": {},
+                "remaining_schema_issues": [],
+            }
+
+        profile = _build_ec_ux_profile(conn, columns)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cur.execute("SELECT COUNT(*) AS total FROM economic_census.enterprises_full")
+            total = int(cur.fetchone()["total"])
+            coverage_sql = {
+                "state_code": """
+                    SELECT COUNT(*) FILTER (WHERE s.state_code IS NOT NULL) AS mapped,
+                           COUNT(*) FILTER (WHERE s.state_code IS NULL) AS unmapped
+                    FROM economic_census.enterprises_full e
+                    LEFT JOIN economic_census.state_codes s
+                      ON NULLIF(e.state_code, '')::integer = s.state_code
+                """,
+                "district_code": """
+                    SELECT COUNT(*) FILTER (WHERE d.district_code IS NOT NULL) AS mapped,
+                           COUNT(*) FILTER (WHERE d.district_code IS NULL) AS unmapped
+                    FROM economic_census.enterprises_full e
+                    LEFT JOIN economic_census.district_codes d
+                      ON NULLIF(e.state_code, '')::integer = d.state_code
+                     AND NULLIF(e.district_code, '')::integer = d.district_code
+                """,
+                "activity_code": """
+                    SELECT COUNT(*) FILTER (WHERE n.nic_code IS NOT NULL) AS mapped,
+                           COUNT(*) FILTER (WHERE n.nic_code IS NULL) AS unmapped
+                    FROM economic_census.enterprises_full e
+                    LEFT JOIN economic_census.nic_codes n
+                      ON e.activity_code = n.nic_code
+                """,
+            }
+            mapped_records = {}
+            unmapped_records = {}
+            for column_name, sql in coverage_sql.items():
+                cur.execute(sql)
+                row = cur.fetchone()
+                mapped_records[column_name] = int(row["mapped"])
+                unmapped_records[column_name] = int(row["unmapped"])
+
+            cur.execute(
+                """
+                SELECT e.activity_code AS code, COUNT(*) AS rows
+                FROM economic_census.enterprises_full e
+                LEFT JOIN economic_census.nic_codes n ON e.activity_code = n.nic_code
+                WHERE n.nic_code IS NULL
+                GROUP BY e.activity_code
+                ORDER BY COUNT(*) DESC
+                LIMIT 50
+                """
+            )
+            unmapped_codes = {
+                "activity_code": [
+                    {"code": row["code"], "rows": int(row["rows"])}
+                    for row in cur.fetchall()
+                ]
+            }
+        finally:
+            cur.close()
+
+        return {
+            "success": True,
+            "table": EC_ENTERPRISES_DATASET,
+            "total_records": total,
+            "coded_columns_found": profile["mapped_columns"],
+            "lookup_tables_used": sorted({item["lookup_table"] for item in profile["mapped_columns"]}),
+            "filter_fields_selected": profile["filters"],
+            "hidden_columns": profile["hidden_columns"],
+            "mapped_records": mapped_records,
+            "unmapped_records": unmapped_records,
+            "unmapped_codes": unmapped_codes,
+            "remaining_schema_issues": [
+                "Some Delhi district names were added as unverified placeholder labels.",
+                "Remaining activity_code unmapped rows are malformed values such as XIO0, NILL, blanks, or punctuation-bearing codes.",
+                "Non-primary coded fields use variable_metadata descriptions unless a dedicated lookup table is added.",
+            ],
+        }
+    finally:
+        conn.close()
+
+
 @app.post("/data")
 async def fetch_data(request: DataRequest):
     """Fetch data from database with specified columns"""
@@ -416,31 +1258,24 @@ async def fetch_data(request: DataRequest):
     conn = None
     try:
         conn = get_db_connection()
-        
-        # Validate table name
-        if not request.table.replace("_", "").replace(".", "").isalnum():
-            raise HTTPException(status_code=400, detail="Invalid table name")
-        
-        # Validate column names
+        schema_name, table_name, table_ref = resolve_relation(conn, request.table)
+        available_columns = {row["column_name"] for row in get_table_columns(conn, schema_name, table_name)}
+
+        # Validate column names against the actual table schema
         for col in request.columns:
-            if not col.replace("_", "").isalnum():
+            if not is_safe_identifier(col):
                 raise HTTPException(status_code=400, detail=f"Invalid column name: {col}")
-        
-        # Build safe query with properly quoted identifiers
+            if col not in available_columns:
+                raise HTTPException(status_code=400, detail=f"Column '{col}' not found in '{request.table}'")
+
         columns_str = ", ".join([f'"{col}"' for col in request.columns])
-        
-        if "." in request.table:
-            schema_name, table_name = request.table.split(".", 1)
-            table_ref = f'"{schema_name}"."{table_name}"'
-        else:
-            table_ref = f'"{request.table}"'
             
         # Build WHERE clause from filters
         where_clauses = []
         where_values = []
         
         for col, val in request.filters.items():
-            if not col.replace("_", "").isalnum():
+            if not is_safe_identifier(col) or col not in available_columns:
                 continue
             # Use TRIM to handle padded strings in the database
             where_clauses.append(f'TRIM("{col}"::text) = %s')
@@ -471,7 +1306,7 @@ async def fetch_data(request: DataRequest):
         
         return {
             "success": True,
-            "table": request.table,
+            "table": _format_qualified_name(schema_name, table_name),
             "columns": request.columns,
             "data": rows,
             "count": len(rows),
@@ -500,11 +1335,10 @@ async def get_statistics(table: str, column: str = None):
     
     try:
         if column:
-            if "." in table:
-                schema_name, table_name = table.split(".", 1)
-                table_ref = f'"{schema_name}"."{table_name}"'
-            else:
-                table_ref = f'public."{table}"'
+            schema_name, table_name, table_ref = resolve_relation(conn, table)
+            available_columns = {row["column_name"] for row in get_table_columns(conn, schema_name, table_name)}
+            if column not in available_columns:
+                raise HTTPException(status_code=400, detail=f"Column '{column}' not found in '{table}'")
                 
             query = f"""
                 SELECT 
@@ -526,7 +1360,7 @@ async def get_statistics(table: str, column: str = None):
         
         return {
             "success": True,
-            "table": table,
+            "table": _format_qualified_name(schema_name, table_name) if column else table,
             "column": column,
             "statistics": stats
         }
@@ -702,33 +1536,17 @@ async def get_analytics_summary():
     """Get analytics summary across all datasets"""
     try:
         conn = get_db_connection()
+        registry, _ = build_dataset_registry(conn)
         cur = conn.cursor()
-        
-        # Get table counts
-        cur.execute("""
-            SELECT 
-                schemaname,
-                tablename,
-                (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = tablename) as column_count,
-                (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = tablename AND data_type LIKE '%int%' OR data_type LIKE '%numeric%') as numeric_columns
-            FROM pg_tables
-            WHERE schemaname = 'public'
-            ORDER BY tablename
-        """)
-        
-        tables = cur.fetchall()
         summary = []
-        
-        for table_info in tables:
-            table_name = table_info[1]
-            # Get row count
-            cur.execute(f'SELECT COUNT(*) FROM "{table_name}"')
-            row_count = cur.fetchone()[0]
+
+        for dataset in registry:
             summary.append({
-                'table': table_name,
-                'rows': row_count,
-                'columns': table_info[2],
-                'numeric_columns': table_info[3]
+                'table': dataset['name'],
+                'schema': dataset['schema'],
+                'rows': dataset['row_count_estimate'],
+                'columns': dataset['column_count'],
+                'numeric_columns': sum(1 for col in dataset['columns'] if col['type'] in ['smallint', 'integer', 'bigint', 'numeric', 'real', 'double precision', 'decimal']),
             })
         
         cur.close()
@@ -751,16 +1569,7 @@ async def get_data_quality(table: str):
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        if "." in table:
-            schema_name, table_name = table.split(".", 1)
-            table_ref = f'"{schema_name}"."{table_name}"'
-            query_schema = schema_name
-            query_table = table_name
-        else:
-            table_ref = f'public."{table}"'
-            query_schema = 'public'
-            query_table = table
+        query_schema, query_table, table_ref = resolve_relation(conn, table)
             
         # Get column info
         cur.execute("""
@@ -819,12 +1628,10 @@ async def get_column_distribution(table: str, column: str):
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        if "." in table:
-            schema_name, table_name = table.split(".", 1)
-            table_ref = f'"{schema_name}"."{table_name}"'
-        else:
-            table_ref = f'public."{table}"'
+        schema_name, table_name, table_ref = resolve_relation(conn, table)
+        available_columns = {row["column_name"] for row in get_table_columns(conn, schema_name, table_name)}
+        if column not in available_columns:
+            raise HTTPException(status_code=400, detail=f"Column '{column}' not found in '{table}'")
             
         # For categorical data - get top values
         cur.execute(f"""
@@ -855,12 +1662,7 @@ async def get_integrity_audit(table: str):
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        if "." in table:
-            schema_name, table_name = table.split(".", 1)
-            table_ref = f'"{schema_name}"."{table_name}"'
-        else:
-            table_ref = f'public."{table}"'
+        schema_name, table_name, table_ref = resolve_relation(conn, table)
             
         # 1. Detect Duplicate Rows (Total Count)
         # This is a generic check. In a production set, we usually check by a Unique ID if available.

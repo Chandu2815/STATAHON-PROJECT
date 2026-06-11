@@ -57,7 +57,7 @@ CREATE TABLE survey_data (
 
 **File: `.env`** (already created)
 ```env
-DATABASE_URL=postgresql://postgres:1234@127.0.0.1:5432/survey_db
+DATABASE_URL=postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db
 DEBUG=True
 ```
 
@@ -193,7 +193,7 @@ sudo systemctl start postgresql
 ```bash
 # Fix: Use correct URL format
 # Wrong: postgresql://postgres:password@localhost/survey_db
-# Right: postgresql://postgres:1234@127.0.0.1:5432/survey_db
+# Right: postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db
 ```
 
 ### ❌ Error: "pool timeout"
@@ -244,7 +244,7 @@ async def get_data(db: Session = Depends(get_db)):
 - No manual session management
 - Automatic cleanup
 - Thread-safe
-- Easy to test with mocks
+ - Easy to test with testing harnesses
 
 ---
 
@@ -360,7 +360,7 @@ print(result)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DATABASE_URL` | postgresql://postgres:1234@127.0.0.1:5432/survey_db | Database connection string |
+| `DATABASE_URL` | postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db | Database connection string |
 | `DEBUG` | True | Enable debug mode (set False in production) |
 | `DB_POOL_SIZE` | 10 | Connection pool size |
 | `DB_MAX_OVERFLOW` | 20 | Max overflow connections |

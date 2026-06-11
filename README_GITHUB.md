@@ -157,7 +157,7 @@ All 7 requirements implemented and verified:
 ## 🛠️ Technology Stack
 
 - **Framework**: FastAPI 0.104.1
-- **Database**: SQLite with SQLAlchemy 2.0.23
+- **Database**: PostgreSQL with SQLAlchemy 2.0.23
 - **Authentication**: JWT (python-jose)
 - **Security**: bcrypt 4.0.1
 - **Data Processing**: pandas 2.1.3, openpyxl, python-docx
@@ -169,7 +169,7 @@ All 7 requirements implemented and verified:
 Statathon 2/
 ├── app/                    # Main application
 ├── data/                   # Data files (PLFS XLSX, DOCX, PDF)
-├── mospi_dpi.db           # SQLite database
+├── (Central PostgreSQL)   # Single PostgreSQL database (configured via .env)
 ├── requirements.txt       # Python dependencies
 ├── start.ps1              # Quick start script
 ├── query_data.py          # Easy query tool

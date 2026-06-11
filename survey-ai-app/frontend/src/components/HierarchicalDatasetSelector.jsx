@@ -25,7 +25,37 @@ export default function HierarchicalDatasetSelector({
   const [activeCategory, setActiveCategory] = useState(null); // null means show category list
 
   // Professional Category Metadata
+  const getDatasetName = (item) => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object' && item.name) return item.name;
+    return String(item);
+  };
+
+  const getDatasetDisplayName = (item) => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') {
+      return item.display_name || item.name || String(item);
+    }
+    return String(item);
+  };
+
   const categoryMetadata = {
+    Public: {
+      icon: <FileText size={18} />,
+      title: 'Public Datasets',
+      subtitle: 'PUB',
+      theme: 'text-sky-600',
+      bg: 'bg-sky-50',
+      accent: 'bg-sky-600'
+    },
+    'Economic Census': {
+      icon: <BarChart3 size={18} />,
+      title: 'Economic Census',
+      subtitle: 'EC',
+      theme: 'text-orange-600',
+      bg: 'bg-orange-50',
+      accent: 'bg-orange-600'
+    },
     HCES: { 
       icon: <PieChart size={18} />, 
       title: 'Housing & Consumption',
@@ -42,15 +72,7 @@ export default function HierarchicalDatasetSelector({
       bg: 'bg-emerald-50',
       accent: 'bg-emerald-600'
     },
-    SURVEY: { 
-      icon: <FileText size={18} />, 
-      title: 'Survey Infrastructure',
-      subtitle: 'General',
-      theme: 'text-violet-600',
-      bg: 'bg-violet-50',
-      accent: 'bg-violet-600'
-    },
-    OTHER: { 
+    Other: { 
       icon: <Layers size={18} />, 
       title: 'Reference Materials',
       subtitle: 'Misc',
@@ -65,7 +87,7 @@ export default function HierarchicalDatasetSelector({
   const filteredItems = useMemo(() => {
     if (!activeCategory) return [];
     return (datasets[activeCategory] || []).filter(item => 
-      item.toLowerCase().includes(searchTerm.toLowerCase())
+      getDatasetName(item).toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [datasets, activeCategory, searchTerm]);
 
@@ -130,7 +152,9 @@ export default function HierarchicalDatasetSelector({
           <div className="grid grid-cols-1 gap-3 animate-in fade-in zoom-in duration-300">
             {categories.map(([cat, items]) => {
               const meta = categoryMetadata[cat] || { title: cat, theme: 'text-gray-600', bg: 'bg-gray-50', accent: 'bg-gray-600' };
-              const isSelectedCategory = datasets[cat].includes(selectedDataset);
+              const isSelectedCategory = (datasets[cat] || []).some(
+                (item) => getDatasetName(item) === selectedDataset
+              );
 
               return (
                 <button
@@ -167,27 +191,33 @@ export default function HierarchicalDatasetSelector({
         ) : (
           /* Items List */
           <div className="space-y-1.5 animate-in fade-in slide-in-from-right-4 duration-300">
-            {filteredItems.length > 0 ? filteredItems.map((dataset) => (
+            {filteredItems.length > 0 ? filteredItems.map((dataset) => {
+              const datasetName = getDatasetName(dataset);
+              return (
               <button
-                key={dataset}
-                onClick={() => onSelect(dataset)}
+                key={datasetName}
+                onClick={() => onSelect(datasetName)}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-between group ${
-                  selectedDataset === dataset
+                  selectedDataset === datasetName
                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200'
                     : 'bg-white border-transparent hover:bg-gray-50 hover:border-gray-200 text-gray-700'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <Database size={14} className={selectedDataset === dataset ? 'text-blue-100' : 'text-gray-400 group-hover:text-blue-500'} />
-                  <span className="text-[11px] font-bold truncate">{dataset}</span>
+                  <Database size={14} className={selectedDataset === datasetName ? 'text-blue-100' : 'text-gray-400 group-hover:text-blue-500'} />
+                  <div className="truncate">
+                    <span className="block text-[11px] font-bold truncate">{getDatasetDisplayName(dataset)}</span>
+                    <span className="block text-[9px] font-medium uppercase tracking-widest text-gray-400 truncate">{dataset.schema || activeCategory}</span>
+                  </div>
                 </div>
-                {selectedDataset === dataset && (
+                {selectedDataset === datasetName && (
                   <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
                     <span className="text-[9px] font-black">✓</span>
                   </div>
                 )}
               </button>
-            )) : (
+            );
+            }) : (
               <div className="py-12 text-center">
                 <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <Search className="text-gray-200" size={24} />

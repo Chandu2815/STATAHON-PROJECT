@@ -22,9 +22,9 @@ def example_custom_settings():
     uploader = CSVUploader(
         host='localhost',
         port=5432,
-        database='survey_db',
+        database='statahon_db',
         user='postgres',
-        password='1234',
+        password='NewPassword123',
         chunksize=10000  # Increase chunk size for faster insert (if memory allows)
     )
     
@@ -40,9 +40,9 @@ def example_custom_settings():
 def example_multiple_files(csv_directory: str):
     """Upload multiple CSV files from a directory."""
     uploader = CSVUploader(
-        database='survey_db',
+        database='statahon_db',
         user='postgres',
-        password='1234',
+        password='NewPassword123',
         chunksize=5000
     )
     
@@ -71,9 +71,9 @@ def example_large_file_optimized():
     Larger chunks = faster insert but more memory usage.
     """
     uploader = CSVUploader(
-        database='survey_db',
+        database='statahon_db',
         user='postgres',
-        password='1234',
+        password='NewPassword123',
         chunksize=50000  # Large chunk for faster processing
     )
     

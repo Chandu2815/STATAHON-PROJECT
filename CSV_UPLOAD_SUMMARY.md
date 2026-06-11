@@ -50,7 +50,7 @@ I've set up a complete system to integrate your PLFS CSV files into the project'
 ### Testing & Documentation
 ✓ **test_csv_ingestion.py** - Verification tool
   - Validates CSV files are readable
-  - Shows file statistics and sample data
+  - Shows file statistics and example rows
   - Creates test samples for validation
 
 ✓ **CSV_INTEGRATION_GUIDE.md** - Complete documentation

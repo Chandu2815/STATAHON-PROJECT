@@ -36,7 +36,7 @@ pip install fastapi uvicorn sqlalchemy psycopg2-binary python-dotenv
 Create a `.env` file in your project root:
 
 ```env
-DATABASE_URL=postgresql://postgres:1234@127.0.0.1:5432/survey_db
+DATABASE_URL=postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db
 DEBUG=True
 ```
 
@@ -90,7 +90,7 @@ Expected output:
 
 **DATABASE_URL:**
 - Format: `postgresql://user:password@host:port/database`
-- Example: `postgresql://postgres:1234@127.0.0.1:5432/survey_db`
+- Example: `postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db`
 
 **Connection Pool:**
 - `pool_size=10` - Maintains 10 connections
@@ -223,7 +223,7 @@ psql -U postgres -h 127.0.0.1 -d survey_db
 The database URL format is incorrect. Ensure:
 - Password is URL encoded if it contains special characters
 - Example: `@:P@ssw0rd!` → `@%3AP%40ssw0rd%21`
-- Use this format: `postgresql://postgres:1234@127.0.0.1:5432/survey_db`
+ - Use this format: `postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db`
 
 ### Issue 3: "Database survey_db does not exist"
 **Symptoms:** `Error: database "survey_db" does not exist`

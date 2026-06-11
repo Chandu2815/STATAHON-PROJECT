@@ -11,7 +11,7 @@ DB_CONFIG = {
     "port": 5432,
     "database": "survey_db",
     "user": "postgres",
-    "password": "1234"
+    "password": "NewPassword123"
 }
 
 def create_indexes():

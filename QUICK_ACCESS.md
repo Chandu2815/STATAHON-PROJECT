@@ -64,8 +64,8 @@
 ## 🛠️ Current Status
 
 ✓ Server running on http://localhost:8080  
-✓ 3 demo users created  
-✓ Login page active  
+✓ 3 example users created  
+✓ Login page active
 ✓ Dashboard functional  
 ✓ API docs accessible  
 ✓ 517,029 records available  
@@ -75,4 +75,4 @@
 
 **Open in browser**: http://localhost:8080/login
 
-Try logging in with any of the demo accounts above!
+Try logging in with any of the example accounts above!

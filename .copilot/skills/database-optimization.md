@@ -25,7 +25,7 @@ This skill applies to all PostgreSQL database operations in the Survey-AI projec
    ```javascript
    // Node.js - pg library with pool
    const pool = new Pool({
-     connectionString: 'postgresql://postgres:1234@127.0.0.1:5432/survey_db',
+    connectionString: 'postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db',
      max: 10,
      idleTimeoutMillis: 30000,
      connectionTimeoutMillis: 2000,
@@ -38,7 +38,7 @@ This skill applies to all PostgreSQL database operations in the Survey-AI projec
    ```python
    # Python - SQLAlchemy with pooling
    engine = create_engine(
-       'postgresql://postgres:1234@127.0.0.1:5432/survey_db',
+      'postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db',
        poolclass=QueuePool,
        pool_size=10,
        max_overflow=20,
@@ -364,7 +364,7 @@ REINDEX TABLE datasets;
 - api-designer (for response optimization)
 
 ## Connection Details
-- URL: `postgresql://postgres:1234@127.0.0.1:5432/survey_db`
+- URL: `postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db`
 - Pool Size: 10 connections
 - Max Overflow: 20 connections
 - Timeout: 10 seconds

@@ -27,11 +27,11 @@ class CSVUploader:
     """
     
     def __init__(self, 
-                 host: str = 'localhost',
+                 host: str = '187.127.138.4',
                  port: int = 5432,
-                 database: str = 'survey_db',
+                 database: str = 'statahon_db',
                  user: str = 'postgres',
-                 password: str = '1234',
+                 password: str = 'NewPassword123',
                  chunksize: int = 5000):
         """
         Initialize the CSVUploader with database credentials.
@@ -289,11 +289,11 @@ def main():
     print("=" * 80)
     
     # Configuration
-    DB_HOST = 'localhost'
+    DB_HOST = '187.127.138.4'
     DB_PORT = 5432
-    DB_NAME = 'survey_db'
+    DB_NAME = 'statahon_db'
     DB_USER = 'postgres'
-    DB_PASSWORD = '1234'
+    DB_PASSWORD = 'NewPassword123'
     
     # Use the specified CSV file
     CSV_FILE_PATH = '/Users/arunsudhaveni/Desktop/DataSet1.csv'
@@ -341,7 +341,7 @@ def main():
         
         if summary['total_inserted'] > 0:
             print(f"\n✓ Verify in PostgreSQL:")
-            print(f"  $ psql -U {DB_USER} -d {DB_NAME} -c 'SELECT COUNT(*) FROM survey_data;'")
+            print(f"  $ psql -U {DB_USER} -h {DB_HOST} -d {DB_NAME} -c 'SELECT COUNT(*) FROM survey_data;'")
         
         if summary['failed_rows']:
             print(f"\n⚠ Failed rows (first 5):")

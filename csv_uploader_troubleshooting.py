@@ -34,15 +34,15 @@ STEP 2: VERIFY POSTGRESQL
    
    Expected: PostgreSQL version information
 
-2. Test connection to survey_db:
-   $ psql -U postgres -d survey_db -c "\\dt"
+2. Test connection to statahon_db:
+   $ psql -U postgres -h 187.127.138.4 -d statahon_db -c "\\dt"
    
    Expected: List of tables (empty if new database)
 
 3. Create database if not exists:
-   $ psql -U postgres -c "CREATE DATABASE survey_db;"
-   $ psql -U postgres -c "CREATE USER survey_user WITH PASSWORD 'StrongPass@123';"
-   $ psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE survey_db TO survey_user;"
+   $ psql -U postgres -h 187.127.138.4 -c "CREATE DATABASE statahon_db;"
+   $ psql -U postgres -h 187.127.138.4 -c "CREATE USER survey_user WITH PASSWORD 'StrongPass@123';"
+   $ psql -U postgres -h 187.127.138.4 -c "GRANT ALL PRIVILEGES ON DATABASE statahon_db TO survey_user;"
 
 
 STEP 3: TEST CSV FILE FORMAT
@@ -78,17 +78,17 @@ Create test script:
 import psycopg2
 
 try:
-    conn = psycopg2.connect(
-        host='localhost',
-        port=5432,
-        database='survey_db',
-        user='postgres',
-        password='1234'
-    )
-    print("✓ Connection successful")
-    conn.close()
+   conn = psycopg2.connect(
+      host='187.127.138.4',
+      port=5432,
+      database='statahon_db',
+      user='postgres',
+      password='NewPassword123'
+   )
+   print("✓ Connection successful")
+   conn.close()
 except Exception as e:
-    print(f"✗ Connection failed: {e}")
+   print(f"✗ Connection failed: {e}")
 ```
 
 Run test:
@@ -107,22 +107,22 @@ STEP 5: RUN UPLOADER WITH TEST FILE
    (and modify main() to use test_small.csv)
 
 3. Verify rows inserted:
-   $ psql -U postgres -d survey_db -c "SELECT COUNT(*) FROM survey_data;"
+   $ psql -U postgres -h 187.127.138.4 -d statahon_db -c "SELECT COUNT(*) FROM survey_data;"
 
 
 STEP 6: VALIDATE DATA INTEGRITY
 ================================
 
 1. Check JSONB data structure:
-   $ psql -U postgres -d survey_db -c "SELECT id, data FROM survey_data LIMIT 1;"
+   $ psql -U postgres -h 187.127.138.4 -d statahon_db -c "SELECT id, data FROM survey_data LIMIT 1;"
 
 2. Check for NULL values in data column:
-   $ psql -U postgres -d survey_db -c "SELECT COUNT(*) FROM survey_data WHERE data IS NULL;"
+   $ psql -U postgres -h 187.127.138.4 -d statahon_db -c "SELECT COUNT(*) FROM survey_data WHERE data IS NULL;"
    
    Expected: 0
 
 3. Sample a few rows:
-   $ psql -U postgres -d survey_db -c "SELECT jsonb_pretty(data) FROM survey_data LIMIT 2;"
+   $ psql -U postgres -h 187.127.138.4 -d statahon_db -c "SELECT jsonb_pretty(data) FROM survey_data LIMIT 2;"
 """
 
 
@@ -148,14 +148,14 @@ Solutions:
   2. Check credentials are correct:
      - host: localhost (or 127.0.0.1)
      - port: 5432 (default)
-     - database: survey_db (create if missing)
+   - database: statahon_db (create if missing)
      - user: postgres
 
   3. Check firewall isn't blocking:
      $ sudo ufw allow 5432/tcp
 
   4. Verify database exists:
-     $ psql -U postgres -l | grep survey_db
+   $ psql -U postgres -h 187.127.138.4 -l | grep statahon_db
 
 
 PROBLEM 2: "Database 'survey_db' does not exist"
@@ -179,7 +179,7 @@ Symptoms:
   ✗ UnicodeDecodeError: 'utf-8' codec can't decode...
 
 Solutions:
-  1. Automatic fallback:
+   1. Automatic handling:
      The uploader automatically falls back to latin1 encoding
      Check log: "UTF-8 decoding failed, falling back to latin1"
 
@@ -443,16 +443,16 @@ except ImportError:
 
 # 4. Test PostgreSQL connection
 try:
-    conn = psycopg2.connect(
-        host='localhost', port=5432,
-        database='survey_db', user='postgres', password='1234'
-    )
+   conn = psycopg2.connect(
+      host='187.127.138.4', port=5432,
+      database='statahon_db', user='postgres', password='NewPassword123'
+   )
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM survey_data;")
     count = cursor.fetchone()[0]
     cursor.close()
     conn.close()
-    print(f"4. Database 'survey_db' has {count:,} rows")
+   print(f"4. Database 'statahon_db' has {count:,} rows")
 except Exception as e:
     print(f"4. ✗ Database connection failed: {e}")
 

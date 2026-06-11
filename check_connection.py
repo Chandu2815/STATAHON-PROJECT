@@ -34,9 +34,9 @@ print('\n✓ DATABASE CONNECTION')
 try:
     import psycopg2
     conn = psycopg2.connect(
-        host='localhost', port=5432,
-        database='survey_db', user='postgres',
-        password='1234', connect_timeout=5
+        host='187.127.138.4', port=5432,
+        database='statahon_db', user='postgres',
+        password='NewPassword123', connect_timeout=5
     )
     cursor = conn.cursor()
     cursor.execute('SELECT version();')

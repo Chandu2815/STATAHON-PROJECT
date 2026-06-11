@@ -1,18 +1,17 @@
-"""
-Test the REAL fix - fetch all then filter
-"""
-import sqlite3
+"""Test the REAL fix - fetch all then filter (PostgreSQL)"""
 import json
+from app.database import SessionLocal
+from sqlalchemy import text
 
-conn = sqlite3.connect('mospi_dpi.db')
-cursor = conn.cursor()
+db = SessionLocal()
+engine = db.bind
 
 print("Testing FIXED logic:")
 print("=" * 70)
 
 # Simulate the NEW fixed endpoint logic
-cursor.execute("SELECT data FROM data_records WHERE dataset_id = 2")
-all_records = cursor.fetchall()
+with engine.connect() as conn:
+    all_records = conn.execute(text("SELECT data FROM data_records WHERE dataset_id = 2")).fetchall()
 
 # Convert all records
 all_data = [json.loads(record[0]) for record in all_records]
@@ -37,7 +36,7 @@ if paginated:
 else:
     print("\n✗ FAILED - no records")
 
-conn.close()
+db.close()
 
 print("\n" + "=" * 70)
 print("Fix confirmed: Fetch ALL records first, THEN filter, THEN paginate")

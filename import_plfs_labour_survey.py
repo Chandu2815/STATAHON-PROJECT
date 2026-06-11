@@ -6,9 +6,9 @@ from sqlalchemy.pool import NullPool
 import psycopg2
 
 # Database config
-DB_NAME = "survey_db"
+DB_NAME = "statahon_db"
 DB_USER = "postgres"
-DB_PASSWORD = "1234"
+DB_PASSWORD = "NewPassword123"
 DB_HOST = "127.0.0.1"
 DB_PORT = 5432
 

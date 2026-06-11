@@ -1,15 +1,14 @@
-"""
-Direct test of the filter logic
-"""
-import sqlite3
+"""Direct test of the filter logic using PostgreSQL only"""
 import json
+from app.database import SessionLocal
+from sqlalchemy import text
 
-conn = sqlite3.connect('mospi_dpi.db')
-cursor = conn.cursor()
+db = SessionLocal()
+engine = db.bind
 
 # Get all district records
-cursor.execute("SELECT data FROM data_records WHERE dataset_id = 2")
-all_records = cursor.fetchall()
+with engine.connect() as conn:
+    all_records = conn.execute(text("SELECT data FROM data_records WHERE dataset_id = 2")).fetchall()
 
 print("Testing filter logic:")
 print("=" * 70)
@@ -36,7 +35,7 @@ if new_filtered:
         state_code = record.get('District codes for panel 4 of PLFS i.e. PLFS 2023-24 and upto December 2024', '?')
         print(f"  {i}. {district_name} (District Code: {district_code}, State Code: {state_code})")
 
-conn.close()
+db.close()
 
 print("\n" + "=" * 70)
 print("✓ Fix confirmed: Using 'Unnamed: 1' instead of 'State' field")

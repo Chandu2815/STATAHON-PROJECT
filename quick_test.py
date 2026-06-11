@@ -5,9 +5,9 @@ import requests
 
 BASE_URL = "http://localhost:8080/api/v1"
 
-# Login with existing user
-username = "demouser"
-password = "demo123"
+# Login with example user
+username = "exampleuser"
+password = "example123"
 response = requests.post(
     f"{BASE_URL}/auth/login",
     data={"username": username, "password": password}

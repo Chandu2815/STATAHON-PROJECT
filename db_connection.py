@@ -1,47 +1,32 @@
+import os
 import psycopg2
-from psycopg2 import sql, Error
-
-
-# Database configuration
-DB_CONFIG = {
-    'host': '187.127.135.117',
-    'database': 'survey_db',
-    'user': 'survey_user',
-    'password': 'StrongPass@123',
-    'port': 5432
-}
+from psycopg2 import Error
 
 
 def get_connection():
+    """Establish and return a connection to the central PostgreSQL database.
+
+    Uses the `DATABASE_URL` environment variable. If the connection fails,
+    an exception is raised and no fallback is attempted.
     """
-    Establish and return a connection to the PostgreSQL database.
-    
-    Returns:
-        psycopg2.connection: A database connection object if successful, None otherwise.
-    
-    Raises:
-        Prints error message to console if connection fails.
-    """
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set in environment")
+
     try:
-        connection = psycopg2.connect(
-            host=DB_CONFIG['host'],
-            database=DB_CONFIG['database'],
-            user=DB_CONFIG['user'],
-            password=DB_CONFIG['password'],
-            port=DB_CONFIG['port']
-        )
-        return connection
+        conn = psycopg2.connect(dsn=database_url)
+        return conn
     except Error as e:
-        print(f"Error: Failed to connect to the database.")
-        print(f"Details: {e}")
-        return None
+        # Do not fallback or print instructions that suggest using local DBs.
+        raise
 
 
 if __name__ == "__main__":
     # Test the connection
-    conn = get_connection()
-    if conn:
+    try:
+        conn = get_connection()
         print("✓ Database connection successful!")
         conn.close()
-    else:
-        print("✗ Database connection failed.")
+    except Exception as e:
+        print(f"✗ Database connection failed: {e}")
+        raise

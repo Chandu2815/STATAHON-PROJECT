@@ -1,22 +1,22 @@
-import sqlite3
+from app.database import SessionLocal
 import pandas as pd
 
-# Connect to database
-conn = sqlite3.connect('mospi_dpi.db')
+db = SessionLocal()
+engine = db.bind
 
 # Get actual column names from person_survey table
-cursor = conn.cursor()
-cursor.execute('PRAGMA table_info(person_survey)')
-columns = cursor.fetchall()
+from sqlalchemy import inspect, text
+inspector = inspect(engine)
+columns = inspector.get_columns('person_survey')
 
 print("Person Survey Table Columns:")
 print("=" * 80)
 for col in columns:
-    print(f"  {col[1]} ({col[2]})")
+    print(f"  {col['name']} ({col['type']})")
 
-# Check a sample record with non-zero earnings
+# Check example records with non-zero earnings
 print("\n" + "=" * 80)
-print("Sample records with non-zero earnings:")
+print("Example records with non-zero earnings:")
 print("=" * 80)
 
 query = """
@@ -31,7 +31,7 @@ WHERE CWS_Earnings_Salaried > 0 OR CWS_Earnings_SelfEmployed > 0
 LIMIT 5
 """
 
-df = pd.read_sql_query(query, conn)
+df = pd.read_sql_query(query, engine)
 print(df.to_string())
 
 # Check the records matching the screenshot (State=36, Age=15, Rural, Male)
@@ -51,7 +51,7 @@ WHERE State_UT_Code = 36 AND Age = 15 AND Sector = 1 AND Sex = 1
 LIMIT 10
 """
 
-df2 = pd.read_sql_query(query2, conn)
+df2 = pd.read_sql_query(query2, engine)
 print(df2.to_string())
 
 # Check overall statistics for earnings
@@ -59,20 +59,21 @@ print("\n" + "=" * 80)
 print("Overall earnings statistics:")
 print("=" * 80)
 
-cursor.execute("""
-    SELECT 
-        COUNT(*) as total_records,
-        COUNT(CASE WHEN CWS_Earnings_Salaried > 0 THEN 1 END) as non_zero_salaried,
-        COUNT(CASE WHEN CWS_Earnings_SelfEmployed > 0 THEN 1 END) as non_zero_self_employed,
-        AVG(CASE WHEN CWS_Earnings_Salaried > 0 THEN CWS_Earnings_Salaried END) as avg_salaried,
-        AVG(CASE WHEN CWS_Earnings_SelfEmployed > 0 THEN CWS_Earnings_SelfEmployed END) as avg_self_employed
-    FROM person_survey
-""")
-stats = cursor.fetchone()
+with engine.connect() as conn:
+    stats = conn.execute(text("""
+        SELECT 
+            COUNT(*) as total_records,
+            COUNT(CASE WHEN CWS_Earnings_Salaried > 0 THEN 1 END) as non_zero_salaried,
+            COUNT(CASE WHEN CWS_Earnings_SelfEmployed > 0 THEN 1 END) as non_zero_self_employed,
+            AVG(CASE WHEN CWS_Earnings_Salaried > 0 THEN CWS_Earnings_Salaried END) as avg_salaried,
+            AVG(CASE WHEN CWS_Earnings_SelfEmployed > 0 THEN CWS_Earnings_SelfEmployed END) as avg_self_employed
+        FROM person_survey
+    """)).fetchone()
+
 print(f"  Total records: {stats[0]}")
 print(f"  Non-zero salaried earnings: {stats[1]}")
 print(f"  Non-zero self-employed earnings: {stats[2]}")
 print(f"  Average salaried (when > 0): ₹{stats[3]:.2f}" if stats[3] else "  Average salaried: N/A")
 print(f"  Average self-employed (when > 0): ₹{stats[4]:.2f}" if stats[4] else "  Average self-employed: N/A")
 
-conn.close()
+db.close()

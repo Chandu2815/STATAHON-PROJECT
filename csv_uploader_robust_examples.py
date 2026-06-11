@@ -38,11 +38,11 @@ def example_custom_config():
     print("=" * 70)
     
     uploader = RobustCSVUploader(
-        host='127.0.0.1',
+        host='187.127.138.4',
         port=5432,
-        database='survey_db',
+        database='statahon_db',
         user='postgres',
-        password='1234',
+        password='NewPassword123',
         chunksize=10000  # Larger chunks for faster insert
     )
     
@@ -64,9 +64,9 @@ def example_large_file():
     print("=" * 70)
     
     uploader = RobustCSVUploader(
-        database='survey_db',
+        database='statahon_db',
         user='postgres',
-        password='1234',
+        password='NewPassword123',
         chunksize=50000  # Much larger chunks for speed
     )
     
@@ -133,11 +133,11 @@ def example_with_error_handling():
         
         # Create uploader
         uploader = RobustCSVUploader(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234',
+            password='NewPassword123',
             chunksize=5000
         )
         
@@ -242,17 +242,17 @@ def example_progress_monitoring():
        $ tail -f csv_uploader.log
     
     2. PostgreSQL (in another terminal):
-       $ psql -U postgres -d survey_db -c "SELECT COUNT(*) FROM survey_data;"
+    $ psql -U postgres -h 187.127.138.4 -d statahon_db -c "SELECT COUNT(*) FROM survey_data;"
     
     3. System monitoring:
-       $ watch -n 1 'psql -U postgres -d survey_db -c "SELECT COUNT(*) FROM survey_data;"'
+    $ watch -n 1 'psql -U postgres -h 187.127.138.4 -d statahon_db -c "SELECT COUNT(*) FROM survey_data;"'
     
     
     Expected output during upload:
     
     $ tail -f csv_uploader.log
     2024-03-24 10:15:30 | INFO | Starting upload: data.csv (5234.56 MB)
-    2024-03-24 10:15:31 | INFO | ✓ Connected to survey_db@localhost:5432
+    2024-03-24 10:15:31 | INFO | ✓ Connected to statahon_db@187.127.138.4:5432
     2024-03-24 10:15:32 | INFO | ✓ Table 'survey_data' ready (with indexes)
     2024-03-24 10:15:33 | INFO | ✓ Detected encoding: UTF-8
     2024-03-24 10:15:33 | INFO | Processing CSV with chunksize=50000

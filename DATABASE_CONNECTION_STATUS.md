@@ -11,8 +11,8 @@
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| **PostgreSQL Database** | ✅ Connected | localhost:5432, survey_db |
-| **Database User** | ✅ Configured | postgres / 1234 |
+| **PostgreSQL Database** | ✅ Connected | 187.127.138.4:5432, statahon_db |
+| **Database User** | ✅ Configured | postgres / NewPassword123 |
 | **Environment Config** | ✅ Loaded | .env file configured |
 | **SQLAlchemy Engine** | ✅ Created | Connection pooling enabled |
 | **FastAPI Application** | ✅ Ready | Survey Data API v1.0.0 |
@@ -24,17 +24,17 @@
 
 ### Database Connection
 ```
-Host:       127.0.0.1
+Host:       187.127.138.4
 Port:       5432
-Database:   survey_db
+Database:   statahon_db
 User:       postgres
-Password:   1234
-URL:        postgresql://postgres:1234@127.0.0.1:5432/survey_db
+Password:   NewPassword123
+URL:        postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db
 ```
 
 ### Environment File (`.env`)
 ```
-DATABASE_URL=postgresql://postgres:1234@127.0.0.1:5432/survey_db
+DATABASE_URL=postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db
 ENVIRONMENT=development
 DEBUG=True
 DB_POOL_SIZE=10

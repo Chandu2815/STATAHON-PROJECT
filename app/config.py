@@ -43,9 +43,9 @@ class Settings(BaseSettings):
     VITE_APP_URL: str = "http://localhost:8000"
     VITE_SURVEY_AI_URL: str = "http://localhost:5173"
     
-    # Payment
-    PAYMENT_GATEWAY_URL: str = "https://mock-payment-gateway.example.com"
-    PAYMENT_API_KEY: str = "mock-api-key"
+    # Payment (set in production)
+    PAYMENT_GATEWAY_URL: str = ""
+    PAYMENT_API_KEY: str = ""
     
     # CORS - Include both HTTP (dev) and HTTPS (prod) origins
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://localhost:3000,https://localhost:8000"

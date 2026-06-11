@@ -9,7 +9,7 @@ load_dotenv()
 # Database - Use same database as MoSPI
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:1234@127.0.0.1:5432/mospi_db"  # Shared with MoSPI
+    "postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db"  # Shared with MoSPI
 )
 
 # JWT Configuration

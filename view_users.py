@@ -10,9 +10,9 @@ try:
     conn = psycopg2.connect(
         host="127.0.0.1",
         port=5432,
-        database="survey_db",
+        database="statahon_db",
         user="postgres",
-        password="1234"
+        password="NewPassword123"
     )
 
     cursor = conn.cursor(cursor_factory=RealDictCursor)

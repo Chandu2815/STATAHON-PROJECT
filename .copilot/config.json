@@ -124,7 +124,7 @@
       "port": 5432,
       "name": "survey_db",
       "user": "postgres",
-      "connection_string": "postgresql://postgres:1234@127.0.0.1:5432/survey_db",
+      "connection_string": "postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db",
       "pool_size": 10,
       "max_overflow": 20,
       "timeout": 10,
@@ -233,7 +233,7 @@
       "nodejs_port": 8000,
       "fastapi_port": 8001,
       "react_port": 5173,
-      "database": "postgresql://postgres:1234@127.0.0.1:5432/survey_db",
+      "database": "postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db",
       "debug": true
     },
     "production": {

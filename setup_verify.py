@@ -60,7 +60,7 @@ if os.path.exists(".env"):
 else:
     print("  ✗ .env file NOT found - creating...")
     with open(".env", "w") as f:
-        f.write("DATABASE_URL=postgresql://postgres:1234@127.0.0.1:5432/survey_db\n")
+        f.write("DATABASE_URL=postgresql://postgres:NewPassword123@187.127.138.4:5432/statahon_db\n")
         f.write("DEBUG=True\n")
     print("  ✓ Created .env file")
 

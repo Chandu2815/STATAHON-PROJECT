@@ -43,7 +43,7 @@ The MoSPI Data Portal now features a complete role-based authentication system w
   - System configuration
   - Direct database access via API
 
-## Demo Accounts
+## Example Accounts
 
 ### Admin Account
 ```

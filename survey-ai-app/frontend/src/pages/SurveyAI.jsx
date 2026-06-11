@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { API, normalizeHierarchicalDatasets } from '../lib/api.js';
 import { 
   Loader2, 
   AlertCircle, 
@@ -24,52 +24,12 @@ import DataExportActions from '../components/DataExportActions.jsx';
 import HelpAndShortcuts from '../components/HelpAndShortcuts.jsx';
 import AnalyticsDashboard from '../components/AnalyticsDashboard.jsx';
 
-// Create fetch instance with proper error handling
-const API = {
-  baseURL: '/api/ai',
-  timeout: 30000,
-  
-  async get(endpoint) {
-    try {
-      const url = `${this.baseURL}${endpoint}`;
-      console.log(`[API] GET ${url}`);
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await response.json();
-      console.log(`[API] Response:`, data);
-      return { data };
-    } catch (error) {
-      console.error(`[API Error] GET ${endpoint}:`, error);
-      throw error;
-    }
-  },
-
-  async post(endpoint, payload) {
-    try {
-      const url = `${this.baseURL}${endpoint}`;
-      console.log(`[API] POST ${url} with payload:`, payload);
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      console.log(`[API] Response:`, data);
-      return { data };
-    } catch (error) {
-      console.error(`[API Error] POST ${endpoint}:`, error);
-      throw error;
-    }
-  }
-};
-
 export default function SurveyAI() {
   const [datasets, setDatasets] = useState({}); 
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [columns, setColumns] = useState([]);
+  const [uxProfile, setUxProfile] = useState(null);
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [data, setData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -80,6 +40,18 @@ export default function SurveyAI() {
   const [pendingFilters, setPendingFilters] = useState({});
   const [pagination, setPagination] = useState({ page: 0, pageSize: 12 });
   const [activeTab, setActiveTab] = useState('explore'); 
+
+  console.log('[Survey AI] render state', {
+    selectedDataset,
+    datasetCategories: Object.keys(datasets),
+    datasetCounts: Object.fromEntries(
+      Object.entries(datasets).map(([category, items]) => [category, Array.isArray(items) ? items.length : 0])
+    ),
+    columns: columns.map((col) => col.name),
+    selectedColumns,
+    filters,
+    pendingFilters,
+  });
 
   // Fetch datasets on mount
   useEffect(() => {
@@ -106,15 +78,16 @@ export default function SurveyAI() {
       console.log('[Survey AI] Fetching hierarchical datasets...');
       
       const response = await API.get('/datasets/hierarchical');
-      if (response.data.success) {
-        console.log('[Survey AI] Successfully loaded datasets:', Object.keys(response.data.data || {}));
-        setDatasets(response.data.data || {});
+      if (response.data?.success) {
+        const normalized = normalizeHierarchicalDatasets(response.data.data || {});
+        console.log('[Survey AI] Successfully loaded datasets:', Object.keys(normalized));
+        setDatasets(normalized);
       } else {
-        throw new Error(response.data.error || 'API returned error');
+        throw new Error(response.data?.error || 'API returned error');
       }
     } catch (err) {
       console.error('[Survey AI] Error fetching datasets:', err);
-      setError('Failed to fetch datasets: ' + err.message);
+      setError('Failed to fetch datasets: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -125,6 +98,7 @@ export default function SurveyAI() {
       console.log(`[Survey AI] Selected dataset: ${dataset}`);
       setSelectedDataset(dataset);
       setSelectedColumns([]);
+      setUxProfile(null);
       setData([]);
       setChartData([]);
       setTotalCount(0);
@@ -140,9 +114,15 @@ export default function SurveyAI() {
         const cols = response.data.columns.map((col) => ({
           name: col.name,
           type: col.type || 'unknown',
+          label: col.label || col.name.replace(/_/g, ' '),
+          hidden: Boolean(col.hidden),
+          description: col.description || '',
+          coded: Boolean(col.coded),
+          mapping: col.mapping || null,
         }));
         console.log(`[Survey AI] Loaded ${cols.length} columns:`, cols.map(c => c.name));
         setColumns(cols);
+        setUxProfile(response.data.ux_profile || null);
       } else {
         throw new Error('No columns returned from API');
       }
@@ -150,6 +130,7 @@ export default function SurveyAI() {
       console.error(`[Survey AI] Error fetching columns for ${dataset}:`, err);
       setError('Failed to fetch columns: ' + err.message);
       setColumns([]);
+      setUxProfile(null);
     }
   };
 
@@ -158,15 +139,17 @@ export default function SurveyAI() {
       const nextColumns = prev.includes(column)
         ? prev.filter((col) => col !== column)
         : [...prev, column];
+      const profileFilterNames = new Set((uxProfile?.filters || []).map((filter) => filter.name));
+      const keepFilter = (key) => nextColumns.includes(key) || profileFilterNames.has(key);
 
       setPendingFilters((prevFilters) =>
         Object.fromEntries(
-          Object.entries(prevFilters).filter(([key]) => nextColumns.includes(key))
+          Object.entries(prevFilters).filter(([key]) => keepFilter(key))
         )
       );
       setFilters((prevFilters) =>
         Object.fromEntries(
-          Object.entries(prevFilters).filter(([key]) => nextColumns.includes(key))
+          Object.entries(prevFilters).filter(([key]) => keepFilter(key))
         )
       );
 
@@ -397,11 +380,20 @@ export default function SurveyAI() {
                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-[.3em] pr-4">Primary Source Repository</h3>
               </div>
               <div className="pl-14">
-                <HierarchicalDatasetSelector
-                  datasets={datasets}
-                  selectedDataset={selectedDataset}
-                  onSelect={handleDatasetSelect}
-                />
+                {loading && Object.keys(datasets).length === 0 ? (
+                  <div className="flex items-center justify-center p-12 bg-white rounded-2xl border border-gray-100 shadow-sm min-h-[450px]">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="animate-spin text-blue-600" size={32} />
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Initializing Repository...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <HierarchicalDatasetSelector
+                    datasets={datasets}
+                    selectedDataset={selectedDataset}
+                    onSelect={handleDatasetSelect}
+                  />
+                )}
               </div>
             </section>
 
@@ -421,12 +413,12 @@ export default function SurveyAI() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-10 border-b border-gray-50">
                       <div>
                         <h4 className="text-lg font-black text-gray-900 uppercase tracking-tight italic">Schema Identification</h4>
-                        <p className="text-xs font-medium text-gray-400 mt-1">Found {columns.length} potential vectors in {selectedDataset}</p>
+                        <p className="text-xs font-medium text-gray-400 mt-1">Found {columns.filter(c => !c.hidden).length} usable fields in {selectedDataset}</p>
                       </div>
                       
                       <div className="flex items-center gap-3">
                         <button 
-                          onClick={() => { setSelectedColumns(columns.map(c => c.name)); setData([]); setChartData([]); setTotalCount(0); }}
+                          onClick={() => { setSelectedColumns(columns.filter(c => !c.hidden).map(c => c.name)); setData([]); setChartData([]); setTotalCount(0); }}
                           className="px-6 py-3 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95"
                         >
                           Select All Fields
@@ -447,7 +439,7 @@ export default function SurveyAI() {
 
                     {columns.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-4 py-2">
-                        {columns.map((col) => {
+                        {columns.filter((col) => !col.hidden).map((col) => {
                           const isActive = selectedColumns.includes(col.name);
                           return (
                             <button
@@ -461,7 +453,7 @@ export default function SurveyAI() {
                             >
                               <div className="flex items-start justify-between gap-3 w-full">
                                 <div className={`text-[10px] sm:text-[11px] font-black uppercase tracking-tight break-words leading-[1.3] flex-1 ${isActive ? 'text-emerald-900' : 'text-gray-400'}`}>
-                                  {col.name.replace(/_/g, ' ')}
+                                  {col.label || col.name.replace(/_/g, ' ')}
                                 </div>
                                 <div className={`shrink-0 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${
                                   isActive 
@@ -522,6 +514,7 @@ export default function SurveyAI() {
                       filters={pendingFilters}
                       onChange={handleFilterChange}
                       selectedDataset={selectedDataset}
+                      uxProfile={uxProfile}
                     />
                     <button
                       onClick={fetchData}

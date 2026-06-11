@@ -11,9 +11,9 @@ columns = inspector.get_columns('household_survey')
 for i, col in enumerate(columns, 1):
     print(f"{i:3d}. {col['name']:40s} {str(col['type']):20s}")
 
-# Sample data to understand values
+# Show first records to understand values
 print("\n" + "="*80)
-print("HOUSEHOLD SURVEY SAMPLE DATA (First 3 records)")
+print("HOUSEHOLD SURVEY - First 3 records")
 print("="*80)
 result = db.execute(text('SELECT * FROM household_survey LIMIT 3')).fetchall()
 if result:
@@ -30,9 +30,8 @@ columns = inspector.get_columns('person_survey')
 for i, col in enumerate(columns, 1):
     print(f"{i:3d}. {col['name']:40s} {str(col['type']):20s}")
 
-# Sample data to understand values
 print("\n" + "="*80)
-print("PERSON SURVEY SAMPLE DATA (First 3 records)")
+print("PERSON SURVEY - First 3 records")
 print("="*80)
 result = db.execute(text('SELECT * FROM person_survey LIMIT 3')).fetchall()
 if result:

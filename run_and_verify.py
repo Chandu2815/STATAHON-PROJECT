@@ -44,11 +44,11 @@ def check_prerequisites():
     # Check PostgreSQL connection
     try:
         conn = psycopg2.connect(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234',
+            password='NewPassword123',
             connect_timeout=3
         )
         conn.close()
@@ -72,11 +72,11 @@ def verify_postgres_empty():
     
     try:
         conn = psycopg2.connect(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234'
+            password='NewPassword123'
         )
         cursor = conn.cursor()
         
@@ -145,11 +145,11 @@ def verify_upload_results():
     
     try:
         conn = psycopg2.connect(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234'
+            password='NewPassword123'
         )
         cursor = conn.cursor()
         
@@ -199,8 +199,8 @@ def print_summary(success, initial_count, final_count):
         print(f"     Final rows: {final_count:,}")
         print(f"     Rows added: {rows_added:,}")
         print(f"\n  You can query the data:")
-        print(f"    psql -U postgres -d survey_db -c 'SELECT COUNT(*) FROM survey_data;'")
-        print(f"    psql -U postgres -d survey_db -c 'SELECT * FROM survey_data LIMIT 5;'")
+        print(f"    psql -U postgres -h 187.127.138.4 -d statahon_db -c 'SELECT COUNT(*) FROM survey_data;'")
+        print(f"    psql -U postgres -h 187.127.138.4 -d statahon_db -c 'SELECT * FROM survey_data LIMIT 5;'")
     else:
         print(f"\n  ❌ UPLOAD FAILED")
         print(f"     Check logs: tail -f /tmp/csv_uploader.log")
@@ -228,11 +228,11 @@ def main():
     # Get initial count
     try:
         conn = psycopg2.connect(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234'
+            password='NewPassword123'
         )
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM survey_data")
@@ -255,11 +255,11 @@ def main():
     # Get final count
     try:
         conn = psycopg2.connect(
-            host='localhost',
+            host='187.127.138.4',
             port=5432,
-            database='survey_db',
+            database='statahon_db',
             user='postgres',
-            password='1234'
+            password='NewPassword123'
         )
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM survey_data")
