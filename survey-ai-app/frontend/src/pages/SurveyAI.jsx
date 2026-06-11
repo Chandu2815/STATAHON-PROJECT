@@ -626,7 +626,7 @@ export default function SurveyAI() {
               selectedDataset={selectedDataset}
               columns={columns}
               selectedColumns={selectedColumns}
-              data={data}
+              data={chartData.length > 0 ? chartData : data}
               statistics={statistics}
               loading={loading}
               error={error}
