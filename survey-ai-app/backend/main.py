@@ -4,20 +4,24 @@ Modern Survey Data Explorer with Dynamic Queries
 Connects exclusively to VPS PostgreSQL database
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import psycopg2
+from psycopg2 import errors as pg_errors
 from psycopg2.extras import RealDictCursor
 import os
 import re
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 import logging
 import json
 import time
 from collections import defaultdict
 from time import monotonic
+from urllib.parse import urlparse, unquote
+from jose import JWTError, jwt
 
 # Configure logging
 logging.basicConfig(
@@ -47,15 +51,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(pg_errors.QueryCanceled)
+async def postgres_timeout_handler(request: Request, exc):
+    logger.warning("Query timed out for %s: %s", request.url.path, exc)
+    return JSONResponse(
+        status_code=504,
+        content={
+            "success": False,
+            "error": "Query timed out. Please narrow your filters and try again.",
+            "detail": "database_query_timeout",
+        },
+    )
+
 # Include routers
 app.include_router(survey_data_router)
 
-# Database Configuration - NO FALLBACK DEFAULTS (read from .env only)
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", "5432")  # Default port only
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+# Database Configuration - prefer DATABASE_URL, allow explicit DB_* overrides
+DATABASE_URL = os.getenv("DATABASE_URL")
+parsed_database_url = urlparse(DATABASE_URL) if DATABASE_URL else None
+DB_HOST = os.getenv("DB_HOST") or (parsed_database_url.hostname if parsed_database_url else None)
+DB_PORT = os.getenv("DB_PORT") or (str(parsed_database_url.port) if parsed_database_url and parsed_database_url.port else "5432")
+DB_NAME = os.getenv("DB_NAME") or (parsed_database_url.path.lstrip("/") if parsed_database_url else None)
+DB_USER = os.getenv("DB_USER") or (unquote(parsed_database_url.username) if parsed_database_url and parsed_database_url.username else None)
+DB_PASSWORD = os.getenv("DB_PASSWORD") or (unquote(parsed_database_url.password) if parsed_database_url and parsed_database_url.password else None)
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ROOT_ENV = dotenv_values(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+JWT_SECRET_CANDIDATES = list(dict.fromkeys(
+    secret for secret in [
+        SECRET_KEY,
+        ROOT_ENV.get("SECRET_KEY"),
+        "your-secret-key-change-in-production-12345",
+    ]
+    if secret
+))
 
 # Validate required configuration
 missing_vars = []
@@ -74,21 +104,60 @@ if missing_vars:
     logger.error(startup_config_error)
 
 # Build psycopg2 config
+DB_CONNECT_TIMEOUT_SECONDS = int(os.getenv("DB_CONNECT_TIMEOUT_SECONDS", "3"))
+DB_STATEMENT_TIMEOUT_MS = int(os.getenv("DB_STATEMENT_TIMEOUT_MS", "4500"))
+DB_LOCK_TIMEOUT_MS = int(os.getenv("DB_LOCK_TIMEOUT_MS", "1000"))
+
 DB_CONFIG = {
     "host": DB_HOST,
     "port": int(DB_PORT) if DB_PORT and DB_PORT.isdigit() else 5432,
     "database": DB_NAME,
     "user": DB_USER,
     "password": DB_PASSWORD,
-    "connect_timeout": 10,
+    "connect_timeout": DB_CONNECT_TIMEOUT_SECONDS,
+    "options": f"-c statement_timeout={DB_STATEMENT_TIMEOUT_MS} -c lock_timeout={DB_LOCK_TIMEOUT_MS}",
 }
 
 SYSTEM_SCHEMAS = {"information_schema", "pg_catalog"}
+PUBLIC_INTERNAL_TABLES = {
+    "users",
+    "sessions",
+    "otp_challenges",
+    "transactions",
+    "usage_logs",
+    "datasets",
+    "data_records",
+    "survey_ai_activity",
+}
 SCHEMA_CATEGORY_MAP = {
     "public": "Public",
     "economic_census": "Economic Census",
     "plfs": "PLFS",
 }
+
+_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
+def cache_get(key: str):
+    item = _CACHE.get(key)
+    if not item or item["expires_at"] <= monotonic():
+        _CACHE.pop(key, None)
+        return None
+    return item["value"]
+
+
+def cache_set(key: str, value: Any, ttl_seconds: int = 30):
+    _CACHE[key] = {"value": value, "expires_at": monotonic() + ttl_seconds}
+    return value
+
+
+def clear_cache(prefix: str | None = None):
+    if prefix is None:
+        _CACHE.clear()
+        return
+    for key in list(_CACHE):
+        if key.startswith(prefix):
+            _CACHE.pop(key, None)
 
 
 def is_safe_identifier(value: str) -> bool:
@@ -108,6 +177,214 @@ def get_category_name(schema_name: str) -> str:
 
 def quote_relation(schema_name: str, table_name: str) -> str:
     return f'"{schema_name}"."{table_name}"'
+
+
+def normalize_account_type(role: str | None, account_type: str | None = None) -> str:
+    if account_type in {"public", "researcher"}:
+        return account_type
+    return "researcher" if str(role or "").lower() == "researcher" else "public"
+
+
+def default_credits_for_account(account_type: str) -> int:
+    return 100 if account_type == "researcher" else 10
+
+
+def ensure_credit_columns() -> None:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS account_type VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS credits_remaining INTEGER,
+                ADD COLUMN IF NOT EXISTS credits_used INTEGER
+            """
+        )
+        cur.execute(
+            """
+            UPDATE users
+            SET account_type = CASE
+                WHEN lower(role::text) = 'researcher' THEN 'researcher'
+                ELSE 'public'
+            END
+            WHERE account_type IS NULL OR account_type = ''
+            """
+        )
+        cur.execute(
+            """
+            UPDATE users
+            SET credits_remaining = CASE
+                WHEN account_type = 'researcher' THEN 100
+                ELSE 10
+            END
+            WHERE credits_remaining IS NULL
+            """
+        )
+        cur.execute("UPDATE users SET credits_used = 0 WHERE credits_used IS NULL")
+        cur.execute(
+            """
+            ALTER TABLE users
+                ALTER COLUMN account_type SET DEFAULT 'public',
+                ALTER COLUMN account_type SET NOT NULL,
+                ALTER COLUMN credits_remaining SET DEFAULT 10,
+                ALTER COLUMN credits_remaining SET NOT NULL,
+                ALTER COLUMN credits_used SET DEFAULT 0,
+                ALTER COLUMN credits_used SET NOT NULL
+            """
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+def ensure_activity_table() -> None:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS survey_ai_activity (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                action VARCHAR(64) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                detail TEXT,
+                metadata JSONB DEFAULT '{}'::jsonb,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_survey_ai_activity_user_created
+            ON survey_ai_activity (user_id, created_at DESC)
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_survey_ai_activity_user_action_created
+            ON survey_ai_activity (user_id, action, created_at DESC)
+            """
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+def decode_bearer_token(authorization: Optional[str]) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    token = authorization.split(" ", 1)[1].strip()
+    for secret in JWT_SECRET_CANDIDATES:
+        try:
+            payload = jwt.decode(token, secret, algorithms=[ALGORITHM])
+            username = payload.get("sub")
+            if username:
+                return username
+        except JWTError:
+            continue
+
+    raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+
+def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
+    username = decode_bearer_token(authorization)
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            SELECT id, username, email, role, is_active, account_type, credits_remaining, credits_used
+            FROM users
+            WHERE username = %s OR email = %s
+            LIMIT 1
+            """,
+            (username, username),
+        )
+        user = cur.fetchone()
+        if not user:
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+        if not user["is_active"]:
+            raise HTTPException(status_code=403, detail="User account is inactive")
+        return dict(user)
+    finally:
+        cur.close()
+        conn.close()
+
+
+def serialize_credits(user: Dict[str, Any]) -> Dict[str, Any]:
+    account_type = normalize_account_type(user.get("role"), user.get("account_type"))
+    return {
+        "account_type": account_type,
+        "credits_remaining": int(user.get("credits_remaining") or 0),
+        "credits_used": int(user.get("credits_used") or 0),
+    }
+
+
+def log_user_activity(
+    user_id: int,
+    action: str,
+    title: str,
+    detail: str | None = None,
+    metadata: Dict[str, Any] | None = None,
+) -> None:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO survey_ai_activity (user_id, action, title, detail, metadata)
+            VALUES (%s, %s, %s, %s, %s::jsonb)
+            """,
+            (user_id, action, title, detail, json.dumps(metadata or {})),
+        )
+        conn.commit()
+    except Exception as exc:
+        conn.rollback()
+        logger.warning("Failed to log Survey AI activity: %s", exc)
+    finally:
+        cur.close()
+        conn.close()
+
+
+def deduct_query_credit(user_id: int) -> Dict[str, Any]:
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            UPDATE users
+            SET credits_remaining = credits_remaining - 1,
+                credits_used = credits_used + 1
+            WHERE id = %s AND credits_remaining > 0
+            RETURNING id, username, email, role, is_active, account_type, credits_remaining, credits_used
+            """,
+            (user_id,),
+        )
+        updated = cur.fetchone()
+        if not updated:
+            conn.rollback()
+            raise HTTPException(status_code=402, detail="You have exhausted your credits.")
+        conn.commit()
+        return dict(updated)
+    except HTTPException:
+        raise
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 def discover_relations(conn):
@@ -244,6 +521,8 @@ def build_dataset_registry(conn):
     for relation in relations:
         schema_name = relation["schema_name"]
         table_name = relation["table_name"]
+        if schema_name == "public" and table_name in PUBLIC_INTERNAL_TABLES:
+            continue
         if schema_name == "economic_census" and _is_internal_ec_dataset(table_name):
             continue
         if schema_name == "plfs" and table_name in PLFS_HIDDEN_TABLES:
@@ -1122,7 +1401,7 @@ def get_db_connection():
 
 # Test connection on startup
 @app.on_event("startup")
-async def startup_event():
+def startup_event():
     """Test database connection on app startup"""
     if startup_config_error:
         logger.error(f"⚠️ Startup connection check skipped: {startup_config_error}")
@@ -1138,6 +1417,8 @@ async def startup_event():
         logger.info(f"✅ Database: {DB_NAME}")
         logger.info(f"✅ PostgreSQL version: {version[0][:60]}...")
         print(f"Connected DB: postgresql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+        ensure_credit_columns()
+        ensure_activity_table()
         # Pre-load PLFS lookup tables into memory
         load_plfs_lookups()
     except Exception as e:
@@ -1159,7 +1440,7 @@ async def health():
     return {"status": "healthy", "message": "Survey AI API is running"}
 
 @app.get("/health/db")
-async def health_db():
+def health_db():
     """Database connection status endpoint"""
     from database.connection import get_db_status
     status_info = get_db_status()
@@ -1187,26 +1468,122 @@ async def health_db():
         }
     }
 
+
+@app.get("/api/user/credits")
+def get_user_credits(current_user: Dict[str, Any] = Depends(get_current_user)):
+    return serialize_credits(current_user)
+
+
+@app.get("/api/user/activity")
+def get_user_activity(
+    limit: int = Query(10, ge=1, le=50),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            SELECT id, action, title, detail, metadata, created_at
+            FROM survey_ai_activity
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (current_user["id"], limit),
+        )
+        rows = cur.fetchall()
+        return {
+            "success": True,
+            "activity": [
+                {
+                    "id": row["id"],
+                    "action": row["action"],
+                    "title": row["title"],
+                    "detail": row["detail"],
+                    "metadata": row["metadata"] or {},
+                    "created_at": row["created_at"].isoformat(),
+                }
+                for row in rows
+            ],
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.get("/api/user/activity/summary")
+def get_user_activity_summary(current_user: Dict[str, Any] = Depends(get_current_user)):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            SELECT
+                to_char(day::date, 'Dy') AS day_label,
+                day::date AS day,
+                COALESCE(query_count, 0)::integer AS queries,
+                COALESCE(exhausted_count, 0)::integer AS blocked
+            FROM generate_series(current_date - interval '6 days', current_date, interval '1 day') AS day
+            LEFT JOIN (
+                SELECT
+                    date_trunc('day', created_at)::date AS activity_day,
+                    COUNT(*) FILTER (WHERE action = 'query_executed') AS query_count,
+                    COUNT(*) FILTER (WHERE action = 'credits_exhausted') AS exhausted_count
+                FROM survey_ai_activity
+                WHERE user_id = %s
+                  AND created_at >= current_date - interval '6 days'
+                GROUP BY activity_day
+            ) activity ON activity.activity_day = day::date
+            ORDER BY day::date
+            """,
+            (current_user["id"],),
+        )
+        rows = cur.fetchall()
+        return {
+            "success": True,
+            "summary": [
+                {
+                    "day": row["day"].isoformat(),
+                    "label": row["day_label"],
+                    "queries": row["queries"],
+                    "blocked": row["blocked"],
+                }
+                for row in rows
+            ],
+        }
+    finally:
+        cur.close()
+        conn.close()
+
 @app.get("/datasets")
-async def get_datasets():
+def get_datasets():
     """Get all available datasets with registry metadata."""
+    cached = cache_get("datasets")
+    if cached:
+        return cached
+
     try:
         conn = get_db_connection()
         registry, _ = build_dataset_registry(conn)
         conn.close()
         
-        return {
+        return cache_set("datasets", {
             "success": True,
             "datasets": registry,
             "tables": [item["name"] for item in registry],
             "count": len(registry)
-        }
+        }, ttl_seconds=60)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching datasets: {str(e)}")
 
 @app.get("/datasets/hierarchical")
-async def get_datasets_hierarchical():
+def get_datasets_hierarchical():
     """Get datasets organized by schema categories."""
+    cached = cache_get("datasets_hierarchical")
+    if cached:
+        return cached
+
     t_start = time.time()
     logger.info("[datasets/hierarchical] Request received")
     try:
@@ -1270,9 +1647,7 @@ async def get_datasets_hierarchical():
             col_count = int(row["column_count"])
 
             # Filter/Skip system tables in public schema
-            if schema_name == "public" and table_name in {
-                "users", "sessions", "otp_challenges", "transactions", "usage_logs", "datasets", "data_records"
-            }:
+            if schema_name == "public" and table_name in PUBLIC_INTERNAL_TABLES:
                 continue
             if schema_name == "economic_census" and _is_internal_ec_dataset(table_name):
                 continue
@@ -1331,18 +1706,18 @@ async def get_datasets_hierarchical():
             f"Returned {counts['total']} datasets across {len(hierarchical)} categories."
         )
 
-        return {
+        return cache_set("datasets_hierarchical", {
             "success": True,
             "data": hierarchical,
             "categories": list(hierarchical.keys()),
             "datasets": flat_datasets,
             "counts": counts,
             "total_datasets": counts["total"]
-        }
+        }, ttl_seconds=60)
 
     except HTTPException as e:
         logger.error(f"[datasets/hierarchical] HTTP error: {e.detail}")
-        return {
+        return cache_set("datasets_hierarchical", {
             "success": False,
             "error": str(e.detail),
             "data": {},
@@ -1350,10 +1725,10 @@ async def get_datasets_hierarchical():
             "datasets": [],
             "counts": {"total": 0},
             "total_datasets": 0
-        }
+        }, ttl_seconds=5)
     except Exception as e:
         logger.error(f"[datasets/hierarchical] Error: {e}", exc_info=True)
-        return {
+        return cache_set("datasets_hierarchical", {
             "success": False,
             "error": f"Error fetching hierarchical datasets: {str(e)}",
             "data": {},
@@ -1361,26 +1736,30 @@ async def get_datasets_hierarchical():
             "datasets": [],
             "counts": {"total": 0},
             "total_datasets": 0
-        }
+        }, ttl_seconds=5)
 
 @app.get("/datasets/registry")
-async def get_datasets_registry():
+def get_datasets_registry():
     """Get the full dynamic dataset registry with schema, table, and column metadata."""
+    cached = cache_get("datasets_registry")
+    if cached:
+        return cached
+
     try:
         conn = get_db_connection()
         registry, hierarchical_data = build_dataset_registry(conn)
         conn.close()
-        return {
+        return cache_set("datasets_registry", {
             "success": True,
             "schemas": list(hierarchical_data.keys()),
             "datasets": registry,
             "count": len(registry),
-        }
+        }, ttl_seconds=60)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching dataset registry: {str(e)}")
 
 @app.get("/columns/{table:path}")
-async def get_columns(table: str):
+def get_columns(table: str, authorization: Optional[str] = Header(None)):
     """Get columns for a specific table"""
     conn = get_db_connection()
     
@@ -1421,6 +1800,19 @@ async def get_columns(table: str):
 
         cur.close()
         conn.close()
+
+        if authorization:
+            try:
+                user = get_current_user(authorization)
+                log_user_activity(
+                    user["id"],
+                    "dataset_opened",
+                    "Dataset opened",
+                    f"Opened {_format_qualified_name(schema_name, table_name)}",
+                    {"table": _format_qualified_name(schema_name, table_name)},
+                )
+            except HTTPException:
+                pass
         
         return {
             "success": True,
@@ -1435,7 +1827,7 @@ async def get_columns(table: str):
 
 # Reference endpoints for UI dropdowns
 @app.get("/reference/ec/states")
-async def get_states():
+def get_states():
     """Return all rows from economic_census.state_codes"""
     try:
         conn = get_db_connection()
@@ -1449,7 +1841,7 @@ async def get_states():
         raise HTTPException(status_code=500, detail=f"Error fetching states: {str(e)}")
 
 @app.get("/reference/ec/districts")
-async def get_districts(state_code: int = None):
+def get_districts(state_code: int = None):
     """Return all rows from economic_census.district_codes"""
     try:
         conn = get_db_connection()
@@ -1469,7 +1861,7 @@ async def get_districts(state_code: int = None):
         raise HTTPException(status_code=500, detail=f"Error fetching districts: {str(e)}")
 
 @app.get("/reference/ec/nic-codes")
-async def get_nic_codes():
+def get_nic_codes():
     """Return all rows from economic_census.nic_codes"""
     try:
         conn = get_db_connection()
@@ -1483,7 +1875,7 @@ async def get_nic_codes():
         raise HTTPException(status_code=500, detail=f"Error fetching nic codes: {str(e)}")
 
 @app.get("/distinct/{table:path}/{column}")
-async def get_distinct_values(
+def get_distinct_values(
     table: str,
     column: str,
     limit: int = Query(default=10000, ge=1, le=50000),
@@ -1554,7 +1946,7 @@ async def get_distinct_values(
 
 
 @app.get("/ux-report/{table:path}")
-async def get_ux_report(table: str):
+def get_ux_report(table: str):
     """Report UX mapping coverage and schema issues for Economic Census."""
     conn = get_db_connection()
     try:
@@ -1730,11 +2122,23 @@ async def get_ux_report(table: str):
 
 
 @app.post("/data")
-async def fetch_data(request: DataRequest):
+def fetch_data(request: DataRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Fetch data from database with specified columns"""
     
     conn = None
     try:
+        try:
+            current_user = deduct_query_credit(current_user["id"])
+        except HTTPException as exc:
+            if exc.status_code == 402:
+                log_user_activity(
+                    current_user["id"],
+                    "credits_exhausted",
+                    "Credits exhausted",
+                    "A query was blocked because credits are exhausted.",
+                    {"table": request.table},
+                )
+            raise
         conn = get_db_connection()
         schema_name, table_name, table_ref = resolve_relation(conn, request.table)
         available_columns = {row["column_name"] for row in get_table_columns(conn, schema_name, table_name)}
@@ -1818,6 +2222,19 @@ async def fetch_data(request: DataRequest):
         limit = int(request.limit)
         has_more = len(rows) == limit
         display_total = offset + len(rows) + (1 if has_more else 0)
+
+        log_user_activity(
+            current_user["id"],
+            "query_executed",
+            "Query executed",
+            f"Queried {_format_qualified_name(schema_name, table_name)}",
+            {
+                "table": _format_qualified_name(schema_name, table_name),
+                "columns": request.columns,
+                "filters": request.filters,
+                "count": len(rows),
+            },
+        )
         
         return {
             "success": True,
@@ -1828,7 +2245,8 @@ async def fetch_data(request: DataRequest):
             "total": display_total,
             "has_more": has_more,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
+            "credits": serialize_credits(current_user),
         }
     except HTTPException as he:
         raise he
@@ -1842,7 +2260,7 @@ async def fetch_data(request: DataRequest):
             conn.close()
 
 @app.get("/statistics/{table:path}")
-async def get_statistics(table: str, column: str = None):
+def get_statistics(table: str, column: str = None):
     """Get statistics for numeric columns"""
     
     conn = get_db_connection()
@@ -1883,7 +2301,7 @@ async def get_statistics(table: str, column: str = None):
         raise HTTPException(status_code=500, detail=f"Error fetching statistics: {str(e)}")
 
 @app.get("/reference/districts")
-async def get_district_codes(state_code: str = None):
+def get_district_codes(state_code: str = None):
     """Get district codes (optionally filtered by state)"""
     try:
         conn = get_db_connection()
@@ -1918,7 +2336,7 @@ async def get_district_codes(state_code: str = None):
         raise HTTPException(status_code=500, detail=f"Error fetching district codes: {str(e)}")
 
 @app.get("/reference/ec/states")
-async def get_ec_states():
+def get_ec_states():
     """Get all states for Economic Census"""
     try:
         conn = get_db_connection()
@@ -1932,7 +2350,7 @@ async def get_ec_states():
         raise HTTPException(status_code=500, detail=f"Error fetching EC states: {str(e)}")
 
 @app.get("/reference/ec/districts")
-async def get_ec_districts(state_code: int = None):
+def get_ec_districts(state_code: int = None):
     """Get districts for Economic Census"""
     try:
         conn = get_db_connection()
@@ -1949,7 +2367,7 @@ async def get_ec_districts(state_code: int = None):
         raise HTTPException(status_code=500, detail=f"Error fetching EC districts: {str(e)}")
 
 @app.get("/reference/ec/nic-codes")
-async def get_ec_nic_codes():
+def get_ec_nic_codes():
     """Get NIC codes for Economic Census"""
     try:
         conn = get_db_connection()
@@ -1963,7 +2381,7 @@ async def get_ec_nic_codes():
         raise HTTPException(status_code=500, detail=f"Error fetching EC NIC codes: {str(e)}")
 
 @app.get("/reference/states")
-async def get_states():
+def get_states():
     """Get all states with their district counts"""
     try:
         conn = get_db_connection()
@@ -1989,7 +2407,7 @@ async def get_states():
         raise HTTPException(status_code=500, detail=f"Error fetching states: {str(e)}")
 
 @app.get("/reference/item-codes")
-async def get_item_codes(block: str = None):
+def get_item_codes(block: str = None):
     """Get PLFS item codes (optionally filtered by block)"""
     try:
         conn = get_db_connection()
@@ -2022,7 +2440,7 @@ async def get_item_codes(block: str = None):
         raise HTTPException(status_code=500, detail=f"Error fetching item codes: {str(e)}")
 
 @app.get("/reference/metadata")
-async def get_nmds_metadata():
+def get_nmds_metadata():
     """Get NMDS metadata"""
     try:
         conn = get_db_connection()
@@ -2047,8 +2465,12 @@ async def get_nmds_metadata():
         raise HTTPException(status_code=500, detail=f"Error fetching metadata: {str(e)}")
 
 @app.get("/analytics/summary")
-async def get_analytics_summary():
+def get_analytics_summary():
     """Get analytics summary across all datasets"""
+    cached = cache_get("analytics_summary")
+    if cached:
+        return cached
+
     try:
         conn = get_db_connection()
         registry, _ = build_dataset_registry(conn)
@@ -2069,17 +2491,17 @@ async def get_analytics_summary():
         
         total_rows = sum(s['rows'] for s in summary)
         
-        return {
+        return cache_set("analytics_summary", {
             "success": True,
             "summary": summary,
             "total_tables": len(summary),
             "total_rows": total_rows
-        }
+        }, ttl_seconds=60)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
 
 @app.get("/analytics/data-quality/{table:path}")
-async def get_data_quality(table: str):
+def get_data_quality(table: str):
     """Analyze data quality for a table"""
     try:
         conn = get_db_connection()
@@ -2138,8 +2560,13 @@ async def get_data_quality(table: str):
         raise HTTPException(status_code=500, detail=f"Error analyzing data quality: {str(e)}")
 
 @app.get("/analytics/column-distribution/{table:path}/{column}")
-async def get_column_distribution(table: str, column: str):
+def get_column_distribution(table: str, column: str):
     """Get value distribution for a column"""
+    cache_key = f"column_distribution:{table}:{column}"
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -2147,7 +2574,31 @@ async def get_column_distribution(table: str, column: str):
         available_columns = {row["column_name"] for row in get_table_columns(conn, schema_name, table_name)}
         if column not in available_columns:
             raise HTTPException(status_code=400, detail=f"Column '{column}' not found in '{table}'")
-            
+
+        if _is_plfs_person_household(schema_name, table_name) and column == "state_ut_code":
+            cur.execute("""
+                SELECT
+                    p.st AS value,
+                    COALESCE(s.state_name, p.st::text) AS label,
+                    COUNT(*) AS count
+                FROM plfs.person p
+                LEFT JOIN plfs.state_codes s
+                  ON NULLIF(p.st, '')::integer = NULLIF(s.state_code::text, '')::integer
+                WHERE p.st IS NOT NULL AND p.st <> ''
+                GROUP BY p.st, s.state_name
+                ORDER BY count DESC
+                LIMIT 20
+            """)
+            distribution = cur.fetchall()
+            cur.close()
+            conn.close()
+            return cache_set(cache_key, {
+                "success": True,
+                "table": table,
+                "column": column,
+                "distribution": distribution,
+            }, ttl_seconds=300)
+
         # For categorical data - get top values
         cur.execute(f"""
             SELECT "{column}" as value, COUNT(*) as count
@@ -2162,17 +2613,28 @@ async def get_column_distribution(table: str, column: str):
         cur.close()
         conn.close()
         
-        return {
+        return cache_set(cache_key, {
             "success": True,
             "table": table,
             "column": column,
             "distribution": distribution
+        }, ttl_seconds=300)
+    except pg_errors.QueryCanceled:
+        fallback = {
+            "success": False,
+            "table": table,
+            "column": column,
+            "distribution": [],
+            "error": "Query timed out. Please narrow your filters and try again.",
         }
+        return cache_set(cache_key, fallback, ttl_seconds=10)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting distribution: {str(e)}")
 
 @app.get("/analytics/integrity/{table:path}")
-async def get_integrity_audit(table: str):
+def get_integrity_audit(table: str):
     """Detect duplicates and repeated entries in a dataset"""
     try:
         conn = get_db_connection()

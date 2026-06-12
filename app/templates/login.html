@@ -454,35 +454,69 @@
             e.preventDefault();
             hideMessages();
 
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+            const otp = document.getElementById('otp').value.trim();
             // Show loading
             loginBtn.disabled = true;
             loading.style.display = 'block';
 
             try {
-                const verifyResponse = await fetch('/api/v1/auth/login/simple', {
+                if (!loginChallengeId) {
+                    const startResponse = await fetch('/api/v1/auth/login/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const startData = await startResponse.json();
+                    if (!startResponse.ok) {
+                        showError(startData.detail || 'Login failed. Please check your credentials.');
+                        loginBtn.disabled = false;
+                        loading.style.display = 'none';
+                        return;
+                    }
+
+                    loginChallengeId = startData.challenge_id;
+                    otpGroup.style.display = 'block';
+                    loginBtn.textContent = 'Verify Authenticator Code';
+                    showInfo('Open the same authenticator app you set up during registration and enter the current 6-digit code.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                if (!otp || otp.length !== 6) {
+                    showError('Please enter the 6-digit authenticator code.');
+                    loginBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const verifyResponse = await fetch('/api/v1/auth/login/verify', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ challenge_id: loginChallengeId, otp })
                 });
 
                 const verifyData = await verifyResponse.json();
                 if (!verifyResponse.ok) {
-                    showError(verifyData.detail || 'Login failed. Please check your credentials.');
+                    showError(verifyData.detail || 'Authenticator verification failed.');
                     loginBtn.disabled = false;
                     loading.style.display = 'none';
                     return;
                 }
 
                 localStorage.setItem('access_token', verifyData.access_token);
-                localStorage.setItem('user_role', verifyData.user?.role || 'public');
-                localStorage.setItem('username', verifyData.user?.username || username);
+                localStorage.setItem('user_role', verifyData.user?.role || verifyData.user_role || 'public');
+                localStorage.setItem('username', verifyData.user?.username || verifyData.username || username);
                 if (verifyData.user) {
                     localStorage.setItem('user_email', verifyData.user.email || '');
-                    localStorage.setItem('full_name', verifyData.user.full_name || verifyData.user.username || username);
+                    localStorage.setItem('full_name', verifyData.user.full_name || verifyData.user.username || verifyData.username || username);
                 }
 
                 showInfo('Login successful! Redirecting to Survey AI...');

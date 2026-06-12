@@ -220,6 +220,14 @@ def _credits_for_role(role: UserRole) -> float:
     return credits_by_role.get(role, 10.0)
 
 
+def _account_type_for_role(role: UserRole) -> str:
+    return "researcher" if role == UserRole.RESEARCHER else "public"
+
+
+def _query_credits_for_account(account_type: str) -> int:
+    return 100 if account_type == "researcher" else 10
+
+
 @router.post("/register/start", response_model=OtpChallengeResponse)
 def register_start(user_data: RegisterStartRequest, db: Session = Depends(get_db)):
     """Start registration by creating authenticator setup challenge"""
@@ -306,6 +314,7 @@ def register_verify(payload: RegisterVerifyRequest, db: Session = Depends(get_db
         try:
             role_value = user_payload.get("role", UserRole.PUBLIC.value)
             role = UserRole(role_value)
+            account_type = _account_type_for_role(role)
             
             user = User(
                 email=user_payload["email"],
@@ -315,6 +324,9 @@ def register_verify(payload: RegisterVerifyRequest, db: Session = Depends(get_db
                 password=user_payload["password"],
                 role=role,
                 credits=_credits_for_role(role),
+                account_type=account_type,
+                credits_remaining=_query_credits_for_account(account_type),
+                credits_used=0,
                 is_active=True,
                 totp_secret=user_payload.get("totp_secret"),
                 totp_enabled=True,
@@ -354,7 +366,10 @@ def register_verify(payload: RegisterVerifyRequest, db: Session = Depends(get_db
 @router.post("/login/start", response_model=OtpChallengeResponse)
 def login_start(payload: LoginStartRequest, db: Session = Depends(get_db)):
     """Start login by validating credentials and requesting authenticator code"""
-    user = db.query(User).filter(User.username == payload.username).first()
+    login_id = payload.username.strip()
+    user = db.query(User).filter(
+        (User.username == login_id) | (User.email == login_id)
+    ).first()
 
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
@@ -440,7 +455,8 @@ def login_verify(payload: LoginVerifyRequest, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
         "user_role": user_role,
-        "username": user.username
+        "username": user.username,
+        "user": user,
     }
 
 
@@ -564,6 +580,7 @@ def register_simple(user_data: SimpleRegisterRequest, db: Session = Depends(get_
             )
         
         # Create new user
+        account_type = _account_type_for_role(UserRole.PUBLIC)
         new_user = User(
             email=user_data.email,
             username=user_data.username,
@@ -573,6 +590,9 @@ def register_simple(user_data: SimpleRegisterRequest, db: Session = Depends(get_
             role=UserRole.PUBLIC,
             is_active=True,
             credits=_credits_for_role(UserRole.PUBLIC),
+            account_type=account_type,
+            credits_remaining=_query_credits_for_account(account_type),
+            credits_used=0,
             totp_secret=pyotp.random_base32(),
             totp_enabled=False
         )
@@ -599,13 +619,13 @@ def register_simple(user_data: SimpleRegisterRequest, db: Session = Depends(get_
         )
 
 
-@router.post("/register/verify", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register/direct", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_verify_simple(user_data: SimpleRegisterRequest, db: Session = Depends(get_db)):
     """
     Direct registration endpoint (alias for /register/simple).
-    
-    POST /api/v1/auth/register/verify
-    
+
+    POST /api/v1/auth/register/direct
+
     Requirements:
     - Accept: full_name, email, username, password
     - Hash password using bcrypt

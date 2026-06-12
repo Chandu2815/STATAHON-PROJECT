@@ -96,7 +96,7 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         print("[DB] ✅ Tables created successfully")
         
-        # Ensure TOTP columns exist for backward compatibility
+        # Ensure user auth/account columns exist for backward compatibility
         _ensure_user_totp_columns()
         
         # Create or update default users
@@ -105,6 +105,8 @@ def init_db():
             def ensure_user(username, email, full_name, password, role, credits):
                 """Create or update user account"""
                 try:
+                    account_type = "researcher" if role == UserRole.RESEARCHER else "public"
+                    default_query_credits = 100 if account_type == "researcher" else 10
                     user = db.query(User).filter(User.username == username).first()
                     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
@@ -119,6 +121,9 @@ def init_db():
                             role=role,
                             is_active=True,
                             credits=credits,
+                            account_type=account_type,
+                            credits_remaining=default_query_credits,
+                            credits_used=0,
                             totp_secret=pyotp.random_base32(),
                             totp_enabled=True,
                         )
@@ -132,6 +137,12 @@ def init_db():
                         if not user.totp_secret:
                             user.totp_secret = pyotp.random_base32()
                         user.totp_enabled = True
+                        if not user.account_type:
+                            user.account_type = account_type
+                        if user.credits_remaining is None:
+                            user.credits_remaining = default_query_credits
+                        if user.credits_used is None:
+                            user.credits_used = 0
                         db.commit()
                         print(f"[USER] ✅ User {username} exists - password reset to: {password}")
                     return user
@@ -258,7 +269,7 @@ def load_csv_data_if_needed(db):
 
 
 def _ensure_user_totp_columns() -> None:
-    """Add TOTP columns for existing databases without running migrations."""
+    """Add user auth/account columns for existing databases without running migrations."""
     inspector = inspect(engine)
     if "users" not in inspector.get_table_names():
         return
@@ -270,6 +281,36 @@ def _ensure_user_totp_columns() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64)"))
         if "totp_enabled" not in user_columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE"))
+        if "account_type" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN account_type VARCHAR(32)"))
+        if "credits_remaining" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN credits_remaining INTEGER"))
+        if "credits_used" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN credits_used INTEGER"))
+
+        conn.execute(text("""
+            UPDATE users
+            SET account_type = CASE
+                WHEN lower(role::text) = 'researcher' THEN 'researcher'
+                ELSE 'public'
+            END
+            WHERE account_type IS NULL OR account_type = ''
+        """))
+        conn.execute(text("""
+            UPDATE users
+            SET credits_remaining = CASE
+                WHEN account_type = 'researcher' THEN 100
+                ELSE 10
+            END
+            WHERE credits_remaining IS NULL
+        """))
+        conn.execute(text("UPDATE users SET credits_used = 0 WHERE credits_used IS NULL"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN account_type SET DEFAULT 'public'"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN account_type SET NOT NULL"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN credits_remaining SET DEFAULT 10"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN credits_remaining SET NOT NULL"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN credits_used SET DEFAULT 0"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN credits_used SET NOT NULL"))
 
 
 if __name__ == "__main__":

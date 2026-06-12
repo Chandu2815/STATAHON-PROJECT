@@ -39,6 +39,9 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.PUBLIC, nullable=False)
     is_active = Column(Boolean, default=True)
     credits = Column(Float, default=0.0)  # For micro-payment system
+    account_type = Column(String(32), default="public", nullable=False)
+    credits_remaining = Column(Integer, default=10, nullable=False)
+    credits_used = Column(Integer, default=0, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # Track who created this user
     totp_secret = Column(String(64), nullable=True)
     totp_enabled = Column(Boolean, default=False)

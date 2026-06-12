@@ -217,26 +217,18 @@ export default function SurveyAI() {
       if (response.data.success) {
         console.log(`[Survey AI] Successfully fetched ${response.data.data?.length || 0} records (total: ${response.data.total})`);
         setData(response.data.data || []);
+        setChartData(response.data.data || []);
         setTotalCount(response.data.total || 0);
+        if (response.data.credits) {
+          localStorage.setItem('account_type', response.data.credits.account_type || 'public');
+          localStorage.setItem('credits_remaining', String(response.data.credits.credits_remaining ?? 0));
+          localStorage.setItem('credits_used', String(response.data.credits.credits_used ?? 0));
+          window.dispatchEvent(new Event('credits-updated'));
+        }
         // Reset pagination to first page
         setPagination(prev => ({ ...prev, page: 0 }));
-
-        // Fetch full dataset for charts
-        const fullPayload = {
-          ...payload,
-          limit: response.data.total || 1000,
-          offset: 0,
-        };
-        console.log('[Survey AI] Fetching full data for charts with payload:', fullPayload);
-        const fullResponse = await API.post('/data', fullPayload);
-        if (fullResponse.data.success) {
-          setChartData(fullResponse.data.data || []);
-        } else {
-          console.warn('[Survey AI] Failed to fetch full chart data');
-          setChartData([]);
-        }
       } else {
-        throw new Error(response.data.error || 'Failed to fetch data');
+        throw new Error(response.data.detail || response.data.error || 'Failed to fetch data');
       }
     } catch (err) {
       console.error('[Survey AI] Error fetching data:', err);
@@ -286,9 +278,18 @@ export default function SurveyAI() {
           });
           if (response.data.success) {
             setData(response.data.data || []);
+            if (response.data.credits) {
+              localStorage.setItem('account_type', response.data.credits.account_type || 'public');
+              localStorage.setItem('credits_remaining', String(response.data.credits.credits_remaining ?? 0));
+              localStorage.setItem('credits_used', String(response.data.credits.credits_used ?? 0));
+              window.dispatchEvent(new Event('credits-updated'));
+            }
+          } else {
+            throw new Error(response.data.detail || response.data.error || 'Failed to fetch data');
           }
         } catch (err) {
           console.error('[Survey AI] Error in paginated re-fetch:', err);
+          setError('Failed to fetch data: ' + err.message);
         } finally {
           setLoading(false);
         }
