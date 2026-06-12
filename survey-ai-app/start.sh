@@ -106,7 +106,7 @@ kill_port() {
 
 # Start Backend
 echo -e "\n${BLUE}[1/3]${NC} Starting Backend Server..."
-kill_port 8001
+kill_port 8002
 
 cd "$BACKEND_DIR"
 
@@ -139,7 +139,7 @@ EOF
 fi
 
 # Start backend in background
-echo -e "${GREEN}✓ Backend Server Starting on http://localhost:8001${NC}"
+echo -e "${GREEN}✓ Backend Server Starting on http://localhost:8002${NC}"
 python main.py > backend.log 2>&1 &
 BACKEND_PID=$!
 echo "Backend PID: $BACKEND_PID" > backend.pid
@@ -188,8 +188,8 @@ echo -e "${GREEN}✓ Survey AI is Running!${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 echo -e "${BLUE}📊 Frontend:${NC} ${GREEN}http://localhost:5173${NC}"
-echo -e "${BLUE}💾 Backend:${NC}  ${GREEN}http://localhost:8001${NC}"
-echo -e "${BLUE}📚 API Docs:${NC} ${GREEN}http://localhost:8001/docs${NC}"
+echo -e "${BLUE}💾 Backend:${NC}  ${GREEN}http://localhost:8002${NC}"
+echo -e "${BLUE}📚 API Docs:${NC} ${GREEN}http://localhost:8002/docs${NC}"
 echo ""
 echo -e "${YELLOW}To stop servers:${NC}"
 echo "  • Press Ctrl+C to stop all services"

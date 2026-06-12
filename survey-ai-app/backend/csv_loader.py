@@ -23,7 +23,7 @@ class SurveyDataCSVLoader:
     
     def __init__(
         self,
-        api_url: str = "http://localhost:8001/survey-data/insert",
+        api_url: str = "http://localhost:8002/survey-data/insert",
         batch_size: int = 1000,
         timeout: int = 30
     ):
@@ -292,13 +292,13 @@ if __name__ == "__main__":
     Example:
         python csv_loader.py DataSet.csv
         python csv_loader.py data/survey.csv --batch-size 2000
-        python csv_loader.py data/survey.csv --api-url http://localhost:8001/survey-data/insert
+        python csv_loader.py data/survey.csv --api-url http://localhost:8002/survey-data/insert
     """
     
     # Parse arguments
     filepath = sys.argv[1] if len(sys.argv) > 1 else "DataSet.csv"
     
-    api_url = "http://localhost:8001/survey-data/insert"
+    api_url = "http://localhost:8002/survey-data/insert"
     batch_size = 1000
     
     for i, arg in enumerate(sys.argv[2:]):

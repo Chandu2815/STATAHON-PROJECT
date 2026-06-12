@@ -18,6 +18,7 @@ from dotenv import dotenv_values, load_dotenv
 import logging
 import json
 import time
+import uuid
 from collections import defaultdict
 from time import monotonic
 from urllib.parse import urlparse, unquote
@@ -269,6 +270,99 @@ def ensure_activity_table() -> None:
             """
             CREATE INDEX IF NOT EXISTS idx_survey_ai_activity_user_action_created
             ON survey_ai_activity (user_id, action, created_at DESC)
+            """
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+def ensure_transactions_table() -> None:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS subscription_transactions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                order_id VARCHAR(255) UNIQUE,
+                payment_id VARCHAR(255),
+                amount DECIMAL(10, 2) NOT NULL,
+                currency VARCHAR(10) DEFAULT 'INR',
+                credits_purchased INTEGER NOT NULL,
+                plan_type VARCHAR(50),
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                payment_method VARCHAR(50),
+                metadata JSONB DEFAULT '{}'::jsonb,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_subscription_transactions_user_created
+            ON subscription_transactions (user_id, created_at DESC)
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_subscription_transactions_order
+            ON subscription_transactions (order_id)
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_subscription_transactions_status
+            ON subscription_transactions (status, created_at DESC)
+            """
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+def ensure_subscription_plans_table() -> None:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS subscription_plans (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(50) NOT NULL UNIQUE,
+                price_usd DECIMAL(10, 2),
+                price_inr DECIMAL(10, 2),
+                credits_included INTEGER NOT NULL,
+                features JSONB DEFAULT '{}'::jsonb,
+                billing_interval VARCHAR(50),
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+        
+        # Seed default plans
+        cur.execute(
+            """
+            INSERT INTO subscription_plans (name, price_inr, price_usd, credits_included, features, billing_interval)
+            VALUES 
+                ('Free', 0, 0, 10, '{"features": ["10 queries"], "description": "Get started"}'::jsonb, 'one-time'),
+                ('Premium', 99, 1.19, 100, '{"features": ["100 queries", "Full analytics", "AI briefings", "Faster responses"], "description": "Most Popular"}'::jsonb, 'monthly'),
+                ('Ultra', 399, 4.79, 500, '{"features": ["500 queries", "Predictive analytics", "Exports", "Priority support"], "description": "For teams"}'::jsonb, 'monthly'),
+                ('Extra 50', 29, 0.35, 50, '{"features": ["50 extra queries"], "description": "One-time boost"}'::jsonb, 'one-time'),
+                ('Extra 100', 49, 0.59, 100, '{"features": ["100 extra queries"], "description": "One-time boost"}'::jsonb, 'one-time'),
+                ('Extra 500', 199, 2.39, 500, '{"features": ["500 extra queries"], "description": "One-time boost"}'::jsonb, 'one-time')
+            ON CONFLICT (name) DO NOTHING
             """
         )
         conn.commit()
@@ -1419,6 +1513,8 @@ def startup_event():
         print(f"Connected DB: postgresql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
         ensure_credit_columns()
         ensure_activity_table()
+        ensure_transactions_table()
+        ensure_subscription_plans_table()
         # Pre-load PLFS lookup tables into memory
         load_plfs_lookups()
     except Exception as e:
@@ -1551,6 +1647,238 @@ def get_user_activity_summary(current_user: Dict[str, Any] = Depends(get_current
                 }
                 for row in rows
             ],
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+@app.get("/api/plans")
+def get_subscription_plans():
+    """Get all available subscription plans and extras."""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            SELECT id, name, price_inr, price_usd, credits_included, features, billing_interval
+            FROM subscription_plans
+            WHERE is_active = true
+            ORDER BY credits_included ASC
+            """
+        )
+        rows = cur.fetchall()
+        plans = [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "price_inr": float(row["price_inr"] or 0),
+                "price_usd": float(row["price_usd"] or 0),
+                "credits": row["credits_included"],
+                "features": row["features"].get("features", []) if row["features"] else [],
+                "description": row["features"].get("description", "") if row["features"] else "",
+                "billing": row["billing_interval"],
+            }
+            for row in rows
+        ]
+        return {"success": True, "plans": plans}
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.post("/api/payments/create-order")
+def create_payment_order(
+    request: dict,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """Create a Razorpay/Stripe payment order."""
+    plan_id = request.get("plan_id")
+    payment_method = request.get("payment_method", "razorpay")  # razorpay or stripe
+    
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        # Get plan details
+        cur.execute(
+            "SELECT id, price_inr, credits_included, name FROM subscription_plans WHERE id = %s AND is_active = true",
+            (plan_id,)
+        )
+        plan = cur.fetchone()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        
+        # Generate order ID
+        order_id = f"order_{current_user['id']}_{uuid.uuid4().hex[:12]}"
+        
+        # Store transaction record
+        cur.execute(
+            """
+            INSERT INTO subscription_transactions 
+            (user_id, order_id, amount, credits_purchased, plan_type, status, payment_method, metadata)
+            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s::jsonb)
+            RETURNING id, order_id, amount, credits_purchased, created_at
+            """,
+            (
+                current_user["id"],
+                order_id,
+                float(plan["price_inr"]),
+                plan["credits_included"],
+                plan["name"],
+                payment_method,
+                json.dumps({"plan_id": plan_id, "plan_name": plan["name"]})
+            )
+        )
+        transaction = cur.fetchone()
+        conn.commit()
+        
+        # TODO: Integrate with Razorpay API
+        # For now, return placeholder data
+        razorpay_order = {
+            "id": order_id,
+            "entity": "order",
+            "amount": int(float(plan["price_inr"]) * 100),  # In paise
+            "amount_paid": 0,
+            "amount_due": int(float(plan["price_inr"]) * 100),
+            "currency": "INR",
+            "receipt": order_id,
+            "status": "created",
+            "attempts": 0,
+            "notes": {
+                "user_id": current_user["id"],
+                "credits": plan["credits_included"]
+            },
+            "created_at": int(transaction["created_at"].timestamp()) if transaction["created_at"] else 0
+        }
+        
+        return {
+            "success": True,
+            "order": razorpay_order,
+            "payment_method": payment_method,
+            "transaction_id": transaction["id"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.post("/api/payments/verify")
+def verify_payment(
+    request: dict,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """Verify payment and add credits."""
+    order_id = request.get("order_id")
+    payment_id = request.get("payment_id")
+    signature = request.get("signature")
+    
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        # Get transaction
+        cur.execute(
+            "SELECT * FROM subscription_transactions WHERE order_id = %s AND user_id = %s",
+            (order_id, current_user["id"])
+        )
+        transaction = cur.fetchone()
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        # TODO: Verify signature with Razorpay/Stripe
+        # For now, mark as success
+        
+        # Update transaction status
+        cur.execute(
+            """
+            UPDATE subscription_transactions 
+            SET status = 'completed', payment_id = %s, updated_at = NOW()
+            WHERE id = %s
+            """,
+            (payment_id, transaction["id"])
+        )
+        
+        # Add credits to user
+        credits_to_add = transaction["credits_purchased"]
+        cur.execute(
+            """
+            UPDATE users 
+            SET credits_remaining = credits_remaining + %s
+            WHERE id = %s
+            RETURNING credits_remaining, credits_used
+            """,
+            (credits_to_add, current_user["id"])
+        )
+        updated_user = cur.fetchone()
+        
+        # Log activity
+        log_user_activity(
+            current_user["id"],
+            "credits_purchased",
+            f"Purchased {credits_to_add} credits via {transaction['plan_type']}",
+            detail=f"Order: {order_id}, Payment: {payment_id}",
+            metadata={"credits": credits_to_add, "plan": transaction["plan_type"]}
+        )
+        
+        conn.commit()
+        return {
+            "success": True,
+            "message": f"Successfully added {credits_to_add} credits",
+            "credits_remaining": updated_user["credits_remaining"],
+            "credits_used": updated_user["credits_used"],
+            "transaction_id": transaction["id"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.get("/api/transactions")
+def get_user_transactions(
+    limit: int = Query(20, ge=1, le=100),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """Get user's transaction history."""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            """
+            SELECT id, order_id, amount, credits_purchased, plan_type, status, payment_method, created_at, updated_at
+            FROM subscription_transactions
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (current_user["id"], limit)
+        )
+        rows = cur.fetchall()
+        transactions = [
+            {
+                "id": row["id"],
+                "order_id": row["order_id"],
+                "amount": float(row["amount"]),
+                "credits": row["credits_purchased"],
+                "plan": row["plan_type"],
+                "status": row["status"],
+                "method": row["payment_method"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None
+            }
+            for row in rows
+        ]
+        return {
+            "success": True,
+            "transactions": transactions,
+            "total": len(transactions)
         }
     finally:
         cur.close()
@@ -2684,6 +3012,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8001,
+        port=int(os.getenv("API_PORT", "8002")),
         reload=False
     )

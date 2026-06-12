@@ -211,7 +211,7 @@ class NSSSurveyLoader:
     
     def __init__(
         self,
-        api_url: str = "http://localhost:8001/survey-data/insert",
+        api_url: str = "http://localhost:8002/survey-data/insert",
         batch_size: int = 100,
         timeout: int = 30
     ):
@@ -354,7 +354,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     csv_file = sys.argv[1]
-    api_url = "http://localhost:8001/survey-data/insert"
+    api_url = "http://localhost:8002/survey-data/insert"
     batch_size = 100
     
     # Parse additional arguments

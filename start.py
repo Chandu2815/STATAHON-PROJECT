@@ -28,7 +28,7 @@ def start_server():
     if use_https:
         default_port = 8443  # Standard HTTPS port
     else:
-        default_port = 8000  # Standard HTTP port
+        default_port = 8001  # Standard HTTP port
     
     # Railway provides PORT as an environment variable
     port = int(os.environ.get("PORT", default_port))

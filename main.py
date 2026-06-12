@@ -24,8 +24,8 @@ def _is_port_available(host: str, port: int) -> bool:
 
 def _resolve_server_config() -> tuple[str, int]:
     host = os.getenv("APP_HOST", os.getenv("HOST", "0.0.0.0"))
-    explicit_port = os.getenv("APP_PORT") or os.getenv("PORT")
-    port = int(explicit_port or "8000")
+    explicit_port = os.getenv("APP_PORT") or os.getenv("PORT") or os.getenv("API_PORT")
+    port = int(explicit_port or "8001")
 
     if explicit_port:
         return host, port

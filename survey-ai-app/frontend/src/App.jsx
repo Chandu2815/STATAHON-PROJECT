@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import SurveyAI from './pages/SurveyAI.jsx';
 import Settings from './pages/Settings.jsx';
+import Pricing from './pages/Pricing.jsx';
+import BuyCredits from './pages/BuyCredits.jsx';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -87,6 +89,8 @@ export default function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/survey-ai" element={<SurveyAI />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/buy-credits" element={<BuyCredits />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>

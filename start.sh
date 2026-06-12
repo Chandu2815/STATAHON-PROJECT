@@ -26,17 +26,17 @@ else
     PYTHON_CMD="python3.13"
 fi
 
-# Check if the application is already running on port 8000
-if lsof -i :8000 > /dev/null 2>&1; then
-    echo -e "${YELLOW}⚠️  Port 8000 is already in use.${NC}"
+# Check if the application is already running on port 8001
+if lsof -i :8001 > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Port 8001 is already in use.${NC}"
     echo "Kill existing process? (y/n)"
     read -r answer
     if [[ $answer == "y" ]]; then
         echo -e "${YELLOW}Killing existing process...${NC}"
-        kill -9 $(lsof -ti :8000) 2>/dev/null || true
+        kill -9 $(lsof -ti :8001) 2>/dev/null || true
         sleep 2
     else
-        echo -e "${YELLOW}Please free up port 8000 and try again.${NC}"
+        echo -e "${YELLOW}Please free up port 8001 and try again.${NC}"
         exit 1
     fi
 fi
@@ -73,15 +73,15 @@ echo -e "${GREEN}✓ Starting STATAHON Application...${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${YELLOW}Server will be available at:${NC}"
-echo -e "  🏠 Landing Page:    ${BLUE}http://127.0.0.1:8000/${NC}"
-echo -e "  📝 Register:        ${BLUE}http://127.0.0.1:8000/register${NC}"
-echo -e "  🔐 Login:           ${BLUE}http://127.0.0.1:8000/login${NC}"
-echo -e "  📊 Dashboard:       ${BLUE}http://127.0.0.1:8000/dashboard${NC}"
-echo -e "  👨‍💼 Admin:           ${BLUE}http://127.0.0.1:8000/admin${NC}"
-echo -e "  📚 API Docs:        ${BLUE}http://127.0.0.1:8000/docs${NC}"
+echo -e "  🏠 Landing Page:    ${BLUE}http://127.0.0.1:8001/${NC}"
+echo -e "  📝 Register:        ${BLUE}http://127.0.0.1:8001/register${NC}"
+echo -e "  🔐 Login:           ${BLUE}http://127.0.0.1:8001/login${NC}"
+echo -e "  📊 Dashboard:       ${BLUE}http://127.0.0.1:8001/dashboard${NC}"
+echo -e "  👨‍💼 Admin:           ${BLUE}http://127.0.0.1:8001/admin${NC}"
+echo -e "  📚 API Docs:        ${BLUE}http://127.0.0.1:8001/docs${NC}"
 echo ""
 echo -e "${YELLOW}Press CTRL+C to stop the server${NC}"
 echo ""
 
 # Start the FastAPI application
-$PYTHON_CMD -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+$PYTHON_CMD -m uvicorn main:app --host 127.0.0.1 --port 8001 --reload

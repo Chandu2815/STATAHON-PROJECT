@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, Coins, LogOut, Menu, ShieldCheck, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, ChevronDown, Coins, LogOut, Menu, ShieldCheck, User, Zap } from 'lucide-react';
 import { API } from '../lib/api.js';
 
 export default function Navbar({ onLogout, onMenuClick }) {
+  const navigate = useNavigate();
   const userDisplayName = localStorage.getItem('userDisplayName');
   const username = localStorage.getItem('username');
   const userEmail = localStorage.getItem('userEmail');
@@ -126,12 +128,23 @@ export default function Navbar({ onLogout, onMenuClick }) {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Coins size={18} className="text-orange-500" />
-                      <p className="text-sm font-bold text-slate-800">
+                      <Coins size={18} className={credits.remaining <= 3 && credits.remaining > 0 ? 'text-red-500' : credits.remaining === 0 ? 'text-red-600' : 'text-orange-500'} />
+                      <p className={`text-sm font-bold ${credits.remaining <= 3 ? 'text-red-700' : 'text-slate-800'}`}>
                         {credits.remaining} remaining / {credits.used} used
                       </p>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate('/buy-credits');
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-sm font-black text-white transition hover:shadow-lg hover:shadow-blue-600/30"
+                  >
+                    <Zap size={18} />
+                    Buy Credits
+                  </button>
 
                   <button
                     onClick={onLogout}
