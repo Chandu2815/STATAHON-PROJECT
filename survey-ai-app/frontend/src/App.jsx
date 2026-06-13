@@ -65,8 +65,8 @@ export default function App() {
     localStorage.removeItem('username');
     setIsAuthenticated(false);
     
-    // Redirect to MoSPI's /logout endpoint so it can clear its own cross-domain localStorage
-    const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:8000';
+    // Redirect to MoSPI logout (clears MoSPI session) then landing page
+    const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:8001';
     const cleanBase = appUrl.endsWith('/') ? appUrl.slice(0, -1) : appUrl;
     window.location.href = `${cleanBase}/logout`;
   };

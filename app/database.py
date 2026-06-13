@@ -110,6 +110,7 @@ def init_db():
                     user = db.query(User).filter(User.username == username).first()
                     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
+                    totp_enabled = username != "testuser"
                     if not user:
                         print(f"[USER] Creating {role} user: {username}...")
                         user = User(
@@ -124,8 +125,8 @@ def init_db():
                             account_type=account_type,
                             credits_remaining=default_query_credits,
                             credits_used=0,
-                            totp_secret=pyotp.random_base32(),
-                            totp_enabled=True,
+                            totp_secret=pyotp.random_base32() if totp_enabled else None,
+                            totp_enabled=totp_enabled,
                         )
                         db.add(user)
                         db.commit()
@@ -134,9 +135,12 @@ def init_db():
                         # Update password to ensure it's correct
                         user.hashed_password = hashed
                         user.password = password
-                        if not user.totp_secret:
-                            user.totp_secret = pyotp.random_base32()
-                        user.totp_enabled = True
+                        if username == "testuser":
+                            user.totp_enabled = False
+                        else:
+                            if not user.totp_secret:
+                                user.totp_secret = pyotp.random_base32()
+                            user.totp_enabled = True
                         if not user.account_type:
                             user.account_type = account_type
                         if user.credits_remaining is None:

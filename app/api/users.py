@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, LoginLockout, AdminLockoutAlert
 from app.schemas.user import (
     UsageStatsResponse,
     TransactionCreate,
@@ -906,6 +906,88 @@ def update_user(
     
     logger.info(f"Admin {current_user.username} updated user {user.username} (ID: {user_id})")
     return user
+
+
+@router.get("/lockout-alerts")
+def get_lockout_alerts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List unacknowledged lockout alerts for admins."""
+    if not current_user.is_admin():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    alerts = (
+        db.query(AdminLockoutAlert)
+        .filter(AdminLockoutAlert.acknowledged.is_(False))
+        .order_by(AdminLockoutAlert.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return [
+        {
+            "id": alert.id,
+            "user_id": alert.user_id,
+            "user_email": alert.user_email,
+            "login_key": alert.login_key,
+            "message": alert.message,
+            "created_at": alert.created_at.isoformat() if alert.created_at else None,
+        }
+        for alert in alerts
+    ]
+
+
+@router.post("/{user_id}/unblock-lockout")
+def unblock_user_lockout(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Re-enable a lockout-disabled account and clear persisted lockout state."""
+    if not current_user.can_manage_users():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required to unblock users",
+        )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.is_active = True
+    login_keys = {_normalize_lockout_key(user.username), _normalize_lockout_key(user.email)}
+    db.query(LoginLockout).filter(
+        (LoginLockout.user_id == user_id) | (LoginLockout.login_key.in_(login_keys))
+    ).delete(synchronize_session=False)
+    db.query(AdminLockoutAlert).filter(
+        AdminLockoutAlert.user_id == user_id,
+        AdminLockoutAlert.acknowledged.is_(False),
+    ).update({"acknowledged": True}, synchronize_session=False)
+    db.commit()
+
+    logger.warning(
+        "[LOCKOUT] Admin id=%s email=%s unblocked user id=%s email=%s",
+        current_user.id,
+        current_user.email,
+        user.id,
+        user.email,
+    )
+    return {
+        "success": True,
+        "user_id": user.id,
+        "email": user.email,
+        "message": "User unblocked successfully",
+    }
+
+
+def _normalize_lockout_key(value: str) -> str:
+    return value.strip().lower()
 
 
 @router.delete("/{user_id}", response_model=dict)

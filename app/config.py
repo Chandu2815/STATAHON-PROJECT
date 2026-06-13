@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # Frontend URLs
-    VITE_APP_URL: str = "http://localhost:8000"
+    VITE_APP_URL: str = "http://localhost:8001"
     VITE_SURVEY_AI_URL: str = "http://localhost:5173"
     
     # Payment (set in production)

@@ -141,13 +141,16 @@ def admin_redirect():
 @router.get("/logout", response_class=HTMLResponse)
 def logout_endpoint():
     """
-    Clear localStorage and redirect to login
+    Clear localStorage and redirect to MoSPI landing page
     """
     return """
     <script>
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_role');
         localStorage.removeItem('username');
-        window.location.href='/login';
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('full_name');
+        localStorage.removeItem('login_lockout');
+        window.location.href='/';
     </script>
     """

@@ -283,6 +283,25 @@
         .toggle-password-btn:hover {
             color: #1a237e;
         }
+        .lockout-banner {
+            display: none;
+            background: #fff3e0;
+            border: 1px solid #ffb74d;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            color: #e65100;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .lockout-banner strong {
+            color: #bf360c;
+        }
+        .form-locked input,
+        .form-locked button[type="submit"] {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -305,6 +324,11 @@
 
         <div id="errorMessage" class="error-message"></div>
         <div id="infoMessage" class="info-message"></div>
+        <div id="lockoutBanner" class="lockout-banner">
+            <strong id="lockoutTitle">Login temporarily locked.</strong>
+            <span id="lockoutCountdownWrap"> Try again in <span id="lockoutCountdown">0s</span>.</span>
+            <span id="lockoutAttemptsWrap"> Attempts remaining: <strong id="lockoutAttempts">3</strong>.</span>
+        </div>
 
         <form id="loginForm">
             <div class="form-group">
@@ -355,6 +379,180 @@
         const otpGroup = document.getElementById('otpGroup');
 
         let loginChallengeId = null;
+        const LOCKOUT_STORAGE_KEY = 'login_lockout';
+        const MAX_LOGIN_ATTEMPTS = 3;
+        let lockoutTimerId = null;
+
+        function parseErrorDetail(data) {
+            const detail = data?.detail;
+            if (typeof detail === 'object' && detail !== null) {
+                return detail;
+            }
+            return { message: typeof detail === 'string' ? detail : 'Login failed' };
+        }
+
+        function saveLockoutState(state) {
+            localStorage.setItem(LOCKOUT_STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function loadLockoutState() {
+            try {
+                const raw = localStorage.getItem(LOCKOUT_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch {
+                return null;
+            }
+        }
+
+        function clearLockoutState() {
+            localStorage.removeItem(LOCKOUT_STORAGE_KEY);
+            if (lockoutTimerId) {
+                clearInterval(lockoutTimerId);
+                lockoutTimerId = null;
+            }
+        }
+
+        function formatCountdown(totalSeconds) {
+            const seconds = Math.max(0, totalSeconds);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes > 0) {
+                return `${minutes}m ${remainder}s`;
+            }
+            return `${remainder}s`;
+        }
+
+        function setFormLocked(locked) {
+            document.getElementById('username').disabled = locked;
+            document.getElementById('password').disabled = locked;
+            document.getElementById('otp').disabled = locked;
+            loginBtn.disabled = locked;
+            loginForm.classList.toggle('form-locked', locked);
+        }
+
+        function applyLockoutUI(state) {
+            const banner = document.getElementById('lockoutBanner');
+            const titleEl = document.getElementById('lockoutTitle');
+            const countdownWrap = document.getElementById('lockoutCountdownWrap');
+            const countdownEl = document.getElementById('lockoutCountdown');
+            const attemptsEl = document.getElementById('lockoutAttempts');
+            const attemptsWrap = document.getElementById('lockoutAttemptsWrap');
+
+            if (!state) {
+                banner.style.display = 'none';
+                setFormLocked(false);
+                return false;
+            }
+
+            if (state.accountDisabled) {
+                banner.style.display = 'block';
+                titleEl.textContent = 'Account disabled.';
+                countdownWrap.style.display = 'none';
+                attemptsEl.textContent = '0';
+                attemptsWrap.style.display = 'inline';
+                setFormLocked(true);
+                return true;
+            }
+
+            if (!state.lockedUntil) {
+                banner.style.display = 'none';
+                setFormLocked(false);
+                return false;
+            }
+
+            const lockedUntilMs = new Date(state.lockedUntil).getTime();
+            const remainingSec = Math.ceil((lockedUntilMs - Date.now()) / 1000);
+
+            if (remainingSec <= 0) {
+                clearLockoutState();
+                banner.style.display = 'none';
+                setFormLocked(false);
+                hideMessages();
+                return false;
+            }
+
+            banner.style.display = 'block';
+            titleEl.textContent = 'Login temporarily locked.';
+            countdownWrap.style.display = 'inline';
+            countdownEl.textContent = formatCountdown(remainingSec);
+            const attemptsRemaining = state.attemptsRemaining ?? Math.max(0, MAX_LOGIN_ATTEMPTS - (state.failedAttempts || 0));
+            attemptsEl.textContent = String(attemptsRemaining);
+            attemptsWrap.style.display = 'inline';
+            setFormLocked(true);
+
+            if (lockoutTimerId) {
+                clearInterval(lockoutTimerId);
+            }
+            lockoutTimerId = setInterval(() => {
+                const secondsLeft = Math.ceil((lockedUntilMs - Date.now()) / 1000);
+                if (secondsLeft <= 0) {
+                    clearLockoutState();
+                    banner.style.display = 'none';
+                    setFormLocked(false);
+                    hideMessages();
+                    return;
+                }
+                countdownEl.textContent = formatCountdown(secondsLeft);
+            }, 1000);
+
+            return true;
+        }
+
+        function handleLoginFailure(detail, loginId) {
+            if (detail.account_disabled) {
+                const state = {
+                    loginId: loginId.toLowerCase(),
+                    accountDisabled: true,
+                    failedAttempts: detail.failed_attempts || 4,
+                    attemptsRemaining: 0,
+                };
+                saveLockoutState(state);
+                applyLockoutUI(state);
+                showError(detail.message || 'Account disabled. Contact an administrator.');
+                return;
+            }
+
+            if (!detail.locked_until && detail.retry_after_seconds == null) {
+                showError(detail.message || 'Login failed. Please check your credentials.');
+                return;
+            }
+
+            const lockedUntil = detail.locked_until || new Date(Date.now() + (detail.retry_after_seconds || 0) * 1000).toISOString();
+            const attemptsRemaining = detail.attempts_remaining ?? Math.max(0, MAX_LOGIN_ATTEMPTS - (detail.failed_attempts || 0));
+            const state = {
+                loginId: loginId.toLowerCase(),
+                lockedUntil,
+                failedAttempts: detail.failed_attempts || 0,
+                attemptsRemaining,
+                accountDisabled: false,
+            };
+            saveLockoutState(state);
+            applyLockoutUI(state);
+
+            const baseMessage = detail.message || 'Incorrect username or password';
+            if (attemptsRemaining > 0) {
+                showError(`${baseMessage} ${attemptsRemaining} attempt(s) remaining.`);
+            } else {
+                showError(`${baseMessage} Account locked until the timer expires.`);
+            }
+        }
+
+        (function restoreLockoutFromStorage() {
+            const stored = loadLockoutState();
+            if (!stored) {
+                return;
+            }
+            if (stored.loginId) {
+                document.getElementById('username').value = stored.loginId;
+            }
+            if (applyLockoutUI(stored)) {
+                if (stored.accountDisabled) {
+                    showError('Account disabled. Contact an administrator.');
+                } else {
+                    showError('Login is temporarily locked. Please wait for the countdown to finish.');
+                }
+            }
+        })();
 
         // Password visibility toggle - Safe initialization
         const togglePasswordBtn = document.getElementById('togglePassword');
@@ -443,6 +641,35 @@
             infoMessage.style.display = 'none';
         }
 
+        function finishLogin(loginData, formUsername) {
+            clearLockoutState();
+            localStorage.setItem('access_token', loginData.access_token);
+            localStorage.setItem('user_role', loginData.user?.role || loginData.user_role || 'public');
+            localStorage.setItem('username', loginData.user?.username || loginData.username || formUsername);
+            if (loginData.user) {
+                localStorage.setItem('user_email', loginData.user.email || '');
+                localStorage.setItem('full_name', loginData.user.full_name || loginData.user.username || loginData.username || formUsername);
+            }
+
+            showInfo('Login successful! Redirecting to Survey AI...');
+            setTimeout(() => {
+                const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
+                const token = localStorage.getItem('access_token');
+                const username = localStorage.getItem('username') || loginData.user?.username || '';
+                const email = localStorage.getItem('user_email') || loginData.user?.email || '';
+                const fullName = localStorage.getItem('full_name') || loginData.user?.full_name || username;
+                const targetUrl = SURVEY_AI_URL === '__VITE_SURVEY_AI_URL__' ? 'http://localhost:5173' : SURVEY_AI_URL;
+                const cleanBaseUrl = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                const params = new URLSearchParams({
+                    token,
+                    username,
+                    email,
+                    name: fullName
+                });
+                window.location.href = `${cleanBaseUrl}/?${params.toString()}`;
+            }, 1000);
+        }
+
         function fillLogin(username, password) {
             document.getElementById('username').value = username;
             document.getElementById('password').value = password;
@@ -457,6 +684,12 @@
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const otp = document.getElementById('otp').value.trim();
+
+            if (applyLockoutUI(loadLockoutState())) {
+                showError('Login is temporarily locked. Please wait for the countdown to finish.');
+                return;
+            }
+
             // Show loading
             loginBtn.disabled = true;
             loading.style.display = 'block';
@@ -473,9 +706,16 @@
 
                     const startData = await startResponse.json();
                     if (!startResponse.ok) {
-                        showError(startData.detail || 'Login failed. Please check your credentials.');
-                        loginBtn.disabled = false;
+                        handleLoginFailure(parseErrorDetail(startData), username);
                         loading.style.display = 'none';
+                        if (!applyLockoutUI(loadLockoutState())) {
+                            loginBtn.disabled = false;
+                        }
+                        return;
+                    }
+
+                    if (startData.skip_totp && startData.access_token) {
+                        finishLogin(startData, username);
                         return;
                     }
 
@@ -511,31 +751,7 @@
                     return;
                 }
 
-                localStorage.setItem('access_token', verifyData.access_token);
-                localStorage.setItem('user_role', verifyData.user?.role || verifyData.user_role || 'public');
-                localStorage.setItem('username', verifyData.user?.username || verifyData.username || username);
-                if (verifyData.user) {
-                    localStorage.setItem('user_email', verifyData.user.email || '');
-                    localStorage.setItem('full_name', verifyData.user.full_name || verifyData.user.username || verifyData.username || username);
-                }
-
-                showInfo('Login successful! Redirecting to Survey AI...');
-                setTimeout(() => {
-                    const SURVEY_AI_URL = "__VITE_SURVEY_AI_URL__";
-                    const token = localStorage.getItem('access_token');
-                    const username = localStorage.getItem('username') || verifyData.user?.username || '';
-                    const email = localStorage.getItem('user_email') || verifyData.user?.email || '';
-                    const fullName = localStorage.getItem('full_name') || verifyData.user?.full_name || username;
-                    const targetUrl = SURVEY_AI_URL === '__VITE_SURVEY_AI_URL__' ? 'http://localhost:5173' : SURVEY_AI_URL;
-                    const cleanBaseUrl = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
-                    const params = new URLSearchParams({
-                        token,
-                        username,
-                        email,
-                        name: fullName
-                    });
-                    window.location.href = `${cleanBaseUrl}/?${params.toString()}`;
-                }, 1000);
+                finishLogin(verifyData, username);
             } catch (error) {
                 showError('Connection error. Please try again.');
                 loginBtn.disabled = false;

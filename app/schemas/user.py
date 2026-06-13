@@ -85,6 +85,11 @@ class OtpChallengeResponse(BaseModel):
     otp_method: str = "totp"
     otpauth_url: Optional[str] = None
     setup_key: Optional[str] = None
+    skip_totp: bool = False
+    access_token: Optional[str] = None
+    user_role: Optional[str] = None
+    username: Optional[str] = None
+    user: Optional["UserResponse"] = None
 
 
 class LoginStartRequest(BaseModel):

@@ -2,7 +2,7 @@
 Models package initialization
 """
 from app.models.dataset import Dataset, DataRecord, CensusData
-from app.models.user import User, UsageLog, Transaction, UserRole, OtpChallenge, OtpPurpose
+from app.models.user import User, UsageLog, Transaction, UserRole, OtpChallenge, OtpPurpose, LoginLockout, AdminLockoutAlert
 
 __all__ = [
     "Dataset",
@@ -13,5 +13,7 @@ __all__ = [
     "Transaction",
     "UserRole",
     "OtpChallenge",
-    "OtpPurpose"
+    "OtpPurpose",
+    "LoginLockout",
+    "AdminLockoutAlert",
 ]

@@ -119,3 +119,28 @@ class OtpChallenge(Base):
     consumed = Column(Boolean, default=False, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class LoginLockout(Base):
+    """Persist failed login attempts and temporary/permanent lockouts."""
+    __tablename__ = "login_lockouts"
+
+    login_key = Column(String(255), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    failed_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    disabled = Column(Boolean, default=False, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class AdminLockoutAlert(Base):
+    """Alerts admins when an account is disabled by lockout."""
+    __tablename__ = "admin_lockout_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    user_email = Column(String(255), nullable=False)
+    login_key = Column(String(255), nullable=False)
+    message = Column(String(500), nullable=False)
+    acknowledged = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
